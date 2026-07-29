@@ -1,41 +1,57 @@
-<main class="mt-5 pt-3">
-  <div class="container-fluid">
-    <div class="row justify-content-center">
-      <div class="col-lg-6 mb-3">
-        <div class="card text-dark mb-3">
-          <div class="card-header fw-bold text-light text-center fs-2">Register</div>
-          <div class="card-body">
-            <form (ngSubmit)="register()">
-              <div class="mb-3">
-                <label class="form-label">First Name</label>
-                <input class="form-control" [(ngModel)]="registerObj.firstName" name="firstName">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Last Name</label>
-                <input class="form-control" [(ngModel)]="registerObj.lastName" name="lastName">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Login</label>
-                <input class="form-control" [(ngModel)]="registerObj.login" name="login">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control" [(ngModel)]="registerObj.password" name="password">
-              </div>
+<section class="auth-scene">
+  <div class="auth-glow auth-glow-a" aria-hidden="true"></div>
+  <div class="auth-glow auth-glow-b" aria-hidden="true"></div>
 
-              <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
-              <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="auth-layout">
+    <aside class="auth-brand">
+      <p class="eyebrow">Institute Portal</p>
+      <h1 class="brand-title">Humber</h1>
+      <p class="brand-copy">Create your account to access academic tools and administration.</p>
+    </aside>
 
-              <div class="text-center">
-                <button type="submit" class="btn btn-info text-light">Sign Up</button>
-              </div>
-              <div class="text-center mt-3">
-                <a routerLink="/login">Back to login</a>
-              </div>
-            </form>
+    <div class="auth-panel">
+      <h2>Create account</h2>
+      <p class="auth-sub">Fill in your details to register.</p>
+
+      <form class="auth-form" (ngSubmit)="register()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">First name</label>
+            <input class="form-control" [(ngModel)]="registerObj.firstName" name="firstName">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Last name</label>
+            <input class="form-control" [(ngModel)]="registerObj.lastName" name="lastName">
           </div>
         </div>
-      </div>
+
+        <div class="field">
+          <label class="form-label">Login</label>
+          <input class="form-control" [(ngModel)]="registerObj.login" name="login" autocomplete="username">
+        </div>
+
+        <div class="field">
+          <label class="form-label">Password</label>
+          <div class="password-wrap">
+            <input class="form-control" [type]="showPassword ? 'text' : 'password'"
+                   [(ngModel)]="registerObj.password" name="password" autocomplete="new-password">
+            <button type="button" class="eye-btn" (click)="showPassword = !showPassword">
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+        <button type="submit" class="btn btn-accent w-100" [disabled]="loading">
+          <span *ngIf="!loading">Create account</span>
+          <span *ngIf="loading">Creating…</span>
+        </button>
+      </form>
+
+      <p class="auth-footer">
+        Already registered? <a routerLink="/login">Sign in</a>
+      </p>
     </div>
   </div>
-</main>
+</section>

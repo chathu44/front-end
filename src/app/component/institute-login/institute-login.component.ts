@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { UserAuthService } from '../services/api/user/user-auth.service';
 import { UserService } from '../services/api/user/user.service';
 import { LoginRepresentation } from '../services/api/module/login-representation';
+import { ToastService } from '../services/toast.service';
 
 @Component({
   selector: 'app-institute-login',
@@ -12,11 +13,14 @@ import { LoginRepresentation } from '../services/api/module/login-representation
 export class InstituteLoginComponent implements OnInit {
   loginObj: LoginRepresentation = { login: 'admin', password: 'password' };
   error = '';
+  loading = false;
+  showPassword = false;
 
   constructor(
     private userService: UserService,
     private userAuthService: UserAuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -33,23 +37,28 @@ export class InstituteLoginComponent implements OnInit {
       return;
     }
 
+    this.loading = true;
     this.userService.login(this.loginObj).subscribe({
       next: (user) => {
-        if (user?.id) {
-          this.userService.getAuthIds(user.id).subscribe({
-            next: () => this.router.navigate(['/dashboard']),
-            error: () => this.router.navigate(['/dashboard'])
-          });
-        } else {
+        const go = () => {
+          this.toast.success(`Welcome back, ${user.firstName || user.login}`);
           this.router.navigate(['/dashboard']);
+        };
+        if (user?.id) {
+          this.userService.getAuthIds(user.id).subscribe({ next: go, error: go });
+        } else {
+          go();
         }
       },
       error: (err) => {
-        if (err.status === 0) {
-          this.error = 'Cannot connect to server at http://localhost:8010';
-        } else {
-          this.error = err.error?.message || 'Login failed';
-        }
+        this.loading = false;
+        this.error = err.status === 0
+          ? 'Cannot connect to server at http://localhost:8010'
+          : (err.error?.message || 'Login failed');
+        this.toast.error(this.error);
+      },
+      complete: () => {
+        this.loading = false;
       }
     });
   }

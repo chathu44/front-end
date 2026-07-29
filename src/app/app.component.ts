@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserAuthService } from './component/services/api/user/user-auth.service';
+import { ToastService } from './component/services/toast.service';
 
 @Component({
   selector: 'app-root',
@@ -8,11 +9,12 @@ import { UserAuthService } from './component/services/api/user/user-auth.service
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'institute-web';
+  title = 'template-angular';
 
   constructor(
     private router: Router,
-    private userAuthService: UserAuthService
+    private userAuthService: UserAuthService,
+    public toastService: ToastService
   ) { }
 
   get displayName(): string {
@@ -29,16 +31,13 @@ export class AppComponent {
     return this.userAuthService.getUserId();
   }
 
-  logIn(): void {
-    this.router.navigate(['/login']);
-  }
-
   isLoggedIn(): boolean {
     return this.userAuthService.isLoggedIn();
   }
 
   logOut(): void {
     this.userAuthService.clear();
+    this.toastService.info('Signed out');
     this.router.navigate(['/login']);
   }
 }

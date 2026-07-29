@@ -1,354 +1,56 @@
-<body *ngIf="isLoggedIn()">
-    <!-- Nav Bar -->
+<div class="toast-host" *ngIf="toastService.toasts.length">
+  <div class="app-toast" *ngFor="let t of toastService.toasts" [class]="t.kind">
+    <div class="flex-grow-1">{{ t.message }}</div>
+    <button type="button" class="btn-close btn-sm" (click)="toastService.dismiss(t.id)"></button>
+  </div>
+</div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-
-          <!-- offcanvas trigger -->
-          <button  class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <!-- offcancas trigger -->
-
-          <a class="navbar-brand fw-bold" href="#">HUMBER</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="top-icon"><i class="bi bi-caret-down"></i></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            
-          <p class="mb-2 mb-lg-0 bg-warning px-1 py-1 me-2" *ngIf="userId">ID: {{ userId }}</p>
-
-          <ul class="navbar-nav mb-2 mb-lg-0  ms-auto">
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-person-circle"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="#">Profile</a></li>
-                <li><a class="dropdown-item" href="#">Settings</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a  class="dropdown-item mb-2 mb-lg-0 px-3 py-1" *ngIf="isLoggedIn()" (click)="logOut()"> <i class="bi bi-box-arrow-left"></i> logout</a></li>
-              </ul>
-            </li>
-          </ul>
-          <p class="mb-2 mb-lg-0 text-light px-1 py-1 me-2">{{ displayName }}</p>
-          
-          <button class="btn btn-danger mb-2 mb-lg-0 px-3 py-1" *ngIf="!isLoggedIn()" (click)="logIn()"><i class="bi bi-box-arrow-right"></i> LOGIN</button>
-          
-          </div>
-        </div>
-      </nav>
-    <!-- Nav Bar -->
-
-    <!-- offcanvas -->
-    <div class="offcanvas offcanvas-start bg-dark text-white sidebar-nav" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-      
-
-      <div class="offcanvas-body p-0 ">
-
-        <nav class="navbar-dark">
-          <ul class="navbar-nav">
-            <li>
-              <div class="muted small fw-bold text-uppercase px-3">CORE</div>
-            </li>
-            <li>
-              <a routerLink="/dashboard" class="nav-link  px-3 active">
-                <span class="me-2"><i class="bi bi-house"></i></span>
-                <span>Dashboard</span>
-                
-              </a>
-            </li>
-
-            <li class="my-4"><hr class="dropdown-di"></li>
-
-            <li>
-              <div class="muted small fw-bold text-uppercase px-3">InterFace</div>
-            </li>
-
-            <li>
-              <a class="nav-link px-3 sidebar-link" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
-                <span class="me-2"><i class="bi bi-columns"></i></span>
-                <span>Management</span>
-                <span class="right-icon ms-auto"><i class="bi bi-chevron-down"></i></span>
-              </a>
-              <div class="collapse" id="collapseExample">
-                <div>
-                  <ul class="navbar-nav ps-3">
-
-                    <li>
-                      <a routerLink="/student" class="nav-link px-3">
-                        <span class="me-1">
-                            <i class="bi bi-person"></i>
-                        </span>
-                        <span>Student</span>
-                      </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/teacher" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-person-video"></i>
-                          </span>
-                          <span>Teacher</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/course" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-book"></i>
-                          </span>
-                          <span>Course</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/class" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-rocket"></i>
-                          </span>
-                          <span>Class</span>
-                        </a>
-                    </li>
-
-                  
-
-                  </ul>
-                </div>
-              </div>
-            </li>
-
-            <li class="my-4"><hr class="dropdown-di"></li>
-
-            <li>
-              <div class="muted small fw-bold text-uppercase px-3">Panel</div>
-            </li>
-
-            <a class="nav-link px-3 sidebar-link" data-bs-toggle="collapse" href="#collapseAdmin" role="button" aria-expanded="false" aria-controls="collapseAdmin">
-                <span class="me-2"><i class="bi bi-person-lock"></i></span>
-                <span>Administration</span>
-                <span class="right-icon ms-auto"><i class="bi bi-chevron-down"></i></span>
-            </a>
-
-            <div class="collapse" id="collapseAdmin">
-                <div>
-                  <ul class="navbar-nav ps-3">
-
-                    <li>
-                      <a routerLink="/user" class="nav-link px-3">
-                        <span class="me-1">
-                            <i class="bi bi-person-plus"></i>
-                        </span>
-                        <span>User</span>
-                      </a>
-                    </li>
-
-                    <li>
-                      <a routerLink="/privilege" class="nav-link px-3">
-                        <span class="me-1">
-                          <i class="bi bi-rocket"></i>
-                        </span>
-                        <span>Privilege</span>
-                      </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/setting" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-gear"></i>
-                          </span>
-                          <span>Settings</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/tools" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-tools"></i>
-                          </span>
-                          <span>Tools</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a routerLink="/media" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-mic-fill"></i>
-                          </span>
-                          <span>Media</span>
-                        </a>
-                    </li>
-
-                  </ul>
-                </div>
-              </div>
-
-              <li class="my-4"><hr class="dropdown-di"></li>
-
-              <li>
-                <div class="muted small fw-bold text-uppercase px-3">Reports</div>
-              </li>
-  
-              <a class="nav-link px-3 sidebar-link" data-bs-toggle="collapse" href="#collapseReport" role="button" aria-expanded="false" aria-controls="collapseReport">
-                  <span class="me-2"><i class="bi bi-graph-up"></i></span>
-                  <span>Institute</span>
-                  <span class="right-icon ms-auto"><i class="bi bi-chevron-down"></i></span>
-              </a>
-  
-              <div class="collapse" id="collapseReport">
-                  <div>
-                    <ul class="navbar-nav ps-3">
-  
-                      <li>
-                        <a routerLink="/teacherreport" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-graph-up-arrow"></i>
-                          </span>
-                          <span>Teacher Report</span>
-                        </a>
-                      </li>
-
-                      <li>
-                        <a routerLink="/studentreport" class="nav-link px-3">
-                          <span class="me-1">
-                            <i class="bi bi-graph-down-arrow"></i>
-                          </span>
-                          <span>Student Report</span>
-                        </a>
-                      </li>
-  
-                    </ul>
-                  </div>
-                </div>
-
-          </ul>
-        </nav>
+<div class="app-frame" *ngIf="isLoggedIn(); else guestView">
+  <aside class="side-nav">
+    <div class="side-brand">
+      <span class="brand-mark">H</span>
+      <div>
+        <div class="brand-name">Humber</div>
+        <div class="brand-tag">Institute Portal</div>
       </div>
     </div>
-    <!-- offcanvas -->
 
-    <main class="">
-      <div class="container-fluid">
+    <nav class="side-menu">
+      <p class="menu-label">Core</p>
+      <a routerLink="/dashboard" routerLinkActive="active"><i class="bi bi-grid-1x2"></i> Dashboard</a>
 
-        <div class="row">
-          <router-outlet></router-outlet>
-        </div>
-      </div>
-    </main>
-</body>
+      <p class="menu-label">Management</p>
+      <a routerLink="/student" routerLinkActive="active"><i class="bi bi-people"></i> Students</a>
+      <a routerLink="/teacher" routerLinkActive="active"><i class="bi bi-person-video3"></i> Teachers</a>
+      <a routerLink="/course" routerLinkActive="active"><i class="bi bi-journal-bookmark"></i> Courses</a>
+      <a routerLink="/class" routerLinkActive="active"><i class="bi bi-easel"></i> Classes</a>
 
-
-<body *ngIf="!isLoggedIn()">
-  <!-- Nav Bar -->
-
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-      <div class="container-fluid">
-
-        <!-- offcanvas trigger -->
-        <button  class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <!-- offcancas trigger -->
-
-        <a class="navbar-brand fw-bold text-center" href="#">LOCAL INSTITUTE LOGO</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="top-icon"><i class="bi bi-caret-down"></i></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          
-          <div class="d-flex ms-auto">
-            <button class="btn btn-danger mb-2 mb-lg-0 px-3 py-1" *ngIf="!isLoggedIn()" (click)="logIn()"><i class="bi bi-box-arrow-right"></i> LOGIN</button>
-            <button class=" btn btn-warning mb-2 mb-lg-0 bg-danger px-3 py-1" *ngIf="isLoggedIn()" (click)="logOut()"><i class="bi bi-box-arrow-left"></i> LOGOUT</button>
-          </div>
-        
-        </div>
-      </div>
+      <p class="menu-label">Administration</p>
+      <a routerLink="/privilege" routerLinkActive="active"><i class="bi bi-shield-lock"></i> Privileges</a>
     </nav>
-  <!-- Nav Bar -->
+  </aside>
 
-      <!-- offcanvas -->
-      <div class="offcanvas offcanvas-start bg-dark text-white sidebar-nav" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-      
-        <div class="offcanvas-body p-0 ">
-  
-          <nav class="navbar-dark">
-              <img src="../assets/student/sidestudentimg.jpg"/>
-          </nav>
-        </div>
+  <div class="main-pane">
+    <header class="top-bar">
+      <div>
+        <div class="top-greeting">{{ displayName || 'Administrator' }}</div>
+        <div class="top-meta" *ngIf="userId">User ID · {{ userId }}</div>
       </div>
-      <!-- offcanvas -->
-
-  <main class="">
-    <div class="container-fluid">
-
-      <div class="row">
-        <router-outlet></router-outlet>
+      <div class="top-actions">
+        <button type="button" class="btn btn-outline-ink btn-sm" (click)="logOut()">
+          <i class="bi bi-box-arrow-right"></i> Sign out
+        </button>
       </div>
+    </header>
 
-      <div class="my-4"><hr></div>
+    <main class="content-pane">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
 
-      <div class="mx-5 ">
-        <div class="row mt-5 pt-3">
-          <div class="col-lg-4 mb-3">
-            <div class="card text-white  mb-3 h-100">
-              <div class="card-header">Our Official Web</div>
-              <div class="card-body card1">
-                <h4 class="card-title">HUMBER.COM</h4>
-                
-              </div>
-            </div>
-          </div> 
-          <div class="col-lg-4 mb-3">
-            <div class="card text-white  mb-3 h-100">
-              <div class="card-header">Student LMS</div>
-              <div class="card-body card2">
-                <h4 class="card-title">LMS</h4>
-                  
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 mb-3">
-            <div class="card text-dark  mb-3 h-100">
-              <div class="card-header">News & Blog</div>
-              <div class="card-body card3">
-                <h4 class="card-title">OUR LATEST NEWS</h4>
-                
-                 
-              </div>
-            </div>
-          </div>
-        </div>
-  
-        <div class="row mt-2">
-          <div class="col-lg-4 mb-3">
-            <div class="card text-white  mb-3 h-100">
-              <div class="card-header">Student Book</div>
-              <div class="card-body card4">
-                <h4 class="card-title">DOWNLOAD</h4>
-              </div>
-            </div>
-          </div> 
-          <div class="col-lg-4 mb-3">
-            <div class="card text-white  mb-3 h-100">
-              <div class="card-header">Our Partnership </div>
-              <div class="card-body card5">
-                <h4 class="card-title">ABOUT</h4>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 mb-3">
-            <div class="card text-dark mb-3 h-100">
-              <div class="card-header">Student Life</div>
-              <div class="card-body card6">
-                <h4 class="card-title">OUR STUDENTS</h4>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-</body>
-
-
-
+<ng-template #guestView>
+  <div class="guest-shell">
+    <router-outlet></router-outlet>
+  </div>
+</ng-template>

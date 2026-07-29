@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import {
   CommonDataItem,
   PrivilegeGroup,
@@ -7,6 +8,7 @@ import {
 } from '../services/api/privilege/privilege.service';
 import { UserAuthService } from '../services/api/user/user-auth.service';
 import { UserService } from '../services/api/user/user.service';
+import { ToastService } from '../services/toast.service';
 
 @Component({
   selector: 'app-privilege',
@@ -14,6 +16,8 @@ import { UserService } from '../services/api/user/user.service';
   styleUrls: ['./privilege.component.scss']
 })
 export class PrivilegeComponent implements OnInit {
+  @ViewChild('groupModal') groupModal!: TemplateRef<any>;
+  @ViewChild('confirmModal') confirmModal!: TemplateRef<any>;
 
   groups: PrivilegeGroup[] = [];
   selectedGroupId: number | null = null;
@@ -31,13 +35,15 @@ export class PrivilegeComponent implements OnInit {
   myAuthIds: number[] = [];
   myUserId: number | null = null;
 
-  message = '';
-  error = '';
+  private modalRef?: NgbModalRef;
+  private pendingDeleteId: number | null = null;
 
   constructor(
     private privilegeService: PrivilegeService,
     private userAuthService: UserAuthService,
-    private userService: UserService
+    private userService: UserService,
+    private modalService: NgbModal,
+    private toast: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -56,20 +62,64 @@ export class PrivilegeComponent implements OnInit {
   loadGroups(): void {
     this.privilegeService.getPrivilegeGroups().subscribe({
       next: (groups) => this.groups = groups,
-      error: () => this.error = 'Failed to load privilege groups'
+      error: () => this.toast.error('Failed to load privilege groups')
     });
   }
 
   loadSystemPrivileges(): void {
     this.privilegeService.getSystemPrivileges().subscribe({
-      next: (data) => this.systemPrivileges = data,
-      error: () => { /* optional */ }
+      next: (data) => this.systemPrivileges = data
+    });
+  }
+
+  openCreateGroupModal(): void {
+    this.groupForm = { groupName: '', groupDescription: '' };
+    this.modalRef = this.modalService.open(this.groupModal, {
+      centered: true,
+      backdrop: 'static'
+    });
+  }
+
+  createGroup(): void {
+    if (!this.groupForm.groupName?.trim()) {
+      this.toast.error('Group name is required');
+      return;
+    }
+    this.privilegeService.createPrivilegeGroup(this.groupForm).subscribe({
+      next: () => {
+        this.toast.success('Privilege group created');
+        this.modalRef?.close();
+        this.loadGroups();
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to create group')
+    });
+  }
+
+  askDeleteGroup(id: number): void {
+    this.pendingDeleteId = id;
+    this.modalRef = this.modalService.open(this.confirmModal, { centered: true });
+  }
+
+  confirmDelete(): void {
+    if (this.pendingDeleteId == null) {
+      return;
+    }
+    const id = this.pendingDeleteId;
+    this.privilegeService.deletePrivilegeGroup(id).subscribe({
+      next: () => {
+        this.toast.success('Privilege group removed');
+        this.modalRef?.close();
+        if (this.selectedGroupId === id) {
+          this.selectedGroupId = null;
+          this.onGroupChange();
+        }
+        this.loadGroups();
+      },
+      error: (err) => this.toast.error(err.error?.message || 'Failed to delete group')
     });
   }
 
   onGroupChange(): void {
-    this.message = '';
-    this.error = '';
     if (!this.selectedGroupId) {
       this.availablePrivileges = [];
       this.assignedPrivileges = [];
@@ -80,55 +130,26 @@ export class PrivilegeComponent implements OnInit {
 
     this.privilegeService.getAvailablePrivileges(this.selectedGroupId).subscribe({
       next: (data) => this.availablePrivileges = data,
-      error: () => this.error = 'Failed to load available privileges'
+      error: () => this.toast.error('Failed to load available privileges')
     });
     this.privilegeService.getAssignedPrivileges(this.selectedGroupId).subscribe({
       next: (data) => {
         this.assignedPrivileges = data;
         this.originalPrivilegeIds = new Set(data.map(d => d.id));
       },
-      error: () => this.error = 'Failed to load assigned privileges'
+      error: () => this.toast.error('Failed to load assigned privileges')
     });
 
     this.privilegeService.getAvailableUsers(this.selectedGroupId).subscribe({
       next: (data) => this.availableUsers = data,
-      error: () => this.error = 'Failed to load available users'
+      error: () => this.toast.error('Failed to load available users')
     });
     this.privilegeService.getAssignedUsers(this.selectedGroupId).subscribe({
       next: (data) => {
         this.assignedUsers = data;
         this.originalUserIds = new Set(data.map(d => d.id));
       },
-      error: () => this.error = 'Failed to load assigned users'
-    });
-  }
-
-  createGroup(): void {
-    if (!this.groupForm.groupName?.trim()) {
-      this.error = 'Group name is required';
-      return;
-    }
-    this.privilegeService.createPrivilegeGroup(this.groupForm).subscribe({
-      next: () => {
-        this.message = 'Privilege group created';
-        this.groupForm = { groupName: '', groupDescription: '' };
-        this.loadGroups();
-      },
-      error: (err) => this.error = err.error?.message || 'Failed to create group'
-    });
-  }
-
-  deleteGroup(id: number): void {
-    this.privilegeService.deletePrivilegeGroup(id).subscribe({
-      next: () => {
-        this.message = 'Privilege group deleted (soft)';
-        if (this.selectedGroupId === id) {
-          this.selectedGroupId = null;
-          this.onGroupChange();
-        }
-        this.loadGroups();
-      },
-      error: (err) => this.error = err.error?.message || 'Failed to delete group'
+      error: () => this.toast.error('Failed to load assigned users')
     });
   }
 
@@ -154,10 +175,10 @@ export class PrivilegeComponent implements OnInit {
 
     this.privilegeService.saveGroupPrivileges(this.selectedGroupId, { addedData, removedData }).subscribe({
       next: () => {
-        this.message = 'Group privileges saved';
+        this.toast.success('Group privileges saved');
         this.onGroupChange();
       },
-      error: () => this.error = 'Failed to save privileges'
+      error: () => this.toast.error('Failed to save privileges')
     });
   }
 
@@ -183,10 +204,10 @@ export class PrivilegeComponent implements OnInit {
 
     this.privilegeService.saveGroupUsers(this.selectedGroupId, { addedData, removedData }).subscribe({
       next: () => {
-        this.message = 'Group users saved';
+        this.toast.success('Group users saved');
         this.onGroupChange();
       },
-      error: () => this.error = 'Failed to save users'
+      error: () => this.toast.error('Failed to save users')
     });
   }
 }

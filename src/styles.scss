@@ -1,5 +1,291 @@
-/* You can add global styles to this file, and also import other style files */
-
-/* Importing Bootstrap SCSS file. */
-// @import 'bootstrap/scss/bootstrap';
 @import url('../node_modules/bootstrap/dist/css/bootstrap.css');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #0b1f33;
+  --ink-soft: #16324a;
+  --surface: #f3f1ec;
+  --surface-elevated: #fffcf7;
+  --line: rgba(11, 31, 51, 0.12);
+  --muted: #5c6b7a;
+  --accent: #0f766e;
+  --accent-deep: #0b5f59;
+  --accent-soft: rgba(15, 118, 110, 0.12);
+  --danger: #b42318;
+  --success: #067647;
+  --warn: #b54708;
+  --shadow-soft: 0 18px 50px rgba(11, 31, 51, 0.12);
+  --radius: 14px;
+  --font-ui: 'Sora', sans-serif;
+  --font-brand: 'Fraunces', Georgia, serif;
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .brand-font {
+  font-family: var(--font-brand);
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-deep);
+}
+
+.btn-primary,
+.btn-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.65rem 1.25rem;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.btn-primary:hover,
+.btn-accent:hover,
+.btn-primary:focus,
+.btn-accent:focus {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.25);
+}
+
+.btn-outline-ink {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-outline-ink:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+.btn-ghost-danger {
+  border: 1px solid transparent;
+  color: var(--danger);
+  background: transparent;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-ghost-danger:hover {
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.form-control,
+.form-select {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  padding: 0.7rem 0.9rem;
+  background: #fff;
+  box-shadow: none;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.panel {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-shell {
+  padding: 0.25rem 0 1rem;
+}
+
+.page-title {
+  font-family: var(--font-brand);
+  font-size: clamp(1.6rem, 2vw, 2rem);
+  margin: 0 0 0.35rem;
+}
+
+.page-subtitle {
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+}
+
+.table {
+  --bs-table-bg: transparent;
+}
+
+.table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom-width: 1px;
+}
+
+.alert {
+  border-radius: 10px;
+  border: none;
+}
+
+.alert-danger {
+  background: rgba(180, 35, 24, 0.1);
+  color: var(--danger);
+}
+
+.alert-success {
+  background: rgba(6, 118, 71, 0.1);
+  color: var(--success);
+}
+
+.toast-host {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: min(360px, calc(100vw - 2rem));
+}
+
+.app-toast {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+  animation: toast-in 280ms ease;
+}
+
+.app-toast.success {
+  border-left: 4px solid var(--success);
+}
+
+.app-toast.error {
+  border-left: 4px solid var(--danger);
+}
+
+.app-toast.info {
+  border-left: 4px solid var(--accent);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content {
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fff, #f8f6f1);
+}
+
+.modal-title {
+  font-family: var(--font-brand);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line);
+}
+
+.dual-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.dual-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.dual-list li:last-child {
+  border-bottom: none;
+}
+
+/* Soften legacy CRUD page chrome inside the new shell */
+.content-pane main.mt-5 {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.content-pane .card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.content-pane .card-header {
+  background: linear-gradient(180deg, #fff, #f7f4ee) !important;
+  color: var(--ink) !important;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-brand);
+  font-weight: 600;
+}
+
+.content-pane .fw-bold.fs-3 {
+  font-family: var(--font-brand);
+  font-size: 1.8rem !important;
+  margin-bottom: 1rem;
+}
