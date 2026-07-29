@@ -43,35 +43,23 @@ export class CourseComponent {
     this.getprivilegeforComponent();
 }
 
-getprivilegeforComponent():void{
+getprivilegeforComponent(): void {
+    // Spring Boot template uses numeric auth IDs (from /get-auth-ids/{userId}),
+    // not role/module privilege flags. Enable CRUD UI when user has any auth IDs.
+    const authIds = this.userAuthService.getAuthIds();
+    const canManage = authIds.length > 0 || this.userAuthService.isLoggedIn();
 
-  this.roleNameForPrivilege =  this.userAuthService.getRoles();
-
-      if(this.roleNameForPrivilege!=null){
-      for(let i = 0 ; i<this.roleNameForPrivilege.length; i++){
-        this.roleName = this.roleNameForPrivilege[i].roleName;
-        }
+    this.deleteValue = canManage ? '1' : '0';
+    this.editValue = canManage ? '1' : '0';
+    this.insertValue = canManage ? '1' : '0';
+    this.selectValue = canManage ? '1' : '0';
+    this.buttonDisable(this.deleteValue, this.editValue, this.insertValue, this.selectValue);
   }
-
-    this.moduleId = "2";
-    this.privilegeService.GetAllPrivilegeForComponent(this.roleName,this.moduleId).subscribe(allData=>{ 
-    this.allAccess = allData.data.dataList[0];
-    
-    this.deleteValue=allData.data.dataList[0].del;
-    this.editValue=allData.data.dataList[0].upd;
-    this.insertValue=allData.data.dataList[0].ins;
-    this.selectValue=allData.data.dataList[0].sel;
-
-    this.buttonDisable(this.deleteValue,this.editValue,this.insertValue,this.selectValue);
-  })
- 
-}
 
 buttonDisable(deleteValue:string,editValue:string,insertValue:string,selectValue:string){
 console.log(editValue);
 
     if(editValue=="0"){
-      console.log("AAAAA");
       this.updateBtn=true;
     }else{
       this.updateBtn=false;

@@ -1,46 +1,55 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
+import { environment } from 'src/environments/environment';
 import { UserAuthService } from './user-auth.service';
+import {
+  LoginRepresentation,
+  RegisterRepresentation,
+  UserDto
+} from '../module/login-representation';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
 
-  BASE_URL = "http://localhost:8010";
+  private readonly baseUrl = environment.apiUrl;
+  private readonly noAuthHeaders = new HttpHeaders({ 'No-Auth': 'True' });
 
-  requestHeader = new HttpHeaders(
-    {"No-Auth":"True"}
-  );
-  constructor(private httpClient:HttpClient,
-              private userAuthService:UserAuthService
-  ) {}
+  constructor(
+    private httpClient: HttpClient,
+    private userAuthService: UserAuthService
+  ) { }
 
-  public login(loginData:any): Observable<any> {
-    return this.httpClient.post(this.BASE_URL+"/authenticate",loginData,{headers:this.requestHeader});
+  login(loginData: LoginRepresentation): Observable<UserDto> {
+    return this.httpClient.post<UserDto>(
+      `${this.baseUrl}/login`,
+      loginData,
+      { headers: this.noAuthHeaders }
+    ).pipe(
+      tap((user) => this.persistSession(user))
+    );
   }
 
-  //@ts-ignore
-  public roleEqual(allowRoles):boolean{
-    
-    let isMatch = false;
-    const userRoles:any = this.userAuthService.getRoles();
-    console.log(userRoles);
-    
-    if(userRoles!=null && userRoles){
-      for(let i=0; i<userRoles.length; i++){
-          for(let j=0; j<allowRoles.length; j++){
-            if(userRoles[i].roleName===allowRoles[j]){
-              isMatch = true;
-              return isMatch;
-            }else{
-              isMatch = false;
-              
-            }
-          }
-          return isMatch;
-      }
+  register(data: RegisterRepresentation): Observable<UserDto> {
+    return this.httpClient.post<UserDto>(
+      `${this.baseUrl}/register`,
+      data,
+      { headers: this.noAuthHeaders }
+    );
+  }
+
+  getAuthIds(userId: number): Observable<number[]> {
+    return this.httpClient.get<number[]>(`${this.baseUrl}/get-auth-ids/${userId}`).pipe(
+      tap((ids) => this.userAuthService.setAuthIds(ids))
+    );
+  }
+
+  private persistSession(user: UserDto): void {
+    if (user?.token) {
+      this.userAuthService.setToken(user.token);
+      this.userAuthService.setUser(user);
     }
   }
 }

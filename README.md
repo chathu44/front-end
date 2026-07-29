@@ -1,27 +1,54 @@
-# InstituteWeb
+# Angular Template (Student Edition) — Institute Web
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.0.
+Angular 16 frontend paired with **SpringBoot-Template** (JWT + privilege groups).
 
-## Development server
+## Requirements
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+- Node.js 18+
+- Backend running at `http://localhost:8010`
 
-## Code scaffolding
+## Setup
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+npm install
+npm start
+```
 
-## Build
+App: `http://localhost:4200`
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+## Auth (matches Spring Boot)
 
-## Running unit tests
+| Action | Endpoint | Body |
+|--------|----------|------|
+| Login | `POST /login` | `{ login, password }` |
+| Register | `POST /register` | `{ firstName, lastName, login, password }` |
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Response stores:
 
-## Running end-to-end tests
+- `localStorage.token` — JWT
+- `localStorage.currentUser` — includes numeric **`id`**
+- `localStorage.authIds` — from `GET /get-auth-ids/{id}`
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+Default seed user: **admin** / **password**
 
-## Further help
+## Privilege page
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Route: `/privilege`
+
+- Create / soft-delete privilege groups
+- Dual-list: privileges ↔ group
+- Dual-list: users ↔ group (uses `app_user.id`)
+
+## Config
+
+`src/environments/environment.ts`:
+
+```ts
+apiUrl: 'http://localhost:8010'
+```
+
+## Notes for students
+
+- User identity is numeric **`id`**, not a serial string
+- Login field name is **`login`** (not username/email)
+- Student/Teacher/Course CRUD still point at old `/api/v1/*` demo APIs — use them as UI practice, or rewire later to new backend endpoints

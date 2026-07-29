@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
-import Chart from 'chart.js/auto';
-import { UserAuthService } from './component/services/api/user/user-auth.service';
 import { Router } from '@angular/router';
+import { UserAuthService } from './component/services/api/user/user-auth.service';
 
 @Component({
   selector: 'app-root',
@@ -11,42 +10,35 @@ import { Router } from '@angular/router';
 export class AppComponent {
   title = 'institute-web';
 
-  isViewRole:any;
-  roleName:any;
-
   constructor(
-    private router:Router,
-    private userAuthService:UserAuthService
-  ){}
+    private router: Router,
+    private userAuthService: UserAuthService
+  ) { }
 
-  ngOnInit(){
-    this.displayLoginUsername();
+  get displayName(): string {
+    const user = this.userAuthService.getUser();
+    if (!user) {
+      return '';
     }
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim()
+      || user.login
+      || `User #${user.id}`;
+  }
 
-    displayLoginUsername(){
+  get userId(): number | null {
+    return this.userAuthService.getUserId();
+  }
 
-      this.isViewRole =  this.userAuthService.getRoles();
+  logIn(): void {
+    this.router.navigate(['/login']);
+  }
 
-      if(this.isViewRole!=null){
-      for(let i = 0 ; i<this.isViewRole.length; i++){
-        this.roleName = this.isViewRole[i].roleName;
-        }
-      }
-    }
+  isLoggedIn(): boolean {
+    return this.userAuthService.isLoggedIn();
+  }
 
-    public logIn(){
-      this.router.navigate(['/login']);
-    }
-
-    public isLoggedIn(){
-      return this.userAuthService.isLoggedIn();
-    }
-  
-    public logOut(){
-      this.router.navigate(['/login']);
-      return this.userAuthService.clear();
-     
-    }
-
-    
+  logOut(): void {
+    this.userAuthService.clear();
+    this.router.navigate(['/login']);
+  }
 }

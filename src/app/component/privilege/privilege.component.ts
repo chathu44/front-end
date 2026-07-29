@@ -1,220 +1,192 @@
-import { Component } from '@angular/core';
-import { PrivilegeService } from '../services/api/privilege/privilege.service';
-import { ModuleService } from '../services/api/mod_component/module.service';
-import { FormBuilder } from '@angular/forms';
-import { RoleService } from '../services/api/role/role.service';
-import { PrivilegeRepresentation } from '../services/api/module/privilege-representation';
-import swal from 'sweetalert';
+import { Component, OnInit } from '@angular/core';
+import {
+  CommonDataItem,
+  PrivilegeGroup,
+  PrivilegeService,
+  SystemPrivilegeList
+} from '../services/api/privilege/privilege.service';
+import { UserAuthService } from '../services/api/user/user-auth.service';
+import { UserService } from '../services/api/user/user.service';
 
 @Component({
   selector: 'app-privilege',
   templateUrl: './privilege.component.html',
   styleUrls: ['./privilege.component.scss']
 })
-export class PrivilegeComponent {
+export class PrivilegeComponent implements OnInit {
 
-  selectToggle:any;
-  addToggle:any;
-  deleToggle:any;
-  updateToggle:any;
-  isEnabled:boolean;
+  groups: PrivilegeGroup[] = [];
+  selectedGroupId: number | null = null;
+  groupForm: PrivilegeGroup = { groupName: '', groupDescription: '' };
 
-  type:any;
-  allRoles:any;
-  roleValue:any;
-  allModules:any;
-  privileges:any;
-  moduleValue:any;
-  getprivileges:any;
-  isEditRole:boolean=true;
-  isEditModule:boolean=true;
-  isEditPrivilege:boolean=true;
-  privilegeObj:PrivilegeRepresentation = {};
+  availablePrivileges: CommonDataItem[] = [];
+  assignedPrivileges: CommonDataItem[] = [];
+  private originalPrivilegeIds = new Set<number>();
+
+  availableUsers: CommonDataItem[] = [];
+  assignedUsers: CommonDataItem[] = [];
+  private originalUserIds = new Set<number>();
+
+  systemPrivileges: SystemPrivilegeList | null = null;
+  myAuthIds: number[] = [];
+  myUserId: number | null = null;
+
+  message = '';
+  error = '';
 
   constructor(
-    public fb:FormBuilder,
-    private roleService:RoleService,
-    private moduleService:ModuleService,
-    private privilageService:PrivilegeService,
-  ){}
+    private privilegeService: PrivilegeService,
+    private userAuthService: UserAuthService,
+    private userService: UserService
+  ) { }
 
   ngOnInit(): void {
-    this.GetAllRole();
-    this.getAllPrivilege();
-    this.isEditRole=false;
-    this.isEditModule=false;
-    this.isEditPrivilege=false;
+    this.myUserId = this.userAuthService.getUserId();
+    this.loadGroups();
+    this.loadSystemPrivileges();
 
-}
-
-onChangeRole(E:any){
-  this.GetAllFilteredModule(E.target.value);
-  this.privilegeObj.roleId=E.target.value;
-}
-
-onChangeModule(E:any){
-  this.privilegeObj.moduleId=E.target.value;
-  
-}
-
-GetAllRole(){
-    this.roleService.GetAllRole().subscribe(allData=>{
-      this.allRoles = allData.data.dataList;
-    })
-  }
-
-GetAllFilteredModule(ID:string){
-    this.moduleService.GetFilteredModule(ID).subscribe(allData=>{
-      this.allModules = allData.data.dataList;
-      console.log(this.allModules);
-      
-    })
-  }
-
-getAllPrivilege(){
-    this.privilageService.GetAllPrivilege().subscribe(allData=>{
-      this.privileges = allData.data.dataList;
-    })
-  }
-
-onChangeSelect(E:any){
-    this.selectToggle=document.getElementById('selectId') as HTMLInputElement;
-    if(this.selectToggle.checked == true){
-      this.privilegeObj.sel = "1";
-    }else{
-      this.privilegeObj.sel = "0";
-    }
-}
-
-onChangeAdd(E:any){
-  this.addToggle=document.getElementById('addID') as HTMLInputElement;
-  
-  if(this.addToggle.checked == true){
-    this.privilegeObj.ins = "1";
-  }else{
-    this.privilegeObj.ins = "0";
-  }
-}
-
-onChangeUpdate(E:any){
-  this.updateToggle=document.getElementById('updateId') as HTMLInputElement;
-  
-  if(this.updateToggle.checked == true){
-    this.privilegeObj.upd = "1";
-  }else{
-    this.privilegeObj.upd = "0";
-  }
-}
-
-onChangeDelete(E:any){
-  this.deleToggle=document.getElementById('deleteId') as HTMLInputElement;
-  
-  if(this.deleToggle.checked == true){
-    this.privilegeObj.del = "1";
-  }else{
-    this.privilegeObj.del = "0";
-  }
-}
-
-
-GetPrivilegeById(ID:any){
-
-  this.isEditPrivilege = true;
-
-  this.addToggle=document.getElementById('addID') as HTMLInputElement;
-  this.deleToggle=document.getElementById('deleteId') as HTMLInputElement;
-  this.selectToggle=document.getElementById('selectId') as HTMLInputElement;
-  this.updateToggle=document.getElementById('updateId') as HTMLInputElement;
-  
-  this.addToggle.checked=false;
-  this.deleToggle.checked=false;
-  this.updateToggle.checked=false;
-  this.selectToggle.checked=false;
-
-  this.privilegeObj.sel = "0";
-  this.privilegeObj.ins = "0";
-  this.privilegeObj.upd = "0";
-  this.privilegeObj.del = "0";
-  
-  this.privilageService.GetPrivilegeById(ID).subscribe(allData=>{
-    console.log(ID);
-    
-    this.getprivileges=allData.data.dataList;
-    this.privilegeObj=allData.data.dataList;
-    
-    console.log(this.privilegeObj);
-
-    if(this.getprivileges[0].del=="1"){
-      this.deleToggle.checked=true;
-      this.privilegeObj.del = "1";
-    }
-    
-    if(this.getprivileges[0].ins=="1"){
-      this.addToggle.checked=true;
-      this.privilegeObj.ins = "1";
-    }
-    
-    if(this.getprivileges[0].sel=="1"){
-      this.selectToggle.checked=true;
-      this.privilegeObj.sel = "1";
-    }
-  
-    if(this.getprivileges[0].upd=="1"){
-      this.updateToggle.checked=true;
-      this.privilegeObj.upd = "1";
-    }
-
-    this.isEditModule=true;
-    this.isEditRole=true;
-    this.moduleValue=allData.data.dataList[0].moduleId.moduleName;
-    this.privilegeObj.moduleId=this.moduleValue;
-    this.roleValue=allData.data.dataList[0].roleId.roleName;
-    this.privilegeObj.roleId=this.roleValue;
-
-
-    this.isEnabled=true;
-
-  })
-}
-
-
-DeleteById(E:any){}
-
-SavePrivilege(){
-    
-    this.type = this.isEditPrivilege==false?'Add':'Update';
-    if(this.type=='Add'){
-      swal({
-        title: "Are you sure?",
-        text: "That you want to Add this details?",
-        icon: "warning",
-        dangerMode: true,
-      })
-      .then(willDelete => {
-        if (willDelete) {
-          this.privilageService.createPrivilege(this.privilegeObj,this.type)
-          .subscribe({
-            next:(result):void=>{
-              this.getAllPrivilege(); 
-              console.log(result);
-               
-            }
-          });
-          swal("Sucessfull!", "Student has been Adedd!", "success");
-        }
-       
+    if (this.myUserId) {
+      this.userService.getAuthIds(this.myUserId).subscribe({
+        next: (ids) => this.myAuthIds = ids,
+        error: () => this.myAuthIds = []
       });
-    }else{
-      
-      this.privilageService.createPrivilege(this.privilegeObj,this.type)
-          .subscribe({
-            next:(result):void=>{
-              this.getAllPrivilege();  
-            }
-          });
-      swal("Sucessfull!", "Privilage has been updated!", "success");
-
-  
     }
+  }
+
+  loadGroups(): void {
+    this.privilegeService.getPrivilegeGroups().subscribe({
+      next: (groups) => this.groups = groups,
+      error: () => this.error = 'Failed to load privilege groups'
+    });
+  }
+
+  loadSystemPrivileges(): void {
+    this.privilegeService.getSystemPrivileges().subscribe({
+      next: (data) => this.systemPrivileges = data,
+      error: () => { /* optional */ }
+    });
+  }
+
+  onGroupChange(): void {
+    this.message = '';
+    this.error = '';
+    if (!this.selectedGroupId) {
+      this.availablePrivileges = [];
+      this.assignedPrivileges = [];
+      this.availableUsers = [];
+      this.assignedUsers = [];
+      return;
+    }
+
+    this.privilegeService.getAvailablePrivileges(this.selectedGroupId).subscribe({
+      next: (data) => this.availablePrivileges = data,
+      error: () => this.error = 'Failed to load available privileges'
+    });
+    this.privilegeService.getAssignedPrivileges(this.selectedGroupId).subscribe({
+      next: (data) => {
+        this.assignedPrivileges = data;
+        this.originalPrivilegeIds = new Set(data.map(d => d.id));
+      },
+      error: () => this.error = 'Failed to load assigned privileges'
+    });
+
+    this.privilegeService.getAvailableUsers(this.selectedGroupId).subscribe({
+      next: (data) => this.availableUsers = data,
+      error: () => this.error = 'Failed to load available users'
+    });
+    this.privilegeService.getAssignedUsers(this.selectedGroupId).subscribe({
+      next: (data) => {
+        this.assignedUsers = data;
+        this.originalUserIds = new Set(data.map(d => d.id));
+      },
+      error: () => this.error = 'Failed to load assigned users'
+    });
+  }
+
+  createGroup(): void {
+    if (!this.groupForm.groupName?.trim()) {
+      this.error = 'Group name is required';
+      return;
+    }
+    this.privilegeService.createPrivilegeGroup(this.groupForm).subscribe({
+      next: () => {
+        this.message = 'Privilege group created';
+        this.groupForm = { groupName: '', groupDescription: '' };
+        this.loadGroups();
+      },
+      error: (err) => this.error = err.error?.message || 'Failed to create group'
+    });
+  }
+
+  deleteGroup(id: number): void {
+    this.privilegeService.deletePrivilegeGroup(id).subscribe({
+      next: () => {
+        this.message = 'Privilege group deleted (soft)';
+        if (this.selectedGroupId === id) {
+          this.selectedGroupId = null;
+          this.onGroupChange();
+        }
+        this.loadGroups();
+      },
+      error: (err) => this.error = err.error?.message || 'Failed to delete group'
+    });
+  }
+
+  assignPrivilege(item: CommonDataItem): void {
+    this.availablePrivileges = this.availablePrivileges.filter(a => a.id !== item.id);
+    this.assignedPrivileges = [...this.assignedPrivileges, item];
+  }
+
+  unassignPrivilege(item: CommonDataItem): void {
+    this.assignedPrivileges = this.assignedPrivileges.filter(a => a.id !== item.id);
+    this.availablePrivileges = [...this.availablePrivileges, item];
+  }
+
+  savePrivileges(): void {
+    if (!this.selectedGroupId) {
+      return;
+    }
+    const current = new Set(this.assignedPrivileges.map(a => a.id));
+    const addedData = this.assignedPrivileges.filter(a => !this.originalPrivilegeIds.has(a.id));
+    const removedData = [...this.originalPrivilegeIds]
+      .filter(id => !current.has(id))
+      .map(id => ({ id, description: '' }));
+
+    this.privilegeService.saveGroupPrivileges(this.selectedGroupId, { addedData, removedData }).subscribe({
+      next: () => {
+        this.message = 'Group privileges saved';
+        this.onGroupChange();
+      },
+      error: () => this.error = 'Failed to save privileges'
+    });
+  }
+
+  assignUser(item: CommonDataItem): void {
+    this.availableUsers = this.availableUsers.filter(a => a.id !== item.id);
+    this.assignedUsers = [...this.assignedUsers, item];
+  }
+
+  unassignUser(item: CommonDataItem): void {
+    this.assignedUsers = this.assignedUsers.filter(a => a.id !== item.id);
+    this.availableUsers = [...this.availableUsers, item];
+  }
+
+  saveUsers(): void {
+    if (!this.selectedGroupId) {
+      return;
+    }
+    const current = new Set(this.assignedUsers.map(a => a.id));
+    const addedData = this.assignedUsers.filter(a => !this.originalUserIds.has(a.id));
+    const removedData = [...this.originalUserIds]
+      .filter(id => !current.has(id))
+      .map(id => ({ id, description: '' }));
+
+    this.privilegeService.saveGroupUsers(this.selectedGroupId, { addedData, removedData }).subscribe({
+      next: () => {
+        this.message = 'Group users saved';
+        this.onGroupChange();
+      },
+      error: () => this.error = 'Failed to save users'
+    });
   }
 }
