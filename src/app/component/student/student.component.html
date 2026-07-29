@@ -42,7 +42,7 @@
                       </select>
                   </div>
                   
-                  <div class="form-group mt-4">
+                      <div class="form-group mt-4" *ngIf="canCreate || (isEditStudent && canUpdate)">
                       <div class="text-end ms-auto">
                         <button class="btn btn-primary"> {{isEditStudent == false ? "submit" : "update"}}</button>
                       </div>
@@ -77,15 +77,17 @@
                   </thead>
                   <tbody>
                     <tr *ngFor="let studentObj of students">
-                      <td>{{studentObj.id}}</td>
+                      <td>{{studentObj.studentCode || studentObj.id}}</td>
                       <td>{{studentObj.studentName}}</td>
                       <td>{{studentObj.studentAge}}</td>
                       <td>{{studentObj.studentNic}}</td>
-                      <td>{{studentObj.status.name}}</td>
+                      <td>{{studentObj.status?.name}}</td>
                       <td class="text-center">
-                        <button class="btn btn-warning me-1" (click)="GetStudentById(studentObj.id)"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-danger me-1"  (click)="DeleteById(studentObj.id)"><i class="bi bi-archive"></i></button>
-                        <button class="btn btn-info "><i class="bi bi-file-earmark"></i></button></td>
+                        <button class="btn btn-warning me-1" *ngIf="canUpdate"
+                                (click)="GetStudentById(studentObj.id)"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-danger me-1" *ngIf="canDelete"
+                                (click)="DeleteById(studentObj.id)"><i class="bi bi-archive"></i></button>
+                      </td>
                         
                     </tr>
                   </tbody>
