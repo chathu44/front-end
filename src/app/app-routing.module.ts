@@ -10,6 +10,7 @@ import { RegisterComponent } from './component/register/register.component';
 import { ForbiddenComponent } from './component/forbidden/forbidden.component';
 import { AuthGuard } from './component/auth/auth.guard';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
+import { QualificationComponent } from './component/qualification/qualification.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -21,6 +22,7 @@ const routes: Routes = [
   { path: 'student', component: StudentComponent, canActivate: [AuthGuard] },
   { path: 'course', component: CourseComponent, canActivate: [AuthGuard] },
   { path: 'teacher', component: TeacherComponent, canActivate: [AuthGuard] },
+  { path: 'qualification', component: QualificationComponent, canActivate: [AuthGuard] },
   { path: 'class', component: ClassComponent, canActivate: [AuthGuard] },
   { path: 'privilege', component: PrivilegeComponent, canActivate: [AuthGuard] },
 

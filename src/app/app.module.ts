@@ -18,6 +18,7 @@ import { AuthInterceptor } from './component/auth/auth.interceptor';
 import { InstituteLoginComponent } from './component/institute-login/institute-login.component';
 import { RegisterComponent } from './component/register/register.component';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
+import { QualificationComponent } from './component/qualification/qualification.component';
 
 
 @NgModule({
@@ -31,7 +32,8 @@ import { PrivilegeComponent } from './component/privilege/privilege.component';
     ForbiddenComponent,
     InstituteLoginComponent,
     RegisterComponent,
-    PrivilegeComponent
+    PrivilegeComponent,
+    QualificationComponent
   ],
   imports: [
     BrowserModule,
