@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserAuthService } from './component/services/api/user/user-auth.service';
+import { UserService } from './component/services/api/user/user.service';
 import { ToastService } from './component/services/toast.service';
 
 @Component({
@@ -14,6 +15,7 @@ export class AppComponent {
   constructor(
     private router: Router,
     private userAuthService: UserAuthService,
+    private userService: UserService,
     public toastService: ToastService
   ) { }
 
@@ -36,6 +38,21 @@ export class AppComponent {
   }
 
   logOut(): void {
+    if (this.userAuthService.isLoggedIn()) {
+      this.userService.logout().subscribe({
+        next: () => {
+          this.toastService.info('Signed out');
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.userAuthService.clear();
+          this.toastService.info('Signed out');
+          this.router.navigate(['/login']);
+        }
+      });
+      return;
+    }
+
     this.userAuthService.clear();
     this.toastService.info('Signed out');
     this.router.navigate(['/login']);

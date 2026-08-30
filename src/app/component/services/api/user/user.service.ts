@@ -22,6 +22,12 @@ export class UserService {
     private userAuthService: UserAuthService
   ) { }
 
+  logout(): Observable<void> {
+    return this.httpClient.post<void>(`${this.baseUrl}/logout`, {}).pipe(
+      tap(() => this.userAuthService.clear())
+    );
+  }
+
   login(loginData: LoginRepresentation): Observable<UserDto> {
     return this.httpClient.post<UserDto>(
       `${this.baseUrl}/login`,
