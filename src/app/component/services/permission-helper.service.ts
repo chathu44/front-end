@@ -1,14 +1,29 @@
 import { Injectable } from '@angular/core';
 import { UserAuthService } from './api/user/user-auth.service';
 
-/** Common auth_id values from system_authentications (see backend schema.sql). */
+/** Must match auth_id values in system_authentications (see schema.sql). */
 export const AuthIds = {
+  // Generic buttons (optional shared IDs)
+  BUTTON_SAVE: 7,
+  BUTTON_DELETE: 8,
+
+  // Student module
   STUDENT_VIEW: 10,
   STUDENT_CREATE: 11,
   STUDENT_UPDATE: 12,
   STUDENT_DELETE: 13,
-  BUTTON_SAVE: 7,
-  BUTTON_DELETE: 8,
+
+  // Course module
+  COURSE_VIEW: 20,
+  COURSE_CREATE: 21,
+  COURSE_UPDATE: 22,
+  COURSE_DELETE: 23,
+
+  // Teacher module
+  TEACHER_VIEW: 30,
+  TEACHER_CREATE: 31,
+  TEACHER_UPDATE: 32,
+  TEACHER_DELETE: 33,
 } as const;
 
 @Injectable({ providedIn: 'root' })

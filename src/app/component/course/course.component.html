@@ -20,7 +20,7 @@
                   [(ngModel)]="courseObj.courseName"  required  placeholder="Enter Course Name">
                 </div>
                 
-                <div class="form-group mt-4">
+                <div class="form-group mt-4" *ngIf="canCreate || (isEditCourse && canUpdate)">
                     <div class="text-end ms-auto">
                       <button id="saveBtn" class="btn btn-primary"> {{isEditCourse == false ? "submit" : "update"}}</button>
                     </div>
@@ -55,8 +55,8 @@
                     <td>{{courseObj.courseCode}}</td>
                     <td>{{courseObj.courseName}}</td>
                     <td class="text-center">
-                      <button class="btn btn-warning me-1" [disabled]="updateBtn"  (click)="GetCourseById(courseObj.id)"><i class="bi bi-pencil-square"></i></button>
-                      <button class="btn btn-danger me-1" id="deleteBtn" (click)="DeleteById(courseObj.id)"><i class="bi bi-archive"></i></button>
+                      <button class="btn btn-warning me-1" *ngIf="canUpdate" (click)="GetCourseById(courseObj.id)"><i class="bi bi-pencil-square"></i></button>
+                      <button class="btn btn-danger me-1" *ngIf="canDelete" (click)="DeleteById(courseObj.id)"><i class="bi bi-archive"></i></button>
                       <button class="btn btn-info"><i class="bi bi-file-earmark"></i></button></td>
                       
                   </tr>
