@@ -11,6 +11,7 @@ import { ForbiddenComponent } from './component/forbidden/forbidden.component';
 import { AuthGuard } from './component/auth/auth.guard';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
 import { QualificationComponent } from './component/qualification/qualification.component';
+import { ChildComponent } from './component/child/child.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -26,6 +27,8 @@ const routes: Routes = [
   { path: 'class', component: ClassComponent, canActivate: [AuthGuard] },
   { path: 'privilege', component: PrivilegeComponent, canActivate: [AuthGuard] },
 
+  { path: 'child', component: ChildComponent, canActivate: [AuthGuard] },
+  
   { path: '**', redirectTo: 'login' }
 ];
 

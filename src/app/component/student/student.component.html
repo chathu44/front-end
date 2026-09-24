@@ -1,105 +1,146 @@
+<main class="mt-5 pt-3">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12 fw-bold fs-3">STUDENT REGISTRATION</div>
+    </div>
 
-    <main class="mt-5 pt-3">
-      <div class="container-fluid">
+    <div class="row">
+      <div class="col-lg-12 mb-3">
+        <div class="card text-dark mb-3 h-100">
+          <div class="card-header bg-info fw-bold">Student Form</div>
+          <div class="card-body">
+            <form (ngSubmit)="SaveStudent()">
+              <div class="form-group">
+                <label for="studentName">Student Name <span>*</span></label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="studentName"
+                  name="studentName"
+                  [(ngModel)]="studentObj.studentName"
+                  required
+                  placeholder="Enter Student Name"
+                />
+              </div>
 
-        <div class="row">
-          <div class="col-md-12 fw-bold fs-3">
-            STUDENT REGISTRATION
+              <div class="form-group mt-1">
+                <label for="studentAge">Student Age <span>*</span></label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="studentAge"
+                  name="studentAge"
+                  [(ngModel)]="studentObj.studentAge"
+                  required
+                  placeholder="Enter Student Age"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="studentNic">Student NIC <span>*</span></label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="studentNic"
+                  name="studentNic"
+                  [(ngModel)]="studentObj.studentNic"
+                  required
+                  placeholder="Enter Student NIC"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="studentStatus">Student Status <span>*</span></label>
+                <select
+                  class="form-control form-select mt-2"
+                  id="studentStatus"
+                  name="studentStatus"
+                  aria-label="Default select example"
+                  (change)="onChangeStatus($event)"
+                  required
+                >
+                  <option disabled selected>
+                    {{ isEditStudent === true ? statusValue : "Select Value" }}
+                  </option>
+                  <option *ngFor="let status of allStatus" [value]="status.id">
+                    {{ status.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div
+                class="form-group mt-4"
+                *ngIf="canCreate || (isEditStudent && canUpdate)"
+              >
+                <div class="text-end ms-auto">
+                  <button class="btn btn-primary">
+                    {{ isEditStudent == false ? "submit" : "update" }}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
-
-        <div class="row">
-          <div class="col-lg-12 mb-3">
-            <div class="card text-dark mb-3 h-100">
-              <div class="card-header bg-info fw-bold">Student Form</div>
-              <div class="card-body">
-                <form (ngSubmit)="SaveStudent()">
-    
-                  <div class="form-group">
-                    <label for="studentName">Student Name <span>*</span></label>
-                    <input type="text" class="form-control mt-2" id="studentName" name="studentName"
-                    [(ngModel)]="studentObj.studentName"  required  placeholder="Enter Student Name">
-                  </div>
-
-                  <div class="form-group mt-1">
-                    <label for="studentAge">Student Age <span>*</span></label>
-                    <input type="text" class="form-control mt-2" id="studentAge" name="studentAge"
-                    [(ngModel)]="studentObj.studentAge"  required  placeholder="Enter Student Age">
-                  </div>
-
-                  <div class="form-group mt-1">
-                      <label for="studentNic">Student NIC <span>*</span></label>
-                      <input type="text" class="form-control mt-2" id="studentNic" name="studentNic"
-                      [(ngModel)]="studentObj.studentNic"  required  placeholder="Enter Student NIC">
-                  </div>
-                  
-                  <div class="form-group mt-1">
-                      <label for="studentStatus">Student Status <span>*</span></label>
-                      <select class="form-control form-select mt-2" id="studentStatus" name="studentStatus" aria-label="Default select example"
-                      (change)="onChangeStatus($event)" required>
-                      <option disabled selected>{{isEditStudent === true ? statusValue : "Select Value"}}</option>
-                      <option  *ngFor="let status of allStatus" [value]="status.id">{{status.name}}</option>
-                      </select>
-                  </div>
-                  
-                      <div class="form-group mt-4" *ngIf="canCreate || (isEditStudent && canUpdate)">
-                      <div class="text-end ms-auto">
-                        <button class="btn btn-primary"> {{isEditStudent == false ? "submit" : "update"}}</button>
-                      </div>
-                  </div>
-
-                </form>
-              </div>
-            </div>
-          </div> 
-        </div>
-
-        <div class="row">
-
-          <div class="col-lg-12 mb-3">
-            <div class="card text-dark  mb-3 h-100">
-              <div class="card-header bg-info fw-bold">Student Table</div>
-              <div class="card-body overflow-auto">
-                <div class="input-group my-3 ">
-                  <input type="text" class="form-control" placeholder="Serach Student" aria-label="Search" aria-describedby="button-addon2">
-                  <button class="btn btn-info" type="button" id="button-addon2"><i class="bi bi-search"></i></button>
-                </div>
-                <table class="table table-striped table-bordered table-wrapper">
-                  <thead>
-                    <tr>
-                      <th scope="col">Student Code</th>
-                      <th scope="col">Student Name</th>
-                      <th scope="col">Student Age</th>
-                      <th scope="col">Student NIC</th>
-                      <th scope="col">Student Status</th>
-                      <th scope="col">Modify</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let studentObj of students">
-                      <td>{{studentObj.studentCode || studentObj.id}}</td>
-                      <td>{{studentObj.studentName}}</td>
-                      <td>{{studentObj.studentAge}}</td>
-                      <td>{{studentObj.studentNic}}</td>
-                      <td>{{studentObj.status?.name}}</td>
-                      <td class="text-center">
-                        <button class="btn btn-warning me-1" *ngIf="canUpdate"
-                                (click)="GetStudentById(studentObj.id)"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-danger me-1" *ngIf="canDelete"
-                                (click)="DeleteById(studentObj.id)"><i class="bi bi-archive"></i></button>
-                      </td>
-                        
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div> 
-
-         
-        </div>
-
       </div>
-    </main>
+    </div>
 
-
+    <div class="row">
+      <div class="col-lg-12 mb-3">
+        <div class="card text-dark mb-3 h-100">
+          <div class="card-header bg-info fw-bold">Student Table</div>
+          <div class="card-body overflow-auto">
+            <div class="input-group my-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Serach Student"
+                aria-label="Search"
+                aria-describedby="button-addon2"
+              />
+              <button class="btn btn-info" type="button" id="button-addon2">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+            <table class="table table-striped table-bordered table-wrapper">
+              <thead>
+                <tr>
+                  <th scope="col">Student Code</th>
+                  <th scope="col">Student Name</th>
+                  <th scope="col">Student Age</th>
+                  <th scope="col">Student NIC</th>
+                  <th scope="col">Student Status</th>
+                  <th scope="col">Modify</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let studentObj of students">
+                  <td>{{ studentObj.studentCode || studentObj.id }}</td>
+                  <td>{{ studentObj.studentName }}</td>
+                  <td>{{ studentObj.studentAge }}</td>
+                  <td>{{ studentObj.studentNic }}</td>
+                  <td>{{ studentObj.status?.name }}</td>
+                  <td class="text-center">
+                    <button
+                      class="btn btn-warning me-1"
+                      *ngIf="canUpdate"
+                      (click)="GetStudentById(studentObj.id)"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger me-1"
+                      *ngIf="canDelete"
+                      (click)="DeleteById(studentObj.id)"
+                    >
+                      <i class="bi bi-archive"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

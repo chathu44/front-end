@@ -1,1 +1,238 @@
-<p>child works!</p>
+<main class="mt-5 pt-3">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12 fw-bold fs-3">CHILD REGISTRATION</div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-12 mb-3">
+        <div class="card text-dark mb-3 h-100">
+          <div class="card-header bg-info fw-bold">Child Form</div>
+          <div class="card-body">
+            <form (ngSubmit)="SaveChild()">
+              <div class="form-group">
+                <label for="firstName">First Name <span>*</span></label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="firstName"
+                  name="firstName"
+                  [(ngModel)]="childObj.firstName"
+                  required
+                  placeholder="Enter First Name"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="lastName">Last Name <span>*</span></label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="lastName"
+                  name="lastName"
+                  [(ngModel)]="childObj.lastName"
+                  required
+                  placeholder="Enter Last Name"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="dateOfBirth">Date of Birth <span>*</span></label>
+                <input
+                  type="date"
+                  class="form-control mt-2"
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  [(ngModel)]="childObj.dateOfBirth"
+                  required
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="gender">Gender</label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="gender"
+                  name="gender"
+                  [(ngModel)]="childObj.gender"
+                  placeholder="Enter Gender"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="bloodGroup">Blood Group</label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="bloodGroup"
+                  name="bloodGroup"
+                  [(ngModel)]="childObj.bloodGroup"
+                  placeholder="Enter Blood Group"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="allergies">Allergies</label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="allergies"
+                  name="allergies"
+                  [(ngModel)]="childObj.allergies"
+                  placeholder="Enter Allergies"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="medicalNotes">Medical Notes</label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="medicalNotes"
+                  name="medicalNotes"
+                  [(ngModel)]="childObj.medicalNotes"
+                  placeholder="Enter Medical Notes"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="photoUrl">Photo URL</label>
+                <input
+                  type="text"
+                  class="form-control mt-2"
+                  id="photoUrl"
+                  name="photoUrl"
+                  [(ngModel)]="childObj.photoUrl"
+                  placeholder="Enter Photo URL"
+                />
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="childParent"
+                  >Parent / Guardian <span>*</span></label
+                >
+                <select
+                  class="form-control form-select mt-2"
+                  id="childParent"
+                  name="childParent"
+                  aria-label="Default select example"
+                  (change)="onChangeParent($event)"
+                  required
+                >
+                  <option disabled selected>
+                    {{ isEditChild === true ? parentValue : "Select Value" }}
+                  </option>
+                  <option *ngFor="let parent of allParents" [value]="parent.id">
+                    {{ parent.fullName }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group mt-1">
+                <label for="childStatus">Child Status <span>*</span></label>
+                <select
+                  class="form-control form-select mt-2"
+                  id="childStatus"
+                  name="childStatus"
+                  aria-label="Default select example"
+                  (change)="onChangeStatus($event)"
+                  required
+                >
+                  <option disabled selected>
+                    {{ isEditChild === true ? statusValue : "Select Value" }}
+                  </option>
+                  <option *ngFor="let status of allStatus" [value]="status.id">
+                    {{ status.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div
+                class="form-group mt-4"
+                *ngIf="canCreate || (isEditChild && canUpdate)"
+              >
+                <div class="text-end ms-auto">
+                  <button class="btn btn-primary">
+                    {{ isEditChild == false ? "submit" : "update" }}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-12 mb-3">
+        <div class="card text-dark mb-3 h-100">
+          <div class="card-header bg-info fw-bold">Child Table</div>
+          <div class="card-body overflow-auto">
+            <div class="input-group my-3">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Serach Child"
+                aria-label="Search"
+                aria-describedby="button-addon2"
+              />
+              <button class="btn btn-info" type="button" id="button-addon2">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+            <table class="table table-striped table-bordered table-wrapper">
+              <thead>
+                <tr>
+                  <th scope="col">Child Code</th>
+                  <th scope="col">First Name</th>
+                  <th scope="col">Last Name</th>
+                  <th scope="col">Date of Birth</th>
+                  <th scope="col">Gender</th>
+                  <th scope="col">Blood Group</th>
+                  <th scope="col">Allergies</th>
+                  <th scope="col">Medical Notes</th>
+                  <th scope="col">Photo URL</th>
+                  <th scope="col">Parent / Guardian</th>
+                  <th scope="col">Child Status</th>
+                  <th scope="col">Modify</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let childObj of children">
+                  <td>{{ childObj.childCode || childObj.id }}</td>
+                  <td>{{ childObj.firstName }}</td>
+                  <td>{{ childObj.lastName }}</td>
+                  <td>{{ childObj.dateOfBirth }}</td>
+                  <td>{{ childObj.gender }}</td>
+                  <td>{{ childObj.bloodGroup }}</td>
+                  <td>{{ childObj.allergies }}</td>
+                  <td>{{ childObj.medicalNotes }}</td>
+                  <td>{{ childObj.photoUrl }}</td>
+                  <td>{{ childObj.parent?.fullName }}</td>
+                  <td>{{ childObj.status?.name }}</td>
+                  <td class="text-center">
+                    <button
+                      class="btn btn-warning me-1"
+                      *ngIf="canUpdate"
+                      (click)="GetChildById(childObj.id)"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button
+                      class="btn btn-danger me-1"
+                      *ngIf="canDelete"
+                      (click)="DeleteById(childObj.id)"
+                    >
+                      <i class="bi bi-archive"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
