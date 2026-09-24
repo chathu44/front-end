@@ -24,6 +24,12 @@ export const AuthIds = {
   TEACHER_CREATE: 31,
   TEACHER_UPDATE: 32,
   TEACHER_DELETE: 33,
+
+  CHILD_VIEW: 40,
+  CHILD_CREATE: 41,
+  CHILD_UPDATE: 42,
+  CHILD_DELETE: 43,
+
 } as const;
 
 @Injectable({ providedIn: 'root' })
