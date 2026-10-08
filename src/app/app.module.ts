@@ -20,7 +20,7 @@ import { RegisterComponent } from './component/register/register.component';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
 import { QualificationComponent } from './component/qualification/qualification.component';
 import { ChildComponent } from './component/child/child.component';
-
+import { ParentComponent } from './component/parent/parent.component';
 
 @NgModule({
   declarations: [
@@ -35,7 +35,8 @@ import { ChildComponent } from './component/child/child.component';
     RegisterComponent,
     PrivilegeComponent,
     QualificationComponent,
-    ChildComponent
+    ChildComponent,
+    ParentComponent
   ],
   imports: [
     BrowserModule,

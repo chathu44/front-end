@@ -1,0 +1,1050 @@
+<main class="parent-page mt-5 pt-3">
+
+  <div class="container-fluid px-4">
+
+    <!-- PAGE HEADER -->
+    <div class="page-heading mb-4">
+
+      <div>
+        <h2 class="page-title mb-1">
+          PARENT REGISTRATION
+        </h2>
+
+        <p class="page-subtitle mb-0">
+          Register and manage daycare parents and guardians.
+        </p>
+      </div>
+
+      <div class="page-heading-icon">
+        <i class="bi bi-people-fill"></i>
+      </div>
+
+    </div>
+
+
+    <!-- REGISTRATION AREA -->
+    <div class="row g-4">
+
+
+      <!-- FORM -->
+      <div class="col-xl-8 col-lg-7">
+
+        <div class="card registration-card">
+
+          <!-- HEADER -->
+          <div class="card-header registration-header">
+
+            <div class="header-left">
+
+              <div class="header-icon">
+                <i class="bi bi-person-plus-fill"></i>
+              </div>
+
+              <div>
+                <h5 class="mb-1">
+                  {{
+                    isEditParent
+                      ? 'Edit Parent Details'
+                      : 'Parent Registration Form'
+                  }}
+                </h5>
+
+                <small>
+                  {{
+                    isEditParent
+                      ? 'Update the selected parent details.'
+                      : 'Enter the parent or guardian information.'
+                  }}
+                </small>
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- BODY -->
+          <div class="card-body p-4">
+
+            <form
+              #parentForm="ngForm"
+              (ngSubmit)="SaveParent()"
+            >
+
+
+              <!-- PERSONAL INFORMATION -->
+              <div class="section-heading">
+
+                <div class="section-icon">
+                  <i class="bi bi-person-vcard"></i>
+                </div>
+
+                <div>
+                  <h6>
+                    Parent Information
+                  </h6>
+
+                  <small>
+                    Basic parent or guardian details
+                  </small>
+                </div>
+
+              </div>
+
+
+              <div class="row g-3 mb-4">
+
+
+                <!-- FULL NAME -->
+                <div class="col-md-8">
+
+                  <label
+                    for="fullName"
+                    class="form-label"
+                  >
+                    Full Name
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    name="fullName"
+                    [(ngModel)]="parentObj.fullName"
+                    required
+                    #fullName="ngModel"
+                    placeholder="Enter full name"
+                  >
+
+                  <small
+                    class="error-text"
+                    *ngIf="
+                      fullName.invalid &&
+                      fullName.touched
+                    "
+                  >
+                    Full name is required.
+                  </small>
+
+                </div>
+
+
+                <!-- RELATIONSHIP -->
+                <div class="col-md-4">
+
+                  <label
+                    for="relationship"
+                    class="form-label"
+                  >
+                    Relationship
+                  </label>
+
+                  <select
+                    class="form-select"
+                    id="relationship"
+                    name="relationship"
+                    [(ngModel)]="parentObj.relationship"
+                  >
+
+                    <option value="">
+                      Select Relationship
+                    </option>
+
+                    <option value="Mother">
+                      Mother
+                    </option>
+
+                    <option value="Father">
+                      Father
+                    </option>
+
+                    <option value="Guardian">
+                      Guardian
+                    </option>
+
+                    <option value="Other">
+                      Other
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- PHONE -->
+                <div class="col-md-6">
+
+                  <label
+                    for="phone"
+                    class="form-label"
+                  >
+                    Phone
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="phone"
+                    name="phone"
+                    [(ngModel)]="parentObj.phone"
+                    required
+                    #phone="ngModel"
+                    placeholder="Enter phone number"
+                  >
+
+                  <small
+                    class="error-text"
+                    *ngIf="
+                      phone.invalid &&
+                      phone.touched
+                    "
+                  >
+                    Phone number is required.
+                  </small>
+
+                </div>
+
+
+                <!-- ALTERNATE PHONE -->
+                <div class="col-md-6">
+
+                  <label
+                    for="alternatePhone"
+                    class="form-label"
+                  >
+                    Alternate Phone
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="alternatePhone"
+                    name="alternatePhone"
+                    [(ngModel)]="parentObj.alternatePhone"
+                    placeholder="Enter alternate phone"
+                  >
+
+                </div>
+
+
+                <!-- EMAIL -->
+                <div class="col-md-6">
+
+                  <label
+                    for="email"
+                    class="form-label"
+                  >
+                    Email
+                  </label>
+
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    name="email"
+                    [(ngModel)]="parentObj.email"
+                    #email="ngModel"
+                    placeholder="Enter email address"
+                  >
+
+                  <small
+                    class="error-text"
+                    *ngIf="
+                      email.invalid &&
+                      email.touched
+                    "
+                  >
+                    Please enter a valid email address.
+                  </small>
+
+                </div>
+
+
+                <!-- NIC -->
+                <div class="col-md-6">
+
+                  <label
+                    for="nic"
+                    class="form-label"
+                  >
+                    NIC
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="nic"
+                    name="nic"
+                    [(ngModel)]="parentObj.nic"
+                    placeholder="Enter NIC number"
+                  >
+
+                </div>
+
+
+              </div>
+
+
+              <!-- CONTACT / ADDRESS -->
+              <div class="section-heading">
+
+                <div class="section-icon contact-icon">
+                  <i class="bi bi-geo-alt-fill"></i>
+                </div>
+
+                <div>
+                  <h6>
+                    Contact Information
+                  </h6>
+
+                  <small>
+                    Address and workplace details
+                  </small>
+                </div>
+
+              </div>
+
+
+              <div class="row g-3 mb-4">
+
+
+                <!-- ADDRESS -->
+                <div class="col-md-7">
+
+                  <label
+                    for="address"
+                    class="form-label"
+                  >
+                    Address
+                  </label>
+
+                  <textarea
+                    class="form-control textarea-control"
+                    id="address"
+                    name="address"
+                    rows="3"
+                    [(ngModel)]="parentObj.address"
+                    placeholder="Enter residential address"
+                  ></textarea>
+
+                </div>
+
+
+                <!-- WORKPLACE -->
+                <div class="col-md-5">
+
+                  <label
+                    for="workplace"
+                    class="form-label"
+                  >
+                    Workplace
+                  </label>
+
+                  <textarea
+                    class="form-control textarea-control"
+                    id="workplace"
+                    name="workplace"
+                    rows="3"
+                    [(ngModel)]="parentObj.workplace"
+                    placeholder="Enter workplace"
+                  ></textarea>
+
+                </div>
+
+              </div>
+
+
+              <!-- STATUS INFORMATION -->
+              <div class="info-box mb-4">
+
+                <div class="info-icon">
+                  <i class="bi bi-shield-check"></i>
+                </div>
+
+                <div>
+                  <strong>
+                    Parent Status
+                  </strong>
+
+                  <p class="mb-0">
+                    New parents are registered as
+                    <strong>Active</strong>.
+                    You can change the status from the registered parents table.
+                  </p>
+                </div>
+
+              </div>
+
+
+              <!-- BUTTONS -->
+              <div
+                class="form-actions"
+                *ngIf="
+                  canCreate ||
+                  (isEditParent && canUpdate)
+                "
+              >
+
+                <button
+                  type="button"
+                  class="btn clear-btn"
+                  (click)="ClearForm()"
+                >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>
+                  Clear
+                </button>
+
+
+                <button
+                  type="submit"
+                  class="btn register-btn"
+                  [disabled]="parentForm.invalid"
+                >
+
+                  <i
+                    class="bi me-1"
+                    [ngClass]="
+                      isEditParent
+                        ? 'bi-check-circle'
+                        : 'bi-person-plus-fill'
+                    "
+                  ></i>
+
+                  {{
+                    isEditParent
+                      ? 'Update Parent'
+                      : 'Register Parent'
+                  }}
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- PROFILE -->
+      <div class="col-xl-4 col-lg-5">
+
+        <div class="card profile-card">
+
+          <div class="profile-card-header">
+
+            <span>
+              PARENT PROFILE
+            </span>
+
+            <i class="bi bi-person-badge"></i>
+
+          </div>
+
+
+          <div class="profile-icon-area">
+
+            <div class="profile-icon-circle">
+              <i class="bi bi-person-fill"></i>
+            </div>
+
+          </div>
+
+
+          <div class="profile-name-area">
+
+            <h4>
+              {{ parentObj.fullName || 'Parent Name' }}
+            </h4>
+
+            <span>
+              {{
+                parentObj.parentCode ||
+                'New Registration'
+              }}
+            </span>
+
+          </div>
+
+
+          <div class="profile-details">
+
+
+            <!-- RELATIONSHIP -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-people-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  Relationship
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.relationship ||
+                    'Not selected'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <!-- PHONE -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-telephone-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  Phone
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.phone ||
+                    'Not provided'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <!-- EMAIL -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-envelope-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  Email
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.email ||
+                    'Not provided'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <!-- NIC -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-credit-card-2-front-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  NIC
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.nic ||
+                    'Not provided'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <!-- ADDRESS -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-geo-alt-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  Address
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.address ||
+                    'Not provided'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <!-- WORKPLACE -->
+            <div class="profile-detail">
+
+              <div class="detail-icon">
+                <i class="bi bi-building-fill"></i>
+              </div>
+
+              <div>
+                <small>
+                  Workplace
+                </small>
+
+                <strong>
+                  {{
+                    parentObj.workplace ||
+                    'Not provided'
+                  }}
+                </strong>
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+          <div class="profile-notice">
+
+            <div class="profile-notice-icon">
+              <i class="bi bi-info-circle-fill"></i>
+            </div>
+
+            <div>
+              <strong>
+                Parent Management
+              </strong>
+
+              <p>
+                Register the parent first before connecting
+                children to this parent.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- REGISTERED PARENTS TABLE -->
+    <div class="row mt-4">
+
+      <div class="col-12">
+
+        <div class="card parent-table-card">
+
+
+          <!-- TABLE HEADER -->
+          <div class="table-header">
+
+            <div class="header-left">
+
+              <div class="header-icon">
+                <i class="bi bi-people-fill"></i>
+              </div>
+
+              <div>
+
+                <h5 class="mb-1">
+                  Registered Parents
+                </h5>
+
+                <small>
+                  Select a parent to load the details into the form
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="parents-count">
+              {{ filteredParents.length }} Parents
+            </div>
+
+          </div>
+
+
+          <!-- SEARCH -->
+          <div class="search-area">
+
+            <div class="search-box">
+
+              <i class="bi bi-search"></i>
+
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="searchText"
+                name="parentTableSearch"
+                placeholder="Search by parent name, code, phone or NIC"
+              >
+
+            </div>
+
+            <div class="search-help">
+
+              <i class="bi bi-info-circle me-1"></i>
+
+              Search using parent name, parent code, phone number or NIC.
+
+            </div>
+
+          </div>
+
+
+          <!-- TABLE -->
+          <div class="table-responsive">
+
+            <table class="table parent-table align-middle mb-0">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Parent
+                  </th>
+
+                  <th>
+                    Relationship
+                  </th>
+
+                  <th>
+                    Phone
+                  </th>
+
+                  <th>
+                    Alternate Phone
+                  </th>
+
+                  <th>
+                    Email
+                  </th>
+
+                  <th>
+                    NIC
+                  </th>
+
+                  <th>
+                    Address
+                  </th>
+
+                  <th>
+                    Workplace
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th class="text-center">
+                    Modify
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+
+                <!-- PARENT ROW -->
+                <tr
+                  *ngFor="let parent of filteredParents"
+                  class="parent-row"
+                  [class.selected-row]="
+                    selectedParentId == parent.id
+                  "
+                  (click)="SelectParentRow(parent)"
+                >
+
+
+                  <!-- PARENT -->
+                  <td>
+
+                    <div class="table-parent">
+
+                      <div class="table-parent-photo">
+
+                        <i class="bi bi-person-fill"></i>
+
+                      </div>
+
+                      <div>
+
+                        <div class="table-parent-name">
+                          {{ parent.fullName }}
+                        </div>
+
+                        <small>
+                          {{
+                            parent.parentCode ||
+                            parent.id
+                          }}
+                        </small>
+
+                      </div>
+
+                    </div>
+
+                  </td>
+
+
+                  <!-- RELATIONSHIP -->
+                  <td>
+                    {{ parent.relationship || '-' }}
+                  </td>
+
+
+                  <!-- PHONE -->
+                  <td>
+                    {{ parent.phone || '-' }}
+                  </td>
+
+
+                  <!-- ALTERNATE PHONE -->
+                  <td>
+                    {{ parent.alternatePhone || '-' }}
+                  </td>
+
+
+                  <!-- EMAIL -->
+                  <td>
+
+                    <div
+                      class="table-note"
+                      [title]="
+                        parent.email || 'Not provided'
+                      "
+                    >
+                      {{
+                        parent.email ||
+                        'Not provided'
+                      }}
+                    </div>
+
+                  </td>
+
+
+                  <!-- NIC -->
+                  <td>
+                    {{ parent.nic || '-' }}
+                  </td>
+
+
+                  <!-- ADDRESS -->
+                  <td>
+
+                    <div
+                      class="table-note"
+                      [title]="
+                        parent.address || 'Not provided'
+                      "
+                    >
+                      {{
+                        parent.address ||
+                        'Not provided'
+                      }}
+                    </div>
+
+                  </td>
+
+
+                  <!-- WORKPLACE -->
+                  <td>
+
+                    <div
+                      class="table-note"
+                      [title]="
+                        parent.workplace || 'Not provided'
+                      "
+                    >
+                      {{
+                        parent.workplace ||
+                        'Not provided'
+                      }}
+                    </div>
+
+                  </td>
+
+
+                  <!-- STATUS -->
+                  <td>
+
+                    <div class="status-toggle-wrapper">
+
+
+                      <label class="status-switch">
+
+                        <input
+                          type="checkbox"
+                          [checked]="
+                            isParentActive(parent)
+                          "
+                          (change)="
+                            onStatusToggle(parent, $event)
+                          "
+                          (click)="$event.stopPropagation()"
+                        >
+
+                        <span class="status-slider"></span>
+
+                      </label>
+
+
+                      <span
+                        class="status-text"
+                        [class.active-text]="
+                          isParentActive(parent)
+                        "
+                        [class.inactive-text]="
+                          !isParentActive(parent)
+                        "
+                      >
+                        {{
+                          isParentActive(parent)
+                            ? 'Active'
+                            : 'Inactive'
+                        }}
+                      </span>
+
+
+                      <button
+                        *ngIf="parent.statusChanged"
+                        type="button"
+                        class="status-save-btn"
+                        title="Save Status"
+                        (click)="
+                          saveParentStatus(parent);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-check-lg"></i>
+                        Save
+                      </button>
+
+                    </div>
+
+                  </td>
+
+
+                  <!-- ACTIONS -->
+                  <td>
+
+                    <div class="table-actions">
+
+
+                      <!-- VIEW -->
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="View Parent"
+                        (click)="
+                          SelectParentRow(parent);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+
+                      <!-- EDIT -->
+                      <button
+                        type="button"
+                        class="action-btn edit-btn"
+                        *ngIf="canUpdate"
+                        title="Edit Parent"
+                        (click)="
+                          GetParentById(parent.id);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+
+                      <!-- DELETE -->
+                      <button
+                        type="button"
+                        class="action-btn delete-btn"
+                        *ngIf="canDelete"
+                        title="Delete Parent"
+                        (click)="
+                          DeleteById(parent.id);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-trash3"></i>
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+
+                <!-- EMPTY -->
+                <tr
+                  *ngIf="
+                    filteredParents.length === 0
+                  "
+                >
+
+                  <td
+                    colspan="10"
+                    class="empty-table"
+                  >
+
+                    <div class="empty-state">
+
+                      <i class="bi bi-people"></i>
+
+                      <h6>
+                        No Parents Found
+                      </h6>
+
+                      <p>
+                        No registered parent matches your search.
+                      </p>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</main>
