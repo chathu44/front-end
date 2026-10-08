@@ -4,23 +4,44 @@ import { ChildRepresentation } from '../module/child-representation';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ChildService {
-
   private baseUrl: string = 'http://localhost:8010/api/v1/child';
 
   private parentUrl: string = 'http://localhost:8010/api/v1/parent';
 
-  constructor(
-    private http: HttpClient
-  ) { }
+  constructor(private http: HttpClient) {}
 
-  createChild(child: any, type: any): Observable<any> {
-    if (type == 'Add') {
-      return this.http.post(this.baseUrl, child);
+  createChild(child: ChildRepresentation, type: string): Observable<any> {
+    const payload: any = {
+      ...child,
+    };
+
+    if (
+      payload.parent !== null &&
+      payload.parent !== undefined &&
+      typeof payload.parent !== 'object'
+    ) {
+      payload.parent = Number(payload.parent);
+    }
+
+    if (
+      payload.status !== null &&
+      payload.status !== undefined &&
+      typeof payload.status !== 'object'
+    ) {
+      payload.status = Number(payload.status);
+    }
+
+    if (payload.dateOfBirth === '') {
+      payload.dateOfBirth = null;
+    }
+
+    if (type === 'Add') {
+      return this.http.post(this.baseUrl, payload);
     } else {
-      return this.http.put(this.baseUrl + "/" + child.id, child);
+      return this.http.put(this.baseUrl + '/' + payload.id, payload);
     }
   }
 
@@ -29,11 +50,11 @@ export class ChildService {
   }
 
   GetChildById(ID: any): Observable<any> {
-    return this.http.get(this.baseUrl + "/" + ID);
+    return this.http.get(this.baseUrl + '/' + ID);
   }
 
   DeleteChildById(ID: any): Observable<any> {
-    return this.http.delete(this.baseUrl + "/" + ID);
+    return this.http.delete(this.baseUrl + '/' + ID);
   }
 
   GetAllParents(): Observable<any> {
