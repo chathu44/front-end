@@ -7,6 +7,7 @@ describe('ChildService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
+
     service = TestBed.inject(ChildService);
   });
 

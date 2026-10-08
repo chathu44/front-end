@@ -8,10 +8,10 @@
 <div class="app-frame" *ngIf="isLoggedIn(); else guestView">
   <aside class="side-nav">
     <div class="side-brand">
-      <span class="brand-mark">H</span>
+      <span class="brand-mark">B</span>
       <div>
-        <div class="brand-name">Humber</div>
-        <div class="brand-tag">Institute Portal</div>
+        <div class="brand-name">BrightCare</div>
+        <div class="brand-tag">Daycare Portal</div>
       </div>
     </div>
 
@@ -21,6 +21,7 @@
 
       <p class="menu-label">Management</p>
       <a routerLink="/parent" routerLinkActive="active"><i class="bi bi-people"></i> Parents</a>
+      <a routerLink="/child" routerLinkActive="active"><i class="bi bi-people"></i> Child</a>
       <a routerLink="/student" routerLinkActive="active"><i class="bi bi-people"></i> Students</a>
       <a routerLink="/teacher" routerLinkActive="active"><i class="bi bi-person-video3"></i> Teachers</a>
       <a routerLink="/course" routerLinkActive="active"><i class="bi bi-journal-bookmark"></i> Courses</a>
