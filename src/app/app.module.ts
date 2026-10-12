@@ -22,6 +22,7 @@ import { QualificationComponent } from './component/qualification/qualification.
 import { ChildComponent } from './component/child/child.component';
 import { ParentComponent } from './component/parent/parent.component';
 import { ClassroomComponent } from './component/classroom/classroom.component';
+import { ProgramComponent } from './component/program/program.component';
 
 @NgModule({
   declarations: [
@@ -38,7 +39,8 @@ import { ClassroomComponent } from './component/classroom/classroom.component';
     QualificationComponent,
     ChildComponent,
     ParentComponent,
-    ClassroomComponent
+    ClassroomComponent,
+    ProgramComponent
   ],
   imports: [
     BrowserModule,
