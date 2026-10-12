@@ -13,6 +13,7 @@ import { PrivilegeComponent } from './component/privilege/privilege.component';
 import { QualificationComponent } from './component/qualification/qualification.component';
 import { ChildComponent } from './component/child/child.component';
 import { ParentComponent } from './component/parent/parent.component';
+import { ClassroomComponent } from './component/classroom/classroom.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -30,6 +31,7 @@ const routes: Routes = [
 
   { path: 'child', component: ChildComponent, canActivate: [AuthGuard] },
   { path: 'parent', component: ParentComponent, canActivate: [AuthGuard] },
+  { path: 'classroom', component: ClassroomComponent, canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'login' }
 ];
