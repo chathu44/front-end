@@ -1,0 +1,567 @@
+<main class="program-page mt-5 pt-3">
+  <div class="container-fluid px-4">
+    <div class="page-heading mb-4">
+      <div>
+        <h2 class="page-title mb-1">PROGRAM MANAGEMENT</h2>
+
+        <p class="page-subtitle mb-0">
+          Create and manage daycare programs, session times and fees.
+        </p>
+      </div>
+
+      <div class="page-heading-icon">
+        <i class="bi bi-stars"></i>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-xl-8 col-lg-7">
+        <div class="card registration-card">
+          <div class="card-header registration-header">
+            <div class="header-left">
+              <div class="header-icon">
+                <i class="bi bi-calendar2-plus-fill"></i>
+              </div>
+
+              <div>
+                <h5 class="mb-1">
+                  {{
+                    isEditProgram
+                      ? "Edit Program Details"
+                      : "Program Registration Form"
+                  }}
+                </h5>
+
+                <small>
+                  {{
+                    isEditProgram
+                      ? "Update the selected program."
+                      : "Enter the details of the daycare program."
+                  }}
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-4">
+            <form #programForm="ngForm" (ngSubmit)="SaveProgram()">
+              <div class="section-heading">
+                <div class="section-icon">
+                  <i class="bi bi-journal-text"></i>
+                </div>
+
+                <div>
+                  <h6>Program Information</h6>
+                  <small>Basic program details</small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                  <label for="programName" class="form-label">
+                    Program Name
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="programName"
+                    name="programName"
+                    [(ngModel)]="programObj.programName"
+                    required
+                    #programName="ngModel"
+                    placeholder="Enter program name"
+                  />
+
+                  <small
+                    class="error-text"
+                    *ngIf="programName.invalid && programName.touched"
+                  >
+                    Program name is required.
+                  </small>
+                </div>
+
+                <div class="col-12">
+                  <label for="description" class="form-label">
+                    Description
+                  </label>
+
+                  <textarea
+                    class="form-control textarea-control"
+                    id="description"
+                    name="description"
+                    rows="3"
+                    [(ngModel)]="programObj.description"
+                    placeholder="Describe the program and its activities"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div class="section-heading">
+                <div class="section-icon session-icon">
+                  <i class="bi bi-clock-fill"></i>
+                </div>
+
+                <div>
+                  <h6>Session Schedule</h6>
+                  <small>Set the program's daily session times</small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label for="sessionStart" class="form-label">
+                    Session Start
+                  </label>
+
+                  <input
+                    type="time"
+                    class="form-control"
+                    id="sessionStart"
+                    name="sessionStart"
+                    [(ngModel)]="programObj.sessionStart"
+                    step="60"
+                  />
+                </div>
+
+                <div class="col-md-6">
+                  <label for="sessionEnd" class="form-label">
+                    Session End
+                  </label>
+
+                  <input
+                    type="time"
+                    class="form-control"
+                    id="sessionEnd"
+                    name="sessionEnd"
+                    [(ngModel)]="programObj.sessionEnd"
+                    step="60"
+                  />
+                </div>
+              </div>
+
+              <div class="section-heading">
+                <div class="section-icon fee-icon">
+                  <i class="bi bi-cash-stack"></i>
+                </div>
+
+                <div>
+                  <h6>Program Fee</h6>
+                  <small>Monthly fee for the program</small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label for="monthlyFee" class="form-label">
+                    Monthly Fee (Rs.)
+                  </label>
+
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="monthlyFee"
+                    name="monthlyFee"
+                    [(ngModel)]="programObj.monthlyFee"
+                    min="0"
+                    step="0.01"
+                    #monthlyFee="ngModel"
+                    placeholder="Enter monthly fee"
+                  />
+
+                  <small
+                    class="error-text"
+                    *ngIf="monthlyFee.invalid && monthlyFee.touched"
+                  >
+                    Monthly fee cannot be negative.
+                  </small>
+                </div>
+              </div>
+
+              <div class="info-box mb-4">
+                <div class="info-icon">
+                  <i class="bi bi-shield-check"></i>
+                </div>
+
+                <div>
+                  <strong>Program Status</strong>
+
+                  <p class="mb-0">
+                    New programs are registered as
+                    <strong>Active</strong>. Change status from the registered
+                    programs table.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="form-actions"
+                *ngIf="canCreate || (isEditProgram && canUpdate)"
+              >
+                <button
+                  type="button"
+                  class="btn clear-btn"
+                  (click)="ClearForm()"
+                >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>
+                  Clear
+                </button>
+
+                <button
+                  type="submit"
+                  class="btn register-btn"
+                  [disabled]="
+                    programForm.invalid ||
+                    (monthlyFee.value !== null &&
+                      monthlyFee.value !== undefined &&
+                      monthlyFee.value !== '' &&
+                      monthlyFee.invalid)
+                  "
+                >
+                  <i
+                    class="bi me-1"
+                    [ngClass]="isEditProgram ? 'bi-check-circle' : 'bi-stars'"
+                  ></i>
+
+                  {{ isEditProgram ? "Update Program" : "Register Program" }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4 col-lg-5">
+        <div class="card profile-card">
+          <div class="profile-card-header">
+            <span>PROGRAM PROFILE</span>
+
+            <i class="bi bi-card-checklist"></i>
+          </div>
+
+          <div class="profile-icon-area">
+            <div class="profile-icon-circle">
+              <i class="bi bi-stars"></i>
+            </div>
+          </div>
+
+          <div class="profile-name-area">
+            <h4>
+              {{ programObj.programName || "Program Name" }}
+            </h4>
+
+            <span>
+              {{ programObj.programCode || "New Registration" }}
+            </span>
+          </div>
+
+          <div class="profile-details">
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-card-text"></i>
+              </div>
+
+              <div>
+                <small>Description</small>
+
+                <strong>
+                  {{ programObj.description || "Not provided" }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-clock"></i>
+              </div>
+
+              <div>
+                <small>Session Start</small>
+
+                <strong>
+                  {{ formatTime(programObj.sessionStart) }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-clock-history"></i>
+              </div>
+
+              <div>
+                <small>Session End</small>
+
+                <strong>
+                  {{ formatTime(programObj.sessionEnd) }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-cash-stack"></i>
+              </div>
+
+              <div>
+                <small>Monthly Fee</small>
+
+                <strong>
+                  <ng-container
+                    *ngIf="
+                      programObj.monthlyFee !== null &&
+                        programObj.monthlyFee !== undefined;
+                      else noFee
+                    "
+                  >
+                    Rs. {{ programObj.monthlyFee | number: "1.2-2" }}
+                  </ng-container>
+
+                  <ng-template #noFee> Not provided </ng-template>
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-shield-check"></i>
+              </div>
+
+              <div>
+                <small>Status</small>
+
+                <strong>
+                  {{ programObj.status?.name || "Active by default" }}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-notice">
+            <div class="profile-notice-icon">
+              <i class="bi bi-info-circle-fill"></i>
+            </div>
+
+            <div>
+              <strong>Program Management</strong>
+
+              <p>
+                Keep program schedules and monthly fees up to date so daycare
+                staff can use the correct information.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card program-table-card">
+          <div class="table-header">
+            <div class="header-left">
+              <div class="header-icon">
+                <i class="bi bi-collection-fill"></i>
+              </div>
+
+              <div>
+                <h5 class="mb-1">Registered Programs</h5>
+
+                <small>
+                  Select a program to load its details into the form
+                </small>
+              </div>
+            </div>
+
+            <div class="programs-count">
+              {{ filteredPrograms.length }} Programs
+            </div>
+          </div>
+
+          <div class="search-area">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="searchText"
+                name="programTableSearch"
+                placeholder="Search by program name, code or description"
+              />
+            </div>
+
+            <div class="search-help">
+              <i class="bi bi-info-circle me-1"></i>
+              Search using the program name, program code or description.
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table program-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Program</th>
+                  <th>Description</th>
+                  <th>Session Start</th>
+                  <th>Session End</th>
+                  <th>Monthly Fee</th>
+                  <th>Status</th>
+                  <th class="text-center">Modify</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  *ngFor="let program of filteredPrograms"
+                  class="program-row"
+                  [class.selected-row]="selectedProgramId == program.id"
+                  (click)="SelectProgramRow(program)"
+                >
+                  <td>
+                    <div class="table-program">
+                      <div class="table-program-icon">
+                        <i class="bi bi-stars"></i>
+                      </div>
+
+                      <div>
+                        <div class="table-program-name">
+                          {{ program.programName }}
+                        </div>
+
+                        <small>
+                          {{ program.programCode || program.id }}
+                        </small>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div
+                      class="table-note"
+                      [title]="program.description || 'No description'"
+                    >
+                      {{ program.description || "Not provided" }}
+                    </div>
+                  </td>
+
+                  <td>
+                    {{ formatTime(program.sessionStart) }}
+                  </td>
+
+                  <td>
+                    {{ formatTime(program.sessionEnd) }}
+                  </td>
+
+                  <td>
+                    <strong class="fee-text">
+                      <ng-container
+                        *ngIf="
+                          program.monthlyFee !== null &&
+                            program.monthlyFee !== undefined;
+                          else tableNoFee
+                        "
+                      >
+                        Rs. {{ program.monthlyFee | number: "1.2-2" }}
+                      </ng-container>
+
+                      <ng-template #tableNoFee> - </ng-template>
+                    </strong>
+                  </td>
+
+                  <td>
+                    <div class="status-toggle-wrapper">
+                      <label class="status-switch">
+                        <input
+                          type="checkbox"
+                          [checked]="isProgramActive(program)"
+                          (change)="onStatusToggle(program, $event)"
+                          (click)="$event.stopPropagation()"
+                        />
+
+                        <span class="status-slider"></span>
+                      </label>
+
+                      <span
+                        class="status-text"
+                        [class.active-text]="isProgramActive(program)"
+                        [class.inactive-text]="!isProgramActive(program)"
+                      >
+                        {{ isProgramActive(program) ? "Active" : "Inactive" }}
+                      </span>
+
+                      <button
+                        *ngIf="program.statusChanged"
+                        type="button"
+                        class="status-save-btn"
+                        title="Save Status"
+                        (click)="
+                          saveProgramStatus(program); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-check-lg"></i>
+                        Save
+                      </button>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="table-actions">
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="View Program"
+                        (click)="
+                          SelectProgramRow(program); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn edit-btn"
+                        *ngIf="canUpdate"
+                        title="Edit Program"
+                        (click)="
+                          GetProgramById(program.id); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn delete-btn"
+                        *ngIf="canDelete"
+                        title="Delete Program"
+                        (click)="
+                          DeleteById(program.id); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="filteredPrograms.length === 0">
+                  <td colspan="7" class="empty-table">
+                    <div class="empty-state">
+                      <i class="bi bi-collection"></i>
+
+                      <h6>No Programs Found</h6>
+
+                      <p>No registered program matches your search.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
