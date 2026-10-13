@@ -1,0 +1,633 @@
+<main class="enrollment-page mt-5 pt-3">
+  <div class="container-fluid px-4">
+    <div class="page-heading mb-4">
+      <div>
+        <h2 class="page-title mb-1">ENROLLMENT MANAGEMENT</h2>
+
+        <p class="page-subtitle mb-0">
+          Enroll children in daycare programs and assign classrooms.
+        </p>
+      </div>
+
+      <div class="page-heading-icon">
+        <i class="bi bi-clipboard2-check-fill"></i>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-xl-8 col-lg-7">
+        <div class="card registration-card">
+          <div class="card-header registration-header">
+            <div class="header-left">
+              <div class="header-icon">
+                <i class="bi bi-person-plus-fill"></i>
+              </div>
+
+              <div>
+                <h5 class="mb-1">
+                  {{
+                    isEditEnrollment
+                      ? "Edit Enrollment Details"
+                      : "New Enrollment Form"
+                  }}
+                </h5>
+
+                <small>
+                  {{
+                    isEditEnrollment
+                      ? "Update the selected enrollment."
+                      : "Complete the details to enroll a child."
+                  }}
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-4">
+            <form #enrollmentForm="ngForm" (ngSubmit)="SaveEnrollment()">
+              <div class="section-heading">
+                <div class="section-icon">
+                  <i class="bi bi-calendar-week-fill"></i>
+                </div>
+
+                <div>
+                  <h6>Enrollment Dates</h6>
+                  <small>Record enrollment and attendance period dates</small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <label for="enrollDate" class="form-label">
+                    Enrollment Date
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="enrollDate"
+                    name="enrollDate"
+                    [(ngModel)]="enrollmentObj.enrollDate"
+                    required
+                    #enrollDate="ngModel"
+                  />
+
+                  <small
+                    class="error-text"
+                    *ngIf="enrollDate.invalid && enrollDate.touched"
+                  >
+                    Enrollment date is required.
+                  </small>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="startDate" class="form-label">
+                    Start Date
+                    <span class="required">*</span>
+                  </label>
+
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="startDate"
+                    name="startDate"
+                    [(ngModel)]="enrollmentObj.startDate"
+                    [min]="enrollmentObj.enrollDate || undefined"
+                    required
+                    #startDate="ngModel"
+                  />
+
+                  <small
+                    class="error-text"
+                    *ngIf="startDate.invalid && startDate.touched"
+                  >
+                    Start date is required.
+                  </small>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="endDate" class="form-label"> End Date </label>
+
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="endDate"
+                    name="endDate"
+                    [(ngModel)]="enrollmentObj.endDate"
+                    [min]="enrollmentObj.startDate || undefined"
+                  />
+
+                  <small class="field-hint"> Optional </small>
+                </div>
+              </div>
+
+              <!-- CHILD SELECTION -->
+              <div class="section-heading">
+                <div class="section-icon child-icon">
+                  <i class="bi bi-people-fill"></i>
+                </div>
+
+                <div>
+                  <h6>Child Selection</h6>
+                  <small>
+                    Select the child to enroll. Their registered parent will be
+                    loaded automatically.
+                  </small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <!-- CHILD -->
+                <div class="col-md-6">
+                  <label for="enrollmentChild" class="form-label">
+                    Child
+                    <span class="required">*</span>
+                  </label>
+
+                  <select
+                    class="form-select"
+                    id="enrollmentChild"
+                    name="enrollmentChild"
+                    [(ngModel)]="enrollmentObj.child"
+                    (ngModelChange)="onChildSelection($event)"
+                    required
+                  >
+                    <option [ngValue]="null">Select Child</option>
+
+                    <option
+                      *ngFor="let child of allChildList"
+                      [ngValue]="child.id"
+                    >
+                      {{ child.firstName }}
+                      {{ child.lastName }}
+                      ({{ child.childCode || child.id }})
+                    </option>
+                  </select>
+                </div>
+
+                <!-- AUTOMATICALLY LINKED PARENT -->
+                <div class="col-md-6">
+                  <label class="form-label"> Parent / Guardian </label>
+
+                  <div class="linked-parent-display">
+                    <i class="bi bi-person-heart"></i>
+
+                    <span>
+                      {{
+                        selectedParentName ||
+                          "Select a child to load their parent"
+                      }}
+                    </span>
+                  </div>
+
+                  <small class="field-hint">
+                    Automatically linked through the child's registration.
+                  </small>
+                </div>
+              </div>
+
+              <div class="section-heading">
+                <div class="section-icon program-icon">
+                  <i class="bi bi-building-fill"></i>
+                </div>
+
+                <div>
+                  <h6>Program and Classroom</h6>
+                  <small>Assign the child to a program and room</small>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label for="enrollmentProgram" class="form-label">
+                    Program
+                    <span class="required">*</span>
+                  </label>
+
+                  <select
+                    class="form-select"
+                    id="enrollmentProgram"
+                    name="enrollmentProgram"
+                    [(ngModel)]="enrollmentObj.program"
+                    required
+                  >
+                    <option [ngValue]="null">Select Program</option>
+
+                    <option
+                      *ngFor="let program of allProgramList"
+                      [ngValue]="program.id"
+                    >
+                      {{ program.programName }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="enrollmentClassroom" class="form-label">
+                    Classroom
+                    <span class="required">*</span>
+                  </label>
+
+                  <select
+                    class="form-select"
+                    id="enrollmentClassroom"
+                    name="enrollmentClassroom"
+                    [(ngModel)]="enrollmentObj.classroom"
+                    required
+                  >
+                    <option [ngValue]="null">Select Classroom</option>
+
+                    <option
+                      *ngFor="let classroom of allClassroomList"
+                      [ngValue]="classroom.id"
+                    >
+                      {{ classroom.roomName }}
+                      <ng-container *ngIf="classroom.roomCode">
+                        ({{ classroom.roomCode }})
+                      </ng-container>
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="info-box mb-4">
+                <div class="info-icon">
+                  <i class="bi bi-shield-check"></i>
+                </div>
+
+                <div>
+                  <strong>Enrollment Status</strong>
+
+                  <p class="mb-0">
+                    New enrollments are set to
+                    <strong>Active</strong> automatically. You can change the
+                    status from the registered enrollments table.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="form-actions"
+                *ngIf="canCreate || (isEditEnrollment && canUpdate)"
+              >
+                <button
+                  type="button"
+                  class="btn clear-btn"
+                  (click)="ClearForm()"
+                >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>
+                  Clear
+                </button>
+
+                <button
+                  type="submit"
+                  class="btn register-btn"
+                  [disabled]="enrollmentForm.invalid"
+                >
+                  <i
+                    class="bi me-1"
+                    [ngClass]="
+                      isEditEnrollment
+                        ? 'bi-check-circle'
+                        : 'bi-clipboard2-check-fill'
+                    "
+                  ></i>
+
+                  {{
+                    isEditEnrollment
+                      ? "Update Enrollment"
+                      : "Register Enrollment"
+                  }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4 col-lg-5">
+        <div class="card profile-card">
+          <div class="profile-card-header">
+            <span>ENROLLMENT SUMMARY</span>
+            <i class="bi bi-card-checklist"></i>
+          </div>
+
+          <div class="profile-icon-area">
+            <div class="profile-icon-circle">
+              <i class="bi bi-person-check-fill"></i>
+            </div>
+          </div>
+
+          <div class="profile-name-area">
+            <h4>
+              {{ selectedChildName || "Select a Child" }}
+            </h4>
+
+            <span>
+              {{ enrollmentObj.enrollmentCode || "New Enrollment" }}
+            </span>
+          </div>
+
+          <div class="profile-details">
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-person-heart"></i>
+              </div>
+
+              <div>
+                <small>Parent / Guardian</small>
+
+                <strong>
+                  {{ selectedParentName || "Not selected" }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-stars"></i>
+              </div>
+
+              <div>
+                <small>Program</small>
+
+                <strong>
+                  {{ selectedProgramName || "Not selected" }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-building"></i>
+              </div>
+
+              <div>
+                <small>Classroom</small>
+
+                <strong>
+                  {{ selectedClassroomName || "Not selected" }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+
+              <div>
+                <small>Start Date</small>
+
+                <strong>
+                  {{ formatDate(enrollmentObj.startDate) }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-icon">
+                <i class="bi bi-shield-check"></i>
+              </div>
+
+              <div>
+                <small>Status</small>
+
+                <strong>
+                  {{ selectedStatusName }}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-notice">
+            <div class="profile-notice-icon">
+              <i class="bi bi-info-circle-fill"></i>
+            </div>
+
+            <div>
+              <strong>Enrollment Reminder</strong>
+
+              <p>
+                Check the child's parent, program, classroom, and dates before
+                saving the enrollment.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card enrollment-table-card">
+          <div class="table-header">
+            <div class="header-left">
+              <div class="header-icon">
+                <i class="bi bi-collection-fill"></i>
+              </div>
+
+              <div>
+                <h5 class="mb-1">Registered Enrollments</h5>
+
+                <small>
+                  Select an enrollment to load its details into the form
+                </small>
+              </div>
+            </div>
+
+            <div class="enrollments-count">
+              {{ filteredEnrollments.length }} Enrollments
+            </div>
+          </div>
+
+          <div class="search-area">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="searchText"
+                name="enrollmentTableSearch"
+                placeholder="Search by enrollment code, child, parent, program or classroom"
+              />
+            </div>
+
+            <div class="search-help">
+              <i class="bi bi-info-circle me-1"></i>
+              Search by enrollment code, child's name, parent, program or
+              classroom.
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table enrollment-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Enrollment</th>
+                  <th>Enroll Date</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Child</th>
+                  <th>Parent / Guardian</th>
+                  <th>Program</th>
+                  <th>Classroom</th>
+                  <th>Status</th>
+                  <th class="text-center">Modify</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  *ngFor="let enrollment of filteredEnrollments"
+                  class="enrollment-row"
+                  [class.selected-row]="selectedEnrollmentId == enrollment.id"
+                  (click)="SelectEnrollmentRow(enrollment)"
+                >
+                  <td>
+                    <div class="table-enrollment">
+                      <div class="table-enrollment-icon">
+                        <i class="bi bi-clipboard-check-fill"></i>
+                      </div>
+
+                      <div>
+                        <div class="table-enrollment-name">
+                          {{ enrollment.enrollmentCode || "Enrollment" }}
+                        </div>
+
+                        <small> ID: {{ enrollment.id }} </small>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    {{ formatDate(enrollment.enrollDate) }}
+                  </td>
+
+                  <td>
+                    {{ formatDate(enrollment.startDate) }}
+                  </td>
+
+                  <td>
+                    {{ formatDate(enrollment.endDate) }}
+                  </td>
+
+                  <td>
+                    {{ enrollment.child?.firstName || "" }}
+                    {{ enrollment.child?.lastName || "" }}
+                  </td>
+
+                  <td>
+                    {{ enrollment.parent?.fullName || "-" }}
+                  </td>
+
+                  <td>
+                    {{ enrollment.program?.programName || "-" }}
+                  </td>
+
+                  <td>
+                    {{ enrollment.classroom?.roomName || "-" }}
+                  </td>
+
+                  <td>
+                    <div class="status-toggle-wrapper">
+                      <label class="status-switch">
+                        <input
+                          type="checkbox"
+                          [checked]="isEnrollmentActive(enrollment)"
+                          (change)="onStatusToggle(enrollment, $event)"
+                          (click)="$event.stopPropagation()"
+                        />
+
+                        <span class="status-slider"></span>
+                      </label>
+
+                      <span
+                        class="status-text"
+                        [class.active-text]="isEnrollmentActive(enrollment)"
+                        [class.inactive-text]="!isEnrollmentActive(enrollment)"
+                      >
+                        {{
+                          isEnrollmentActive(enrollment) ? "Active" : "Inactive"
+                        }}
+                      </span>
+
+                      <button
+                        *ngIf="enrollment.statusChanged"
+                        type="button"
+                        class="status-save-btn"
+                        title="Save Status"
+                        (click)="
+                          saveEnrollmentStatus(enrollment);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-check-lg"></i>
+                        Save
+                      </button>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="table-actions">
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="View Enrollment"
+                        (click)="
+                          SelectEnrollmentRow(enrollment);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn edit-btn"
+                        *ngIf="canUpdate"
+                        title="Edit Enrollment"
+                        (click)="
+                          GetEnrollmentById(enrollment.id);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn delete-btn"
+                        *ngIf="canDelete"
+                        title="Delete Enrollment"
+                        (click)="
+                          DeleteById(enrollment.id); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="filteredEnrollments.length === 0">
+                  <td colspan="10" class="empty-table">
+                    <div class="empty-state">
+                      <i class="bi bi-clipboard2-x"></i>
+
+                      <h6>No Enrollments Found</h6>
+
+                      <p>No enrollment matches your search.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

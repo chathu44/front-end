@@ -23,6 +23,7 @@ import { ChildComponent } from './component/child/child.component';
 import { ParentComponent } from './component/parent/parent.component';
 import { ClassroomComponent } from './component/classroom/classroom.component';
 import { ProgramComponent } from './component/program/program.component';
+import { EnrollmentComponent } from './component/enrollment/enrollment.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { ProgramComponent } from './component/program/program.component';
     ChildComponent,
     ParentComponent,
     ClassroomComponent,
-    ProgramComponent
+    ProgramComponent,
+    EnrollmentComponent
   ],
   imports: [
     BrowserModule,
