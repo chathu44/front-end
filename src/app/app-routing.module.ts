@@ -15,6 +15,7 @@ import { ChildComponent } from './component/child/child.component';
 import { ParentComponent } from './component/parent/parent.component';
 import { ClassroomComponent } from './component/classroom/classroom.component';
 import { ProgramComponent } from './component/program/program.component';
+import { EnrollmentComponent } from './component/enrollment/enrollment.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -34,6 +35,7 @@ const routes: Routes = [
   { path: 'parent', component: ParentComponent, canActivate: [AuthGuard] },
   { path: 'classroom', component: ClassroomComponent, canActivate: [AuthGuard] },
   { path: 'program', component: ProgramComponent, canActivate: [AuthGuard] },
+  { path: 'enrollment', component: EnrollmentComponent, canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'login' }
 ];
