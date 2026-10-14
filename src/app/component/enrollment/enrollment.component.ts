@@ -300,56 +300,80 @@ export class EnrollmentComponent {
   }
 
   isEnrollmentActive(enrollment: any): boolean {
-    return String(enrollment.status?.name || '').toLowerCase() === 'active';
-  }
+  const status = enrollment._pendingStatus ?? enrollment.status;
 
-  onStatusToggle(enrollment: any, event: Event): void {
-    const input = event.target as HTMLInputElement;
+  return (
+    this.normalizeStatusName(
+      this.getEnrollmentStatusName(status)
+    ) === 'active'
+  );
+}
 
-    const newStatusName = input.checked ? 'Active' : 'Inactive';
+onStatusToggle(enrollment: any, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const currentlyActive = this.isEnrollmentActive(enrollment);
 
-    const selectedStatus = this.allStatus.find(
-      (status: any) =>
-        String(status.name).toLowerCase() === newStatusName.toLowerCase(),
+  const requestedStatus = input.checked ? 'Active' : 'Inactive';
+  const selectedStatus = this.findEnrollmentStatus(requestedStatus);
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    input.checked = currentlyActive;
+
+    swal(
+      'Status Not Available',
+      `${requestedStatus} status was not found in the status list returned by the API.`,
+      'warning'
     );
 
-    if (!selectedStatus) {
-      swal('Error!', `${newStatusName} status was not found.`, 'error');
+    return;
+  }
+
+  enrollment._pendingStatus = selectedStatus;
+  enrollment.statusChanged = true;
+}
+
+saveEnrollmentStatus(enrollment: any): void {
+  const selectedStatus = enrollment._pendingStatus;
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    swal('Error!', 'Please select a valid status.', 'error');
+    return;
+  }
+
+  const payload: any = {
+    ...enrollment,
+    status: selectedStatus.id
+  };
+
+  delete payload._pendingStatus;
+  delete payload.statusChanged;
+
+  this.enrollmentService.createEnrollment(payload, 'Update').subscribe({
+    next: (): void => {
+      swal(
+        'Successful!',
+        'Enrollment status has been updated!',
+        'success'
+      );
 
       this.GetAllEnrollments();
-      return;
+    },
+
+    error: (error: any): void => {
+      console.error('Enrollment status update error:', error);
+
+      swal(
+        'Error!',
+        error?.error?.message ||
+          error?.error?.error ||
+          'Unable to update enrollment status.',
+        'error'
+      );
+
+      this.GetAllEnrollments();
     }
-
-    enrollment.status = selectedStatus;
-    enrollment.statusChanged = true;
-  }
-
-  saveEnrollmentStatus(enrollment: any): void {
-    const enrollmentToUpdate: EnrollmentRepresentation = {
-      ...enrollment,
-      status: enrollment.status?.id,
-    };
-
-    this.enrollmentService
-      .createEnrollment(enrollmentToUpdate, 'Update')
-      .subscribe({
-        next: (result: any): void => {
-          enrollment.statusChanged = false;
-
-          swal('Successful!', 'Enrollment status has been updated!', 'success');
-
-          this.GetAllEnrollments();
-        },
-
-        error: (error: any): void => {
-          console.error(error);
-
-          swal('Error!', 'Unable to update enrollment status.', 'error');
-
-          this.GetAllEnrollments();
-        },
-      });
-  }
+  });
+}
 
   formatDate(date: any): string {
     return date ? String(date).slice(0, 10) : '-';
@@ -469,4 +493,42 @@ export class EnrollmentComponent {
 
     this.selectedEnrollmentId = null;
   }
+  private normalizeStatusName(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+}
+
+private getEnrollmentStatusName(status: any): string {
+  if (status && typeof status === 'object') {
+    const name = status.name ?? status.statusName ?? status.label;
+
+    if (name) {
+      return String(name);
+    }
+
+    status = status.id;
+  }
+
+  const match = this.allStatus.find(
+    (item: any) => String(item.id) === String(status)
+  );
+
+  return String(match?.name ?? match?.statusName ?? '');
+}
+
+private findEnrollmentStatus(name: string): any {
+  const expected = this.normalizeStatusName(name);
+
+  return this.allStatus.find((status: any) => {
+    const actual =
+      status?.name ??
+      status?.statusName ??
+      status?.label ??
+      '';
+
+    return this.normalizeStatusName(actual) === expected;
+  });
+}
 }

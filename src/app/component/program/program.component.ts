@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ProgramRepresentation } from '../services/api/module/program-representation';
 import { ProgramService } from '../services/api/program/program.service';
 import { StatusService } from '../services/api/status/status.service';
+import { FormBuilder } from '@angular/forms';
 import swal from 'sweetalert';
+import {
+  AuthIds,
+  PermissionHelperService
+} from '../services/permission-helper.service';
 
 @Component({
   selector: 'app-program',
@@ -10,428 +15,408 @@ import swal from 'sweetalert';
   templateUrl: './program.component.html',
   styleUrls: ['./program.component.scss'],
 })
-export class ProgramComponent {
-
+export class ProgramComponent implements OnInit {
   programObj: ProgramRepresentation = {};
-
   programs: Array<any> = [];
-
   allStatus: Array<any> = [];
-
-  type: string = '';
-
-  isEditProgram: boolean = false;
-
-  canCreate: boolean = true;
-  canUpdate: boolean = true;
-  canDelete: boolean = true;
-
-  searchText: string = '';
-
-  selectedProgramId: any = null;
+  statusValue: any;
+  type = '';
+  isEditProgram = false;
+  dtDynamicVerticalScrollExample: any;
+  canCreate = false;
+  canUpdate = false;
+  canDelete = false;
 
   constructor(
     private programService: ProgramService,
-    private statusService: StatusService
+    private statusService: StatusService,
+    private permissionHelper: PermissionHelperService,
+    public fb: FormBuilder
   ) {}
 
-  ngOnInit(): void {
-    this.isEditProgram = false;
+  // ngOnInit(): void {
+  //   this.canCreate = this.permissionHelper.has(AuthIds.PROGRAM_CREATE);
+  //   this.canUpdate = this.permissionHelper.has(AuthIds.PROGRAM_UPDATE);
+  //   this.canDelete = this.permissionHelper.has(AuthIds.PROGRAM_DELETE);
 
+  //   this.GetAllStatus();
+  //   this.GetAllPrograms();
+  // }
+
+  ngOnInit(): void {
+  const hasProgramCrudPermission = this.permissionHelper.hasAny(
+    AuthIds.PROGRAM_CREATE,
+    AuthIds.PROGRAM_UPDATE,
+    AuthIds.PROGRAM_DELETE
+  );
+
+  if (hasProgramCrudPermission) {
+    this.canCreate = this.permissionHelper.has(AuthIds.PROGRAM_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.PROGRAM_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.PROGRAM_DELETE);
+  } else {
+    // Frontend testing fallback.
     this.canCreate = true;
     this.canUpdate = true;
     this.canDelete = true;
-
-    this.GetAllStatus();
-    this.GetAllPrograms();
   }
 
+  this.GetAllStatus();
+  this.GetAllPrograms();
+}
+
   SaveProgram(): void {
+    this.type = this.isEditProgram ? 'Update' : 'Add';
 
-    this.type = this.isEditProgram
-      ? 'Update'
-      : 'Add';
+    const statusId = this.getStatusId(this.programObj.status);
 
-    if (
-      this.type === 'Add' &&
-      (
-        this.programObj.status === null ||
-        this.programObj.status === undefined ||
-        this.programObj.status === ''
-      )
-    ) {
-
-      const activeStatus =
-        this.allStatus.find(
-          (status: any) =>
-            String(status.name).toLowerCase() === 'active'
-        );
-
-      if (!activeStatus) {
-        swal(
-          'Error!',
-          'Active status was not found. Please check your status records.',
-          'error'
-        );
-        return;
-      }
-
-      this.programObj.status = activeStatus.id;
+    if (statusId === null || statusId === undefined || statusId === '') {
+      swal('Missing Status', 'Please select a status.', 'warning');
+      return;
     }
+
+    const programToSave: ProgramRepresentation = {
+      ...this.programObj,
+      status: statusId
+    };
+
+    const saveProgram = (): void => {
+      this.programService.createProgram(programToSave, this.type).subscribe({
+        next: (): void => {
+          swal(
+            'Successful!',
+            this.type === 'Add'
+              ? 'Program has been added!'
+              : 'Program has been updated!',
+            'success'
+          );
+          this.GetAllPrograms();
+          this.ClearForm();
+        },
+        error: (error: any): void => {
+          console.error('Program save error:', error);
+          swal(
+            'Error!',
+            error?.error?.message ||
+              error?.error?.error ||
+              'Unable to save program. Please check the entered details.',
+            'error'
+          );
+        }
+      });
+    };
 
     if (this.type === 'Add') {
-
       swal({
-        title: 'Register Program?',
-        text: 'Do you want to register this program?',
+        title: 'Are you sure?',
+        text: 'Do you want to add this program?',
         icon: 'warning',
-        dangerMode: true,
+        dangerMode: true
       }).then((confirmed) => {
-
-        if (!confirmed) {
-          return;
+        if (confirmed) {
+          saveProgram();
         }
-
-        this.programService
-          .createProgram(this.programObj, 'Add')
-          .subscribe({
-
-            next: (result: any): void => {
-
-              this.GetAllPrograms();
-              this.ClearForm();
-
-              swal(
-                'Successful!',
-                'Program has been registered!',
-                'success'
-              );
-            },
-
-            error: (error: any): void => {
-
-              console.error(error);
-
-              swal(
-                'Error!',
-                'Unable to register the program. Please check the required fields and API response.',
-                'error'
-              );
-            }
-
-          });
       });
-
     } else {
-
-      this.programService
-        .createProgram(this.programObj, 'Update')
-        .subscribe({
-
-          next: (result: any): void => {
-
-            this.GetAllPrograms();
-            this.ClearForm();
-
-            swal(
-              'Successful!',
-              'Program has been updated!',
-              'success'
-            );
-          },
-
-          error: (error: any): void => {
-
-            console.error(error);
-
-            swal(
-              'Error!',
-              'Unable to update the program.',
-              'error'
-            );
-          }
-
-        });
+      saveProgram();
     }
+  }
+
+  private getStatusId(status: any): string | number | null {
+    if (status && typeof status === 'object') {
+      return status.id ?? null;
+    }
+
+    return status === '' || status === undefined ? null : status;
   }
 
   GetProgramById(ID: any): void {
-
-    this.programService
-      .GetProgramById(ID)
-      .subscribe((allData: any) => {
-
-        const record =
-          allData?.data?.dataList?.[0];
+    this.programService.GetProgramById(ID).subscribe({
+      next: (allData: any): void => {
+        const record = allData?.data?.dataList?.[0];
 
         if (!record) {
-          swal(
-            'Not Found',
-            'The selected program could not be found.',
-            'warning'
-          );
+          swal('Error!', 'Program record was not found.', 'error');
           return;
         }
 
         this.programObj = {
           ...record,
-
-          sessionStart:
-            record.sessionStart
-              ? String(record.sessionStart).slice(0, 5)
-              : '',
-
-          sessionEnd:
-            record.sessionEnd
-              ? String(record.sessionEnd).slice(0, 5)
-              : '',
-
-          monthlyFee:
-            record.monthlyFee ?? null,
-
-          status:
-            record.status?.id ??
-            record.status ??
-            null
+          status: record.status?.id ?? record.status ?? null
         };
 
+        this.statusValue = record.status?.name || 'Select Value';
         this.isEditProgram = true;
-        this.selectedProgramId = record.id;
-      });
-  }
 
-  SelectProgramRow(program: any): void {
-    this.selectedProgramId = program.id;
-    this.GetProgramById(program.id);
+        this.selectedProgramId = record.id;
+      },
+      error: (error: any): void => {
+        console.error('Get program error:', error);
+        swal('Error!', 'Unable to load program details.', 'error');
+      }
+    });
   }
 
   GetAllPrograms(): void {
-
-    this.programService
-      .GetAllPrograms()
-      .subscribe({
-
-        next: (allData: any): void => {
-          this.programs =
-            allData?.data?.dataList || [];
-        },
-
-        error: (error: any): void => {
-          console.error(error);
-
-          swal(
-            'Error!',
-            'Unable to load registered programs.',
-            'error'
-          );
-        }
-
-      });
+    this.programService.GetAllPrograms().subscribe({
+      next: (allData: any): void => {
+        this.programs = allData?.data?.dataList || [];
+      },
+      error: (error: any): void => {
+        console.error('Get programs error:', error);
+        swal('Error!', 'Unable to load programs.', 'error');
+      }
+    });
   }
 
   DeleteById(ID: any): void {
-
     swal({
       title: 'Are you sure?',
       text: 'Do you want to delete this program?',
       icon: 'warning',
-      dangerMode: true,
+      dangerMode: true
     }).then((confirmed) => {
-
-      if (!confirmed) {
-        return;
-      }
-
-      this.programService
-        .DeleteProgramById(ID)
-        .subscribe({
-
-          next: (result: any): void => {
-
-            if (
-              String(this.selectedProgramId) ===
-              String(ID)
-            ) {
-              this.ClearForm();
-            }
-
+      if (confirmed) {
+        this.programService.DeleteProgramById(ID).subscribe({
+          next: (): void => {
+            swal('Deleted!', 'Program has been deleted!', 'success');
             this.GetAllPrograms();
-
-            swal(
-              'Deleted!',
-              'Program has been deleted!',
-              'success'
-            );
           },
-
           error: (error: any): void => {
-
-            console.error(error);
-
+            console.error('Delete program error:', error);
             swal(
               'Error!',
-              'Unable to delete the program. It may be linked to other records.',
+              error?.error?.message || 'Unable to delete program.',
               'error'
             );
           }
-
         });
+      }
     });
   }
 
   GetAllStatus(): void {
+    this.statusService.GetAllStatus().subscribe({
+      next: (allData: any): void => {
+        this.allStatus = allData?.data?.dataList || [];
 
-    this.statusService
-      .GetAllStatus()
-      .subscribe({
+        if (!this.isEditProgram && !this.programObj.status) {
+          const activeStatus = this.allStatus.find(
+            (status: any) =>
+              String(status.name).toLowerCase() === 'active'
+          );
 
-        next: (allData: any): void => {
-          this.allStatus =
-            allData?.data?.dataList || [];
-        },
-
-        error: (error: any): void => {
-          console.error(error);
+          if (activeStatus) {
+            this.programObj.status = activeStatus.id;
+          }
         }
-
-      });
+      },
+      error: (error: any): void => {
+        console.error('Get statuses error:', error);
+        swal('Error!', 'Unable to load statuses.', 'error');
+      }
+    });
   }
 
-  isProgramActive(program: any): boolean {
-    return String(
-      program.status?.name || ''
-    ).toLowerCase() === 'active';
+  onChangeStatus(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.programObj.status = select.value === '' ? null : select.value;
   }
 
-  onStatusToggle(
-    program: any,
-    event: Event
-  ): void {
+  ClearForm(): void {
+  this.programObj = {};
+  this.statusValue = 'Select Value';
+  this.isEditProgram = false;
+  this.selectedProgramId = null;
 
-    const input =
-      event.target as HTMLInputElement;
+  const activeStatus = this.allStatus.find(
+    (status: any) =>
+      String(status.name ?? status.statusName ?? '')
+        .trim()
+        .toLowerCase() === 'active'
+  );
 
-    const newStatusName =
-      input.checked
-        ? 'Active'
-        : 'Inactive';
+  if (activeStatus) {
+    this.programObj.status = activeStatus.id;
+    this.statusValue = activeStatus.name ?? activeStatus.statusName;
+  }
+}
+  searchText: string = '';
+selectedProgramId: any = null;
 
-    const selectedStatus =
-      this.allStatus.find(
-        (status: any) =>
-          String(status.name).toLowerCase() ===
-          newStatusName.toLowerCase()
-      );
+get filteredPrograms(): any[] {
+  const search = this.searchText.trim().toLowerCase();
 
-    if (!selectedStatus) {
+  return (this.programs || []).filter((program: any) => {
+    const name = String(program.programName || '').toLowerCase();
+    const code = String(program.programCode || '').toLowerCase();
+    const description = String(program.description || '').toLowerCase();
+
+    return (
+      name.includes(search) ||
+      code.includes(search) ||
+      description.includes(search)
+    );
+  });
+}
+
+SelectProgramRow(program: any): void {
+  this.selectedProgramId = program.id;
+
+  this.programObj = {
+    ...program,
+    status: this.getStatusId(program.status)
+  };
+
+  this.statusValue =
+    program.status?.name ||
+    this.getStatusName(program.status) ||
+    'Select Value';
+
+  this.isEditProgram = true;
+}
+formatTime(value: any): string {
+  if (!value) {
+    return '';
+  }
+
+  const parts = String(value).split(':');
+
+  if (parts.length < 2) {
+    return String(value);
+  }
+
+  let hours = Number(parts[0]);
+  const minutes = parts[1];
+
+  if (Number.isNaN(hours)) {
+    return String(value);
+  }
+
+  const period = hours >= 12 ? 'PM' : 'AM';
+
+  hours = hours % 12 || 12;
+
+  return `${hours}:${minutes} ${period}`;
+}
+
+isProgramActive(program: any): boolean {
+  const status = program._pendingStatus ?? program.status;
+
+  let statusName = '';
+
+  if (status && typeof status === 'object') {
+    statusName = status.name ?? status.statusName ?? status.label ?? '';
+  } else {
+    const match = this.allStatus.find(
+      (item: any) => String(item.id) === String(status)
+    );
+
+    statusName = match?.name ?? match?.statusName ?? '';
+  }
+
+  return this.normalizeStatusName(statusName) === 'active';
+}
+
+onStatusToggle(program: any, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const currentlyActive = this.isProgramActive(program);
+  const requestedStatus = input.checked ? 'Active' : 'Inactive';
+
+  const selectedStatus = this.findStatusByName(requestedStatus);
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    input.checked = currentlyActive;
+
+    swal(
+      'Status Not Available',
+      `${requestedStatus} status was not found in the status list returned by the API.`,
+      'warning'
+    );
+
+    return;
+  }
+
+  program._pendingStatus = selectedStatus;
+  program.statusChanged = true;
+}
+
+saveProgramStatus(program: any): void {
+  const selectedStatus = program._pendingStatus;
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    swal('Error!', 'Please select a valid status.', 'error');
+    return;
+  }
+
+  const payload: any = {
+    ...program,
+    status: selectedStatus.id
+  };
+
+  delete payload._pendingStatus;
+  delete payload.statusChanged;
+
+  this.programService.createProgram(payload, 'Update').subscribe({
+    next: (): void => {
+      swal('Successful!', 'Program status has been updated!', 'success');
+
+      this.GetAllPrograms();
+    },
+
+    error: (error: any): void => {
+      console.error('Program status update error:', error);
 
       swal(
         'Error!',
-        `${newStatusName} status was not found.`,
+        error?.error?.message ||
+          error?.error?.error ||
+          'Unable to update program status.',
         'error'
       );
 
       this.GetAllPrograms();
-      return;
+    }
+  });
+}
+
+private getStatusName(status: any): string {
+  if (status && typeof status === 'object') {
+    const name = status.name ?? status.statusName ?? status.label;
+
+    if (name) {
+      return String(name);
     }
 
-    program.status = selectedStatus;
-    program.statusChanged = true;
+    status = status.id;
   }
 
-  saveProgramStatus(program: any): void {
+  const match = this.allStatus.find(
+    (item: any) => String(item.id) === String(status)
+  );
 
-    const programToUpdate: ProgramRepresentation = {
-      ...program,
-      status: program.status?.id
-    };
+  return String(
+    match?.name ?? match?.statusName ?? ''
+  );
+}
+private normalizeStatusName(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+}
 
-    this.programService
-      .createProgram(programToUpdate, 'Update')
-      .subscribe({
+private findStatusByName(name: string): any {
+  const expectedName = this.normalizeStatusName(name);
 
-        next: (result: any): void => {
+  return this.allStatus.find((status: any) => {
+    const actualName =
+      status?.name ??
+      status?.statusName ??
+      status?.label ??
+      '';
 
-          program.statusChanged = false;
-
-          swal(
-            'Successful!',
-            'Program status has been updated!',
-            'success'
-          );
-
-          this.GetAllPrograms();
-        },
-
-        error: (error: any): void => {
-
-          console.error(error);
-
-          swal(
-            'Error!',
-            'Unable to update program status.',
-            'error'
-          );
-
-          this.GetAllPrograms();
-        }
-
-      });
-  }
-
-  formatTime(time: any): string {
-
-    if (!time) {
-      return '-';
-    }
-
-    return String(time).slice(0, 5);
-  }
-
-  get filteredPrograms(): any[] {
-
-    if (!this.programs) {
-      return [];
-    }
-
-    const search =
-      this.searchText.trim().toLowerCase();
-
-    if (!search) {
-      return this.programs;
-    }
-
-    return this.programs.filter(
-      (program: any) => {
-
-        const code =
-          String(
-            program.programCode ||
-            program.id ||
-            ''
-          ).toLowerCase();
-
-        const name =
-          String(program.programName || '')
-            .toLowerCase();
-
-        const description =
-          String(program.description || '')
-            .toLowerCase();
-
-        return (
-          code.includes(search) ||
-          name.includes(search) ||
-          description.includes(search)
-        );
-      }
-    );
-  }
-
-  ClearForm(): void {
-    this.programObj = {};
-    this.isEditProgram = false;
-    this.type = '';
-    this.selectedProgramId = null;
-  }
+    return this.normalizeStatusName(actualName) === expectedName;
+  });
+}
 }

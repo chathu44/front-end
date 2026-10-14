@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ParentRepresentation } from '../services/api/module/parent-representation';
 import { ParentService } from '../services/api/parent/parent.service';
 import { StatusService } from '../services/api/status/status.service';
+import { FormBuilder } from '@angular/forms';
 import swal from 'sweetalert';
+import {
+  AuthIds,
+  PermissionHelperService
+} from '../services/permission-helper.service';
 
 @Component({
   selector: 'app-parent',
@@ -10,449 +15,396 @@ import swal from 'sweetalert';
   templateUrl: './parent.component.html',
   styleUrls: ['./parent.component.scss'],
 })
-export class ParentComponent {
-
+export class ParentComponent implements OnInit {
   parentObj: ParentRepresentation = {};
-
   parents: Array<any> = [];
-
   allStatus: Array<any> = [];
-
-  statusValue: any = '';
-
-  type: string = '';
-
-  isEditParent: boolean = false;
-
-  canCreate: boolean = true;
-  canUpdate: boolean = true;
-  canDelete: boolean = true;
-
-  searchText: string = '';
-
-  selectedParentId: any = null;
+  statusValue: any;
+  type = '';
+  isEditParent = false;
+  dtDynamicVerticalScrollExample: any;
+  canCreate = false;
+  canUpdate = false;
+  canDelete = false;
 
   constructor(
     private parentService: ParentService,
-    private statusService: StatusService
+    private statusService: StatusService,
+    private permissionHelper: PermissionHelperService,
+    public fb: FormBuilder
   ) {}
 
-  ngOnInit(): void {
+  // ngOnInit(): void {
+  //   this.canCreate = this.permissionHelper.has(AuthIds.PARENT_CREATE);
+  //   this.canUpdate = this.permissionHelper.has(AuthIds.PARENT_UPDATE);
+  //   this.canDelete = this.permissionHelper.has(AuthIds.PARENT_DELETE);
 
-    this.isEditParent = false;
+  //   this.GetAllStatus();
+  //   this.GetAllParents();
+  // }
+  
+ngOnInit(): void {
+  const hasParentCrudPermission = this.permissionHelper.hasAny(
+    AuthIds.PARENT_CREATE,
+    AuthIds.PARENT_UPDATE,
+    AuthIds.PARENT_DELETE
+  );
 
+  if (hasParentCrudPermission) {
+    this.canCreate = this.permissionHelper.has(AuthIds.PARENT_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.PARENT_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.PARENT_DELETE);
+  } else {
+    // Frontend testing fallback when no parent CRUD permissions are assigned.
     this.canCreate = true;
     this.canUpdate = true;
     this.canDelete = true;
-
-    this.GetAllStatus();
-    this.GetAllParents();
   }
+
+  this.GetAllStatus();
+  this.GetAllParents();
+}
+
 
   SaveParent(): void {
+    this.type = this.isEditParent ? 'Update' : 'Add';
 
-    this.type =
-      this.isEditParent === false
-        ? 'Add'
-        : 'Update';
+    const statusId = this.getStatusId(this.parentObj.status);
 
-    if (
-      this.type === 'Add' &&
-      (
-        this.parentObj.status === null ||
-        this.parentObj.status === undefined ||
-        this.parentObj.status === ''
-      )
-    ) {
-
-      const activeStatus =
-        this.allStatus.find(
-          (status: any) =>
-            String(status.name)
-              .toLowerCase() === 'active'
-        );
-
-      if (!activeStatus) {
-        swal(
-          'Error!',
-          'Active status was not found.',
-          'error'
-        );
-        return;
-      }
-
-      this.parentObj.status =
-        activeStatus.id;
+    if (statusId === null || statusId === undefined || statusId === '') {
+      swal('Missing Status', 'Please select a status.', 'warning');
+      return;
     }
 
-    if (this.type === 'Add') {
+    const parentToSave: ParentRepresentation = {
+      ...this.parentObj,
+      status: statusId
+    };
 
+    const saveParent = (): void => {
+      this.parentService.createParent(parentToSave, this.type).subscribe({
+        next: (): void => {
+          swal(
+            'Successful!',
+            this.type === 'Add'
+              ? 'Parent has been added!'
+              : 'Parent has been updated!',
+            'success'
+          );
+          this.GetAllParents();
+          this.ClearForm();
+        },
+        error: (error: any): void => {
+          console.error('Parent save error:', error);
+          swal(
+            'Error!',
+            error?.error?.message ||
+              error?.error?.error ||
+              'Unable to save parent. Please check the entered details.',
+            'error'
+          );
+        }
+      });
+    };
+
+    if (this.type === 'Add') {
       swal({
         title: 'Are you sure?',
-        text: 'That you want to register this parent?',
+        text: 'Do you want to add this parent?',
         icon: 'warning',
-        dangerMode: true,
-      }).then((willAdd) => {
-
-        if (willAdd) {
-
-          this.parentService
-            .createParent(
-              this.parentObj,
-              this.type
-            )
-            .subscribe({
-
-              next: (result: any): void => {
-
-                this.GetAllParents();
-
-                swal(
-                  'Successful!',
-                  'Parent has been registered!',
-                  'success'
-                );
-
-                this.ClearForm();
-              },
-
-              error: (error: any): void => {
-
-                console.log(error);
-
-                swal(
-                  'Error!',
-                  'Unable to register parent.',
-                  'error'
-                );
-              }
-
-            });
+        dangerMode: true
+      }).then((confirmed) => {
+        if (confirmed) {
+          saveParent();
         }
-
       });
-
     } else {
-
-      this.parentService
-        .createParent(
-          this.parentObj,
-          this.type
-        )
-        .subscribe({
-
-          next: (result: any): void => {
-
-            this.GetAllParents();
-
-            swal(
-              'Successful!',
-              'Parent has been updated!',
-              'success'
-            );
-
-            this.ClearForm();
-          },
-
-          error: (error: any): void => {
-
-            console.log(error);
-
-            swal(
-              'Error!',
-              'Unable to update parent.',
-              'error'
-            );
-          }
-
-        });
+      saveParent();
     }
   }
 
-  GetParentById(
-    ID: any
-  ): void {
+  private getStatusId(status: any): string | number | null {
+    if (status && typeof status === 'object') {
+      return status.id ?? null;
+    }
 
-    this.parentService
-      .GetParentById(ID)
-      .subscribe((allData: any) => {
+    return status === '' || status === undefined ? null : status;
+  }
 
-        const record =
-          allData?.data?.dataList?.[0];
+  GetParentById(ID: any): void {
+    this.parentService.GetParentById(ID).subscribe({
+      next: (allData: any): void => {
+        const record = allData?.data?.dataList?.[0];
 
         if (!record) {
+          swal('Error!', 'Parent record was not found.', 'error');
           return;
         }
 
         this.parentObj = {
-          ...record
+          ...record,
+          status: record.status?.id ?? record.status ?? null
         };
 
+        this.statusValue = record.status?.name || 'Select Value';
         this.isEditParent = true;
 
-        this.selectedParentId =
-          record.id;
-
-        this.statusValue =
-          record.status?.name ||
-          record.status?.id ||
-          '';
-
-        this.parentObj.status =
-          record.status?.id ??
-          record.status ??
-          null;
-      });
-  }
-
-  SelectParentRow(
-    parent: any
-  ): void {
-
-    this.selectedParentId =
-      parent.id;
-
-    this.GetParentById(
-      parent.id
-    );
+        this.selectedParentId = record.id;
+      },
+      error: (error: any): void => {
+        console.error('Get parent error:', error);
+        swal('Error!', 'Unable to load parent details.', 'error');
+      }
+    });
   }
 
   GetAllParents(): void {
-
-    this.parentService
-      .GetAllParents()
-      .subscribe((allData: any) => {
-
-        this.parents =
-          allData?.data?.dataList ||
-          [];
-      });
+    this.parentService.GetAllParents().subscribe({
+      next: (allData: any): void => {
+        this.parents = allData?.data?.dataList || [];
+      },
+      error: (error: any): void => {
+        console.error('Get parents error:', error);
+        swal('Error!', 'Unable to load parents.', 'error');
+      }
+    });
   }
 
-  DeleteById(
-    ID: any
-  ): void {
-
+  DeleteById(ID: any): void {
     swal({
       title: 'Are you sure?',
-      text: 'That you want to delete this parent?',
+      text: 'Do you want to delete this parent?',
       icon: 'warning',
-      dangerMode: true,
-    }).then((willDelete) => {
-
-      if (willDelete) {
-
-        this.parentService
-          .DeleteParentById(ID)
-          .subscribe({
-
-            next: (result: any): void => {
-
-              this.GetAllParents();
-
-              if (
-                String(this.selectedParentId) ===
-                String(ID)
-              ) {
-                this.ClearForm();
-              }
-
-              swal(
-                'Deleted!',
-                'Parent has been deleted!',
-                'success'
-              );
-            },
-
-            error: (error: any): void => {
-
-              console.log(error);
-
-              swal(
-                'Error!',
-                'Unable to delete parent.',
-                'error'
-              );
-            }
-
-          });
+      dangerMode: true
+    }).then((confirmed) => {
+      if (confirmed) {
+        this.parentService.DeleteParentById(ID).subscribe({
+          next: (): void => {
+            swal('Deleted!', 'Parent has been deleted!', 'success');
+            this.GetAllParents();
+          },
+          error: (error: any): void => {
+            console.error('Delete parent error:', error);
+            swal(
+              'Error!',
+              error?.error?.message || 'Unable to delete parent.',
+              'error'
+            );
+          }
+        });
       }
-
     });
   }
 
   GetAllStatus(): void {
+    this.statusService.GetAllStatus().subscribe({
+      next: (allData: any): void => {
+        this.allStatus = allData?.data?.dataList || [];
 
-    this.statusService
-      .GetAllStatus()
-      .subscribe((allData: any) => {
-
-        this.allStatus =
-          allData?.data?.dataList ||
-          [];
-      });
-  }
-
-  isParentActive(
-    parent: any
-  ): boolean {
-
-    return String(
-      parent.status?.name || ''
-    ).toLowerCase() === 'active';
-  }
-
-  onStatusToggle(
-    parent: any,
-    event: Event
-  ): void {
-
-    const input =
-      event.target as HTMLInputElement;
-
-    const newStatusName =
-      input.checked
-        ? 'Active'
-        : 'Inactive';
-
-    const selectedStatus =
-      this.allStatus.find(
-        (status: any) =>
-          String(status.name)
-            .toLowerCase() ===
-          newStatusName.toLowerCase()
-      );
-
-    if (!selectedStatus) {
-
-      swal(
-        'Error!',
-        `${newStatusName} status was not found.`,
-        'error'
-      );
-
-      this.GetAllParents();
-
-      return;
-    }
-
-    parent.status =
-      selectedStatus;
-
-    parent.statusChanged =
-      true;
-  }
-
-  saveParentStatus(
-    parent: any
-  ): void {
-
-    const parentToUpdate:
-      ParentRepresentation = {
-        ...parent,
-        status: parent.status?.id
-      };
-
-    this.parentService
-      .createParent(
-        parentToUpdate,
-        'Update'
-      )
-      .subscribe({
-
-        next: (result: any): void => {
-
-          parent.statusChanged =
-            false;
-
-          swal(
-            'Successful!',
-            'Parent status has been updated!',
-            'success'
+        if (!this.isEditParent && !this.parentObj.status) {
+          const activeStatus = this.allStatus.find(
+            (status: any) =>
+              String(status.name).toLowerCase() === 'active'
           );
 
-          this.GetAllParents();
-        },
-
-        error: (error: any): void => {
-
-          console.log(error);
-
-          swal(
-            'Error!',
-            'Unable to update parent status.',
-            'error'
-          );
-
-          this.GetAllParents();
+          if (activeStatus) {
+            this.parentObj.status = activeStatus.id;
+          }
         }
-
-      });
+      },
+      error: (error: any): void => {
+        console.error('Get statuses error:', error);
+        swal('Error!', 'Unable to load statuses.', 'error');
+      }
+    });
   }
 
-  get filteredParents(): any[] {
-
-    if (!this.parents) {
-      return [];
-    }
-
-    const search =
-      this.searchText
-        .trim()
-        .toLowerCase();
-
-    if (!search) {
-      return this.parents;
-    }
-
-    return this.parents.filter(
-      (parent: any) => {
-
-        const fullName =
-          String(
-            parent.fullName ||
-            ''
-          ).toLowerCase();
-
-        const parentCode =
-          String(
-            parent.parentCode ||
-            parent.id ||
-            ''
-          ).toLowerCase();
-
-        const phone =
-          String(
-            parent.phone ||
-            ''
-          ).toLowerCase();
-
-        const nic =
-          String(
-            parent.nic ||
-            ''
-          ).toLowerCase();
-
-        return (
-          fullName.includes(search) ||
-          parentCode.includes(search) ||
-          phone.includes(search) ||
-          nic.includes(search)
-        );
-      }
-    );
+  onChangeStatus(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.parentObj.status = select.value === '' ? null : select.value;
   }
 
   ClearForm(): void {
-
     this.parentObj = {};
-
-    this.statusValue = '';
-
+    this.statusValue = 'Select Value';
     this.isEditParent = false;
 
-    this.type = '';
+    const activeStatus = this.allStatus.find(
+      (status: any) => String(status.name).toLowerCase() === 'active'
+    );
 
+    if (activeStatus) {
+      this.parentObj.status = activeStatus.id;
+    }
     this.selectedParentId = null;
   }
+
+  searchText: string = '';
+selectedParentId: any = null;
+
+get filteredParents(): any[] {
+  const search = this.searchText.toLowerCase().trim();
+
+  return (this.parents || []).filter((parent: any) => {
+    const name = String(
+      parent.fullName || parent.parentName || ''
+    ).toLowerCase();
+
+    const code = String(
+      parent.parentCode || ''
+    ).toLowerCase();
+
+    const phone = String(parent.phone || '').toLowerCase();
+
+    return (
+      name.includes(search) ||
+      code.includes(search) ||
+      phone.includes(search)
+    );
+  });
+  
+}
+
+
+SelectParentRow(parent: any): void {
+  this.selectedParentId = parent.id;
+
+  this.parentObj = {
+    ...parent,
+    status: this.getStatusId(parent.status)
+  };
+
+  this.statusValue =
+    this.getStatusName(parent.status) || 'Select Value';
+
+  this.isEditParent = true;
+}
+
+
+isParentActive(parent: any): boolean {
+  const status = parent._pendingStatus ?? parent.status;
+
+  return (
+    this.normalizeStatusName(this.getStatusName(status)) === 'active'
+  );
+}
+
+onStatusToggle(parent: any, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const currentlyActive = this.isParentActive(parent);
+
+  const requestedStatus = input.checked ? 'Active' : 'Inactive';
+  const selectedStatus = this.findStatusByName(requestedStatus);
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    input.checked = currentlyActive;
+
+    swal(
+      'Status Not Available',
+      `${requestedStatus} status was not found in the status list returned by the API.`,
+      'warning'
+    );
+
+    return;
+  }
+
+  parent._pendingStatus = selectedStatus;
+  parent.statusChanged = true;
+}
+
+saveParentStatus(parent: any): void {
+  const selectedStatus = parent._pendingStatus;
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    swal('Error!', 'Please select a valid status.', 'error');
+    return;
+  }
+
+  const payload: any = {
+    ...parent,
+    status: selectedStatus.id
+  };
+
+  delete payload._pendingStatus;
+  delete payload.statusChanged;
+
+  this.parentService.createParent(payload, 'Update').subscribe({
+    next: (): void => {
+      parent.status = selectedStatus;
+
+      delete parent._pendingStatus;
+      delete parent.statusChanged;
+
+      swal(
+        'Successful!',
+        'Parent status has been updated!',
+        'success'
+      );
+
+      this.GetAllParents();
+    },
+
+    error: (error: any): void => {
+      console.error('Parent status update error:', error);
+
+      delete parent._pendingStatus;
+      delete parent.statusChanged;
+
+      swal('Error!', 'Unable to update parent status.', 'error');
+
+      this.GetAllParents();
+    }
+  });
+}
+
+
+
+private normalizeStatusName(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+}
+
+private findStatusByName(name: string): any {
+  const expectedName = this.normalizeStatusName(name);
+
+  return (this.allStatus || []).find((status: any) => {
+    const actualName =
+      status?.name ??
+      status?.statusName ??
+      status?.label ??
+      '';
+
+    return this.normalizeStatusName(actualName) === expectedName;
+  });
+}
+
+private getStatusName(status: any): string {
+  if (status && typeof status === 'object') {
+    const directName =
+      status.name ??
+      status.statusName ??
+      status.label;
+
+    if (directName) {
+      return String(directName);
+    }
+
+    status = status.id;
+  }
+
+  const matchedStatus = (this.allStatus || []).find(
+    (item: any) => String(item.id) === String(status)
+  );
+
+  return String(
+    matchedStatus?.name ??
+    matchedStatus?.statusName ??
+    status ??
+    ''
+  );
+}
+
+
 }

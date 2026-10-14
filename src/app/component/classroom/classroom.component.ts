@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ClassroomRepresentation } from '../services/api/module/classroom-representation';
 import { ClassroomService } from '../services/api/classroom/classroom.service';
 import { StatusService } from '../services/api/status/status.service';
+import { FormBuilder } from '@angular/forms';
 import swal from 'sweetalert';
+import {
+  AuthIds,
+  PermissionHelperService
+} from '../services/permission-helper.service';
 
 @Component({
   selector: 'app-classroom',
@@ -10,452 +15,396 @@ import swal from 'sweetalert';
   templateUrl: './classroom.component.html',
   styleUrls: ['./classroom.component.scss'],
 })
-export class ClassroomComponent {
-
+export class ClassroomComponent implements OnInit {
   classroomObj: ClassroomRepresentation = {};
-
   classrooms: Array<any> = [];
-
   allStatus: Array<any> = [];
-
-  statusValue: any = '';
-
-  type: string = '';
-
-  isEditClassroom: boolean = false;
-
-  canCreate: boolean = true;
-  canUpdate: boolean = true;
-  canDelete: boolean = true;
-
-  searchText: string = '';
-
-  selectedClassroomId: any = null;
+  statusValue: any;
+  type = '';
+  isEditClassroom = false;
+  dtDynamicVerticalScrollExample: any;
+  canCreate = false;
+  canUpdate = false;
+  canDelete = false;
 
   constructor(
     private classroomService: ClassroomService,
-    private statusService: StatusService
+    private statusService: StatusService,
+    private permissionHelper: PermissionHelperService,
+    public fb: FormBuilder
   ) {}
 
-  ngOnInit(): void {
+  // ngOnInit(): void {
+  //   this.canCreate = this.permissionHelper.has(AuthIds.CLASSROOM_CREATE);
+  //   this.canUpdate = this.permissionHelper.has(AuthIds.CLASSROOM_UPDATE);
+  //   this.canDelete = this.permissionHelper.has(AuthIds.CLASSROOM_DELETE);
 
-    this.isEditClassroom = false;
+  //   this.GetAllStatus();
+  //   this.GetAllClassrooms();
+  // }
 
+  
+ngOnInit(): void {
+  const hasClassroomCrudPermission = this.permissionHelper.hasAny(
+    AuthIds.CLASSROOM_CREATE,
+    AuthIds.CLASSROOM_UPDATE,
+    AuthIds.CLASSROOM_DELETE
+  );
+
+  if (hasClassroomCrudPermission) {
+    this.canCreate = this.permissionHelper.has(AuthIds.CLASSROOM_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.CLASSROOM_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.CLASSROOM_DELETE);
+  } else {
+    // Frontend testing fallback when no classroom CRUD permissions are assigned.
     this.canCreate = true;
     this.canUpdate = true;
     this.canDelete = true;
-
-    this.GetAllStatus();
-    this.GetAllClassrooms();
   }
 
+  this.GetAllStatus();
+  this.GetAllClassrooms();
+}
+
+
   SaveClassroom(): void {
+    this.type = this.isEditClassroom ? 'Update' : 'Add';
 
-    this.type =
-      this.isEditClassroom === false
-        ? 'Add'
-        : 'Update';
+    const statusId = this.getStatusId(this.classroomObj.status);
 
-
-    if (
-      this.type === 'Add' &&
-      (
-        this.classroomObj.status === null ||
-        this.classroomObj.status === undefined ||
-        this.classroomObj.status === ''
-      )
-    ) {
-
-      const activeStatus =
-        this.allStatus.find(
-          (status: any) =>
-            String(status.name)
-              .toLowerCase() === 'active'
-        );
-
-      if (!activeStatus) {
-
-        swal(
-          'Error!',
-          'Active status was not found.',
-          'error'
-        );
-
-        return;
-      }
-
-      this.classroomObj.status =
-        activeStatus.id;
+    if (statusId === null || statusId === undefined || statusId === '') {
+      swal('Missing Status', 'Please select a status.', 'warning');
+      return;
     }
 
-    if (this.type === 'Add') {
+    const classroomToSave: ClassroomRepresentation = {
+      ...this.classroomObj,
+      status: statusId
+    };
 
-      swal({
-        title: 'Are you sure?',
-        text: 'That you want to register this classroom?',
-        icon: 'warning',
-        dangerMode: true,
-      }).then((willAdd) => {
-
-        if (willAdd) {
-
-          this.classroomService
-            .createClassroom(
-              this.classroomObj,
-              this.type
-            )
-            .subscribe({
-
-              next: (result: any): void => {
-
-                this.GetAllClassrooms();
-
-                swal(
-                  'Successful!',
-                  'Classroom has been registered!',
-                  'success'
-                );
-
-                this.ClearForm();
-              },
-
-              error: (error: any): void => {
-
-                console.log(error);
-
-                swal(
-                  'Error!',
-                  'Unable to register classroom.',
-                  'error'
-                );
-              }
-
-            });
-        }
-
-      });
-
-    } else {
-
+    const saveClassroom = (): void => {
       this.classroomService
-        .createClassroom(
-          this.classroomObj,
-          this.type
-        )
+        .createClassroom(classroomToSave, this.type)
         .subscribe({
-
-          next: (result: any): void => {
-
-            this.GetAllClassrooms();
-
+          next: (): void => {
             swal(
               'Successful!',
-              'Classroom has been updated!',
+              this.type === 'Add'
+                ? 'Classroom has been added!'
+                : 'Classroom has been updated!',
               'success'
             );
-
+            this.GetAllClassrooms();
             this.ClearForm();
           },
-
           error: (error: any): void => {
-
-            console.log(error);
-
+            console.error('Classroom save error:', error);
             swal(
               'Error!',
-              'Unable to update classroom.',
+              error?.error?.message ||
+                error?.error?.error ||
+                'Unable to save classroom. Please check the entered details.',
               'error'
             );
           }
-
         });
+    };
+
+    if (this.type === 'Add') {
+      swal({
+        title: 'Are you sure?',
+        text: 'Do you want to add this classroom?',
+        icon: 'warning',
+        dangerMode: true
+      }).then((confirmed) => {
+        if (confirmed) {
+          saveClassroom();
+        }
+      });
+    } else {
+      saveClassroom();
     }
   }
 
-  GetClassroomById(
-    ID: any
-  ): void {
+  private getStatusId(status: any): string | number | null {
+    if (status && typeof status === 'object') {
+      return status.id ?? null;
+    }
 
-    this.classroomService
-      .GetClassroomById(ID)
-      .subscribe((allData: any) => {
+    return status === '' || status === undefined ? null : status;
+  }
 
-        const record =
-          allData?.data?.dataList?.[0];
+  GetClassroomById(ID: any): void {
+    this.classroomService.GetClassroomById(ID).subscribe({
+      next: (allData: any): void => {
+        const record = allData?.data?.dataList?.[0];
 
         if (!record) {
+          swal('Error!', 'Classroom record was not found.', 'error');
           return;
         }
 
         this.classroomObj = {
-          ...record
+          ...record,
+          status: record.status?.id ?? record.status ?? null
         };
 
+        this.statusValue = record.status?.name || 'Select Value';
         this.isEditClassroom = true;
 
-        this.selectedClassroomId =
-          record.id;
-
-        this.statusValue =
-          record.status?.name ||
-          record.status?.id ||
-          '';
-
-        this.classroomObj.status =
-          record.status?.id ??
-          record.status ??
-          null;
-      });
-  }
-
-  SelectClassroomRow(
-    classroom: any
-  ): void {
-
-    this.selectedClassroomId =
-      classroom.id;
-
-    this.GetClassroomById(
-      classroom.id
-    );
+        this.selectedClassroomId = record.id;
+      },
+      error: (error: any): void => {
+        console.error('Get classroom error:', error);
+        swal('Error!', 'Unable to load classroom details.', 'error');
+      }
+    });
   }
 
   GetAllClassrooms(): void {
-
-    this.classroomService
-      .GetAllClassrooms()
-      .subscribe((allData: any) => {
-
-        this.classrooms =
-          allData?.data?.dataList ||
-          [];
-      });
+    this.classroomService.GetAllClassrooms().subscribe({
+      next: (allData: any): void => {
+        this.classrooms = allData?.data?.dataList || [];
+      },
+      error: (error: any): void => {
+        console.error('Get classrooms error:', error);
+        swal('Error!', 'Unable to load classrooms.', 'error');
+      }
+    });
   }
 
-  DeleteById(
-    ID: any
-  ): void {
-
+  DeleteById(ID: any): void {
     swal({
       title: 'Are you sure?',
-      text: 'That you want to delete this classroom?',
+      text: 'Do you want to delete this classroom?',
       icon: 'warning',
-      dangerMode: true,
-    }).then((willDelete) => {
-
-      if (willDelete) {
-
-        this.classroomService
-          .DeleteClassroomById(ID)
-          .subscribe({
-
-            next: (result: any): void => {
-
-              this.GetAllClassrooms();
-
-              if (
-                String(this.selectedClassroomId) ===
-                String(ID)
-              ) {
-                this.ClearForm();
-              }
-
-              swal(
-                'Deleted!',
-                'Classroom has been deleted!',
-                'success'
-              );
-            },
-
-            error: (error: any): void => {
-
-              console.log(error);
-
-              swal(
-                'Error!',
-                'Unable to delete classroom.',
-                'error'
-              );
-            }
-
-          });
+      dangerMode: true
+    }).then((confirmed) => {
+      if (confirmed) {
+        this.classroomService.DeleteClassroomById(ID).subscribe({
+          next: (): void => {
+            swal('Deleted!', 'Classroom has been deleted!', 'success');
+            this.GetAllClassrooms();
+          },
+          error: (error: any): void => {
+            console.error('Delete classroom error:', error);
+            swal(
+              'Error!',
+              error?.error?.message || 'Unable to delete classroom.',
+              'error'
+            );
+          }
+        });
       }
-
     });
   }
 
   GetAllStatus(): void {
+    this.statusService.GetAllStatus().subscribe({
+      next: (allData: any): void => {
+        this.allStatus = allData?.data?.dataList || [];
 
-    this.statusService
-      .GetAllStatus()
-      .subscribe((allData: any) => {
-
-        this.allStatus =
-          allData?.data?.dataList ||
-          [];
-      });
-  }
-
-  isClassroomActive(
-    classroom: any
-  ): boolean {
-
-    return String(
-      classroom.status?.name || ''
-    ).toLowerCase() === 'active';
-  }
-
-  onStatusToggle(
-    classroom: any,
-    event: Event
-  ): void {
-
-    const input =
-      event.target as HTMLInputElement;
-
-    const newStatusName =
-      input.checked
-        ? 'Active'
-        : 'Inactive';
-
-    const selectedStatus =
-      this.allStatus.find(
-        (status: any) =>
-          String(status.name)
-            .toLowerCase() ===
-          newStatusName.toLowerCase()
-      );
-
-    if (!selectedStatus) {
-
-      swal(
-        'Error!',
-        `${newStatusName} status was not found.`,
-        'error'
-      );
-
-      this.GetAllClassrooms();
-
-      return;
-    }
-
-    classroom.status =
-      selectedStatus;
-
-    classroom.statusChanged =
-      true;
-  }
-
-  saveClassroomStatus(
-    classroom: any
-  ): void {
-
-    const classroomToUpdate:
-      ClassroomRepresentation = {
-        ...classroom,
-        status: classroom.status?.id
-      };
-
-    this.classroomService
-      .createClassroom(
-        classroomToUpdate,
-        'Update'
-      )
-      .subscribe({
-
-        next: (result: any): void => {
-
-          classroom.statusChanged =
-            false;
-
-          swal(
-            'Successful!',
-            'Classroom status has been updated!',
-            'success'
+        if (!this.isEditClassroom && !this.classroomObj.status) {
+          const activeStatus = this.allStatus.find(
+            (status: any) =>
+              String(status.name).toLowerCase() === 'active'
           );
 
-          this.GetAllClassrooms();
-        },
-
-        error: (error: any): void => {
-
-          console.log(error);
-
-          swal(
-            'Error!',
-            'Unable to update classroom status.',
-            'error'
-          );
-
-          this.GetAllClassrooms();
+          if (activeStatus) {
+            this.classroomObj.status = activeStatus.id;
+          }
         }
-
-      });
+      },
+      error: (error: any): void => {
+        console.error('Get statuses error:', error);
+        swal('Error!', 'Unable to load statuses.', 'error');
+      }
+    });
   }
 
-  get filteredClassrooms(): any[] {
-
-    if (!this.classrooms) {
-      return [];
-    }
-
-    const search =
-      this.searchText
-        .trim()
-        .toLowerCase();
-
-    if (!search) {
-      return this.classrooms;
-    }
-
-    return this.classrooms.filter(
-      (classroom: any) => {
-
-        const roomCode =
-          String(
-            classroom.roomCode ||
-            classroom.id ||
-            ''
-          ).toLowerCase();
-
-        const roomName =
-          String(
-            classroom.roomName ||
-            ''
-          ).toLowerCase();
-
-        const ageGroup =
-          String(
-            classroom.ageGroup ||
-            ''
-          ).toLowerCase();
-
-        const floor =
-          String(
-            classroom.floor ||
-            ''
-          ).toLowerCase();
-
-        return (
-          roomCode.includes(search) ||
-          roomName.includes(search) ||
-          ageGroup.includes(search) ||
-          floor.includes(search)
-        );
-      }
-    );
+  onChangeStatus(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.classroomObj.status = select.value === '' ? null : select.value;
   }
 
   ClearForm(): void {
-
     this.classroomObj = {};
-
-    this.statusValue = '';
-
+    this.statusValue = 'Select Value';
     this.isEditClassroom = false;
 
-    this.type = '';
+    const activeStatus = this.allStatus.find(
+      (status: any) => String(status.name).toLowerCase() === 'active'
+    );
 
+    if (activeStatus) {
+      this.classroomObj.status = activeStatus.id;
+    }
     this.selectedClassroomId = null;
   }
+
+  searchText: string = '';
+selectedClassroomId: any = null;
+
+
+get filteredClassrooms(): any[] {
+  const search = this.searchText.trim().toLowerCase();
+
+  return (this.classrooms || []).filter((classroom: any) => {
+    const name = String(classroom.roomName || '').toLowerCase();
+    const code = String(classroom.roomCode || '').toLowerCase();
+    const ageGroup = String(classroom.ageGroup || '').toLowerCase();
+    const floor = String(classroom.floor || '').toLowerCase();
+
+    return (
+      name.includes(search) ||
+      code.includes(search) ||
+      ageGroup.includes(search) ||
+      floor.includes(search)
+    );
+  });
+}
+
+
+
+SelectClassroomRow(classroom: any): void {
+  this.selectedClassroomId = classroom.id;
+
+  this.classroomObj = {
+    ...classroom,
+    status: this.getStatusId(classroom.status)
+  };
+
+  this.statusValue =
+    this.getStatusName(classroom.status) || 'Select Value';
+
+  this.isEditClassroom = true;
+}
+
+
+
+isClassroomActive(classroom: any): boolean {
+  const status = classroom._pendingStatus ?? classroom.status;
+
+  return (
+    this.normalizeStatusName(this.getStatusName(status)) === 'active'
+  );
+}
+
+onStatusToggle(classroom: any, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const currentlyActive = this.isClassroomActive(classroom);
+
+  const requestedStatus = input.checked ? 'Active' : 'Inactive';
+  const selectedStatus = this.findStatusByName(requestedStatus);
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    input.checked = currentlyActive;
+
+    swal(
+      'Status Not Available',
+      `${requestedStatus} status was not found in the status list returned by the API.`,
+      'warning'
+    );
+
+    return;
+  }
+
+  classroom._pendingStatus = selectedStatus;
+  classroom.statusChanged = true;
+}
+
+saveClassroomStatus(classroom: any): void {
+  const selectedStatus = classroom._pendingStatus;
+
+  if (!selectedStatus || selectedStatus.id == null) {
+    swal('Error!', 'Please select a valid status.', 'error');
+    return;
+  }
+
+  const payload: any = {
+    ...classroom,
+    status: selectedStatus.id
+  };
+
+  delete payload._pendingStatus;
+  delete payload.statusChanged;
+
+  this.classroomService.createClassroom(payload, 'Update').subscribe({
+    next: (): void => {
+      classroom.status = selectedStatus;
+
+      delete classroom._pendingStatus;
+      delete classroom.statusChanged;
+
+      swal(
+        'Successful!',
+        'Classroom status has been updated!',
+        'success'
+      );
+
+      this.GetAllClassrooms();
+    },
+
+    error: (error: any): void => {
+      console.error('Classroom status update error:', error);
+
+      delete classroom._pendingStatus;
+      delete classroom.statusChanged;
+
+      swal('Error!', 'Unable to update classroom status.', 'error');
+
+      this.GetAllClassrooms();
+    }
+  });
+}
+
+
+
+private normalizeStatusName(value: any): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+}
+
+private findStatusByName(name: string): any {
+  const expectedName = this.normalizeStatusName(name);
+
+  return (this.allStatus || []).find((status: any) => {
+    const actualName =
+      status?.name ??
+      status?.statusName ??
+      status?.label ??
+      '';
+
+    return this.normalizeStatusName(actualName) === expectedName;
+  });
+}
+
+private getStatusName(status: any): string {
+  if (status && typeof status === 'object') {
+    const directName =
+      status.name ??
+      status.statusName ??
+      status.label;
+
+    if (directName) {
+      return String(directName);
+    }
+
+    status = status.id;
+  }
+
+  const matchedStatus = (this.allStatus || []).find(
+    (item: any) => String(item.id) === String(status)
+  );
+
+  return String(
+    matchedStatus?.name ??
+    matchedStatus?.statusName ??
+    status ??
+    ''
+  );
+}
+
 }

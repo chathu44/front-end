@@ -1,0 +1,286 @@
+<main class="attendance-page container-fluid py-4">
+  <header class="page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <div class="eyebrow"><i class="bi bi-heart-pulse me-2"></i>DAYCARE OPERATIONS</div>
+      <h1>Daily Attendance</h1>
+      <p class="page-description mb-0">Manage arrivals and pickups by classroom, without searching through every child.</p>
+    </div>
+
+    <div class="today-pill">
+      <span class="today-icon"><i class="bi bi-calendar3"></i></span>
+      <span><small>TODAY</small><strong>{{ todayLabel }}</strong></span>
+    </div>
+  </header>
+
+  <div *ngIf="actionMessage" class="alert action-alert" [ngClass]="actionMessageIsError ? 'alert-danger' : 'alert-success'" role="status">
+    <i class="bi me-2" [ngClass]="actionMessageIsError ? 'bi-exclamation-circle' : 'bi-check-circle'"></i>
+    {{ actionMessage }}
+    <button type="button" class="btn-close ms-auto" aria-label="Dismiss" (click)="actionMessage = ''; actionMessageIsError = false"></button>
+  </div>
+
+  <div *ngIf="!staffLoading && !currentStaffProfile" class="staff-warning mb-4">
+    <i class="bi bi-person-exclamation"></i>
+    <div>
+      <strong>Staff profile could not be matched</strong>
+      <p class="mb-0">{{ currentStaffMessage }} Check that the logged-in app user is linked to the correct Staff record. Check-in and check-out are disabled until the staff identity can be verified.</p>
+    </div>
+  </div>
+
+  <div *ngIf="currentStaffProfile" class="staff-context mb-4">
+    <i class="bi bi-shield-check"></i>
+    <span>{{ currentStaffMessage }}</span>
+  </div>
+
+  <!-- Classroom and day selection: children load only for the selected classroom. -->
+  <section class="filter-card mb-4">
+    <div class="filter-card-title">
+      <div class="title-icon"><i class="bi bi-door-open"></i></div>
+      <div><h2>Select Classroom</h2><p class="mb-0">Choose one classroom to see its currently enrolled children.</p></div>
+    </div>
+
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-lg-6">
+        <label for="classroomSelect" class="form-label">Classroom</label>
+        <select id="classroomSelect" class="form-select form-select-lg" name="selectedClassroomId" [(ngModel)]="selectedClassroomId" (ngModelChange)="actionMessage = ''">
+          <option [ngValue]="null">Choose a classroom</option>
+          <option *ngFor="let room of availableClassrooms" [ngValue]="room.id">
+            {{ room.roomName || room.roomCode || ('Classroom #' + room.id) }}
+            {{ room.roomCode ? ' · ' + room.roomCode : '' }}
+          </option>
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <label for="attendanceDate" class="form-label">Attendance date</label>
+        <input id="attendanceDate" class="form-control form-control-lg" type="date" name="selectedDate" [(ngModel)]="selectedDate" (ngModelChange)="onDateChange()">
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <button type="button" class="btn btn-outline-primary btn-lg w-100 refresh-btn" (click)="refreshAll()">
+          <i class="bi bi-arrow-clockwise me-2"></i>Refresh data
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="!isTodaySelected" class="history-notice mt-3">
+      <i class="bi bi-clock-history"></i>
+      <span>Viewing historical attendance. Check-in and check-out are available for today only.</span>
+    </div>
+  </section>
+
+  <!-- Quick summary reflects the selected classroom and date. -->
+  <section class="row g-3 mb-4" *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''">
+    <div class="col-6 col-xl-3">
+      <div class="metric-card">
+        <span class="metric-icon metric-blue"><i class="bi bi-people"></i></span>
+        <div><small>Enrolled Children</small><strong>{{ totalChildren }}</strong></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="metric-card">
+        <span class="metric-icon metric-green"><i class="bi bi-person-check"></i></span>
+        <div><small>Currently in Care</small><strong>{{ childrenInCare }}</strong></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="metric-card">
+        <span class="metric-icon metric-purple"><i class="bi bi-house-check"></i></span>
+        <div><small>Picked Up</small><strong>{{ childrenPickedUp }}</strong></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="metric-card">
+        <span class="metric-icon metric-orange"><i class="bi bi-person-dash"></i></span>
+        <div><small>Not Arrived / Absent</small><strong>{{ childrenNotArrived }}</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Classroom roster -->
+  <section class="roster-card">
+    <div class="roster-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="roster-header-icon"><i class="bi bi-clipboard2-check"></i></div>
+        <div>
+          <h2>Classroom Roster</h2>
+          <p class="mb-0">Check children in on arrival and check them out when pickup is confirmed.</p>
+        </div>
+      </div>
+      <span class="roster-count" *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''">{{ filteredRoster.length }} children</span>
+    </div>
+
+    <div class="roster-toolbar" *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''">
+      <div class="search-field">
+        <i class="bi bi-search"></i>
+        <input type="search" class="form-control" name="rosterSearch" [(ngModel)]="searchTerm" placeholder="Search this classroom by child name or code">
+      </div>
+      <div class="legend">
+        <span><i class="legend-dot dot-care"></i>In daycare</span>
+        <span><i class="legend-dot dot-picked"></i>Picked up</span>
+        <span><i class="legend-dot dot-pending"></i>Not arrived</span>
+      </div>
+    </div>
+
+    <div *ngIf="selectedClassroomId === null || selectedClassroomId === ''" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-door-open"></i></div>
+      <h3>Select a classroom to begin</h3>
+      <p class="mb-0">The roster will show only children with an active enrollment in that classroom on the selected date.</p>
+    </div>
+
+    <div *ngIf="selectedClassroomId !== null && selectedClassroomId !== '' && loading" class="loading-state">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Loading attendance records...
+    </div>
+
+    <div *ngIf="selectedClassroomId !== null && selectedClassroomId !== '' && !loading && classroomChildren.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-people"></i></div>
+      <h3>No enrolled children found</h3>
+      <p class="mb-0">Check the selected date and the child's current enrollment and classroom assignment.</p>
+    </div>
+
+    <div class="roster-table-wrap" *ngIf="selectedClassroomId !== null && selectedClassroomId !== '' && !loading && filteredRoster.length > 0">
+      <table class="table roster-table align-middle">
+        <thead>
+          <tr>
+            <th>Child</th>
+            <th>Parent / Guardian</th>
+            <th>Arrival</th>
+            <th>Checked in by</th>
+            <th>Departure</th>
+            <th>Checked out by</th>
+            <th>Notes</th>
+            <th>Today's status</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let row of filteredRoster; trackBy: trackByChildId">
+            <tr>
+              <td>
+                <div class="child-identity">
+                  <span class="child-avatar">{{ childInitials(row.child) }}</span>
+                  <span class="child-copy"><strong>{{ childName(row.child) }}</strong><small>{{ childCode(row.child) }}</small></span>
+                </div>
+              </td>
+              <td>{{ parentName(row) }}</td>
+              <td><span class="time-text" [class.time-empty]="!row.attendance?.checkInTime">{{ row.attendance?.checkInTime ? formatTime(row.attendance?.checkInTime) : '—' }}</span></td>
+              <td>{{ staffName(row.attendance?.checkedInBy) }}</td>
+              <td><span class="time-text" [class.time-empty]="!row.attendance?.checkOutTime">{{ row.attendance?.checkOutTime ? formatTime(row.attendance?.checkOutTime) : '—' }}</span></td>
+              <td>{{ staffName(row.attendance?.checkedOutBy) }}</td>
+              <td class="notes-column">
+                <span [title]="row.attendance?.notes || ''">{{ row.attendance?.notes || '—' }}</span>
+                <button *ngIf="row.attendance?.id" type="button" class="note-link" (click)="OpenNotes(row)">{{ row.attendance?.notes ? 'Edit' : 'Add note' }}</button>
+              </td>
+              <td><span class="state-chip" [ngClass]="attendanceStateClass(row)"><span class="state-dot"></span>{{ attendanceStateLabel(row) }}</span></td>
+              <td class="text-end action-column">
+                <ng-container *ngIf="isTodaySelected; else historyOnly">
+                  <button *ngIf="!hasCheckIn(row) && !hasCheckedOut(row)" type="button" class="btn btn-checkin" [disabled]="staffLoading || !currentStaffProfile" (click)="CheckIn(row)">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Check In
+                  </button>
+                  <button *ngIf="hasCheckIn(row) && !hasCheckedOut(row)" type="button" class="btn btn-checkout" [disabled]="staffLoading || !currentStaffProfile" (click)="OpenCheckOut(row)">
+                    <i class="bi bi-box-arrow-right me-1"></i>Check Out
+                  </button>
+                  <span *ngIf="hasCheckedOut(row)" class="completed-label"><i class="bi bi-check-circle-fill me-1"></i>Complete</span>
+                  <button *ngIf="!hasCheckIn(row) && !hasCheckedOut(row) && !isAbsent(row)" type="button" class="absent-link" (click)="MarkAbsent(row)">Mark absent</button>
+                </ng-container>
+                <ng-template #historyOnly><span class="history-label">History</span></ng-template>
+                <div *ngIf="row.attendance?.id" class="record-actions">
+                  <button type="button" class="record-action-link" (click)="OpenEditRecord(row)"><i class="bi bi-pencil-square me-1"></i>Correct record</button>
+                  <button type="button" class="record-action-link record-delete-link" (click)="DeleteAttendanceRecord(row)"><i class="bi bi-trash3 me-1"></i>Delete</button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="isCheckoutRow(row)" class="expanded-row">
+              <td colspan="9">
+                <div class="inline-panel checkout-panel">
+                  <div class="inline-panel-heading"><i class="bi bi-shield-check"></i><div><strong>Confirm child pickup</strong><small>Verify the collecting person's identity before completing checkout.</small></div></div>
+                  <div class="row g-3 align-items-start">
+                    <div class="col-12 col-lg-4">
+                      <label class="form-label" [for]="'pickupPerson-' + row.child.id">Pickup person <span class="required">*</span></label>
+                      <input [id]="'pickupPerson-' + row.child.id" type="text" class="form-control" [name]="'pickupPerson-' + row.child.id" [(ngModel)]="pickupPersonDraft" maxlength="100" placeholder="Confirm the person collecting the child">
+                      <small class="field-hint" *ngIf="parentName(row) !== '—'">Prefilled with the registered parent. Change it if another authorized person collects the child.</small>
+                    </div>
+                    <div class="col-12 col-lg-5">
+                      <label class="form-label" [for]="'checkoutNotes-' + row.child.id">Notes <span class="optional-label">Optional</span></label>
+                      <textarea [id]="'checkoutNotes-' + row.child.id" class="form-control" [name]="'checkoutNotes-' + row.child.id" rows="2" [(ngModel)]="checkoutNotesDraft" maxlength="255" placeholder="Optional pickup note"></textarea>
+                    </div>
+                    <div class="col-12 col-lg-3">
+                      <label class="form-label">Safety confirmation</label>
+                      <label class="verification-check"><input type="checkbox" [name]="'pickupVerified-' + row.child.id" [(ngModel)]="pickupVerified"><span>I verified identity and pickup authorization.</span></label>
+                    </div>
+                  </div>
+                  <div class="inline-panel-actions">
+                    <button type="button" class="btn btn-light border" (click)="CancelCheckOut()">Cancel</button>
+                    <button type="button" class="btn btn-checkout" (click)="ConfirmCheckOut(row)"><i class="bi bi-check2-circle me-1"></i>Confirm Check Out</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="isNotesRow(row)" class="expanded-row">
+              <td colspan="9">
+                <div class="inline-panel notes-panel">
+                  <label class="form-label" [for]="'notes-' + row.child.id">Attendance notes <span class="optional-label">Optional, maximum 255 characters</span></label>
+                  <textarea [id]="'notes-' + row.child.id" class="form-control" [name]="'notes-' + row.child.id" rows="2" [(ngModel)]="notesDraft" maxlength="255" placeholder="Only add a note when something needs to be recorded"></textarea>
+                  <div class="inline-panel-actions">
+                    <button type="button" class="btn btn-light border" (click)="CancelNotes()">Cancel</button>
+                    <button type="button" class="btn btn-primary" (click)="SaveNotes(row)"><i class="bi bi-save me-1"></i>Save Note</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="isEditingRow(row)" class="expanded-row">
+              <td colspan="9">
+                <div class="inline-panel edit-panel">
+                  <div class="inline-panel-heading"><i class="bi bi-pencil-square"></i><div><strong>Correct attendance record</strong><small>Use this only to fix a mistake. The originally recorded staff members are preserved.</small></div></div>
+                  <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editDate-' + row.child.id">Attendance date <span class="required">*</span></label>
+                      <input [id]="'editDate-' + row.child.id" type="date" class="form-control" [name]="'editDate-' + row.child.id" [(ngModel)]="editAttendanceDraft.attendanceDate" required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editIn-' + row.child.id">Check-in time</label>
+                      <input [id]="'editIn-' + row.child.id" type="datetime-local" class="form-control" [name]="'editIn-' + row.child.id" [(ngModel)]="editAttendanceDraft.checkInTime" step="1">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editOut-' + row.child.id">Check-out time</label>
+                      <input [id]="'editOut-' + row.child.id" type="datetime-local" class="form-control" [name]="'editOut-' + row.child.id" [(ngModel)]="editAttendanceDraft.checkOutTime" step="1">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editPickup-' + row.child.id">Pickup person</label>
+                      <input [id]="'editPickup-' + row.child.id" type="text" class="form-control" [name]="'editPickup-' + row.child.id" [(ngModel)]="editAttendanceDraft.pickupPerson" maxlength="100">
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editStatus-' + row.child.id">Attendance status</label>
+                      <select [id]="'editStatus-' + row.child.id" class="form-select" [name]="'editStatus-' + row.child.id" [(ngModel)]="editAttendanceDraft.status">
+                        <option [ngValue]="null">Keep current status</option>
+                        <option *ngFor="let status of allStatus" [ngValue]="status.id">{{ status.name }}</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                      <label class="form-label" [for]="'editNotes-' + row.child.id">Notes</label>
+                      <textarea [id]="'editNotes-' + row.child.id" class="form-control" [name]="'editNotes-' + row.child.id" rows="2" [(ngModel)]="editAttendanceDraft.notes" maxlength="255"></textarea>
+                    </div>
+                  </div>
+                  <div class="inline-panel-actions">
+                    <button type="button" class="btn btn-light border" (click)="CancelEditRecord()">Cancel</button>
+                    <button type="button" class="btn btn-primary" (click)="SaveEditedRecord(row)"><i class="bi bi-save me-1"></i>Save Correction</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="selectedClassroomId !== null && selectedClassroomId !== '' && !loading && classroomChildren.length > 0 && filteredRoster.length === 0" class="empty-search">
+      <i class="bi bi-search me-2"></i>No children match this search in the selected classroom.
+    </div>
+
+    <footer class="roster-footer" *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''">
+      <span><i class="bi bi-info-circle me-2"></i>One attendance record per child per day. Notes are optional.</span>
+      <span class="footer-date">{{ formatDate(selectedDate) }}</span>
+    </footer>
+  </section>
+</main>
