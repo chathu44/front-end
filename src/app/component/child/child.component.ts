@@ -65,35 +65,39 @@ export class ChildComponent {
     this.GetAllStatus();
     this.GetAllChildren();
   }
-  // ngOnInit(): void {
-
-  //   this.isEditChild = false;
-
-  //   this.canCreate =
-  //     this.permissionHelper.has(
-  //       AuthIds.CHILD_CREATE
-  //     );
-
-  //   this.canUpdate =
-  //     this.permissionHelper.has(
-  //       AuthIds.CHILD_UPDATE
-  //     );
-
-  //   this.canDelete =
-  //     this.permissionHelper.has(
-  //       AuthIds.CHILD_DELETE
-  //     );
-
-  //   this.GetAllParents();
-
-  //   this.GetAllStatus();
-
-  //   this.GetAllChildren();
-
-  // }
 
   SaveChild(): void {
     this.type = this.isEditChild === false ? 'Add' : 'Update';
+
+    let statusId: any = this.childObj.status;
+
+    if (statusId && typeof statusId === 'object') {
+      statusId = statusId.id;
+    }
+
+    if (!statusId) {
+      const activeStatus = this.allStatus.find(
+        (status: any) => String(status.name).toLowerCase() === 'active',
+      );
+
+      if (activeStatus) {
+        statusId = activeStatus.id;
+      }
+    }
+
+    if (!statusId) {
+      swal(
+        'Error!',
+        'Status is required. Please check that statuses have loaded.',
+        'error',
+      );
+      return;
+    }
+
+    const childToSave: ChildRepresentation = {
+      ...this.childObj,
+      status: statusId,
+    };
 
     if (this.type === 'Add') {
       swal({
@@ -101,39 +105,43 @@ export class ChildComponent {
         text: 'That you want to Add this details?',
         icon: 'warning',
         dangerMode: true,
-      }).then((willAdd) => {
+      }).then((willAdd: boolean) => {
         if (willAdd) {
-          this.childService.createChild(this.childObj, this.type).subscribe({
+          this.childService.createChild(childToSave, this.type).subscribe({
             next: (result: any): void => {
               this.GetAllChildren();
-
               swal('Successful!', 'Child has been Added!', 'success');
-
               this.ClearForm();
             },
-
             error: (error: any): void => {
-              console.log(error);
+              console.log('Add child error:', error);
+              console.log('Backend response:', error?.error);
 
-              swal('Error!', 'Unable to add child.', 'error');
+              swal(
+                'Error!',
+                error?.error?.message || 'Unable to add child.',
+                'error',
+              );
             },
           });
         }
       });
     } else {
-      this.childService.createChild(this.childObj, this.type).subscribe({
+      this.childService.createChild(childToSave, this.type).subscribe({
         next: (result: any): void => {
           this.GetAllChildren();
-
           swal('Successful!', 'Child has been updated!', 'success');
-
           this.ClearForm();
         },
-
         error: (error: any): void => {
-          console.log(error);
+          console.log('Update child error:', error);
+          console.log('Backend response:', error?.error);
 
-          swal('Error!', 'Unable to update child.', 'error');
+          swal(
+            'Error!',
+            error?.error?.message || 'Unable to update child.',
+            'error',
+          );
         },
       });
     }
@@ -240,6 +248,13 @@ export class ChildComponent {
     this.statusService.GetAllStatus().subscribe((allData: any) => {
       this.allStatus = allData?.data?.dataList || [];
     });
+    console.table(
+      this.allStatus.map((status: any) => ({
+        id: status.id,
+        name: status.name,
+        statusName: status.statusName,
+      })),
+    );
   }
 
   onChangeStatus(E: any): void {
@@ -265,11 +280,10 @@ export class ChildComponent {
 
     const file = input.files[0];
 
-    if (
-      file.type !== 'image/jpeg' &&
-      file.type !== 'image/jpg' &&
-      file.type !== 'image/png'
-    ) {
+    // Accept JPG, JPEG, and PNG files only.
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
+    if (!allowedTypes.includes(file.type)) {
       swal(
         'Invalid Photo',
         'Please select a JPG, JPEG or PNG image.',
@@ -277,17 +291,18 @@ export class ChildComponent {
       );
 
       input.value = '';
-
+      this.selectedPhotoFile = null;
       return;
     }
 
+    // Maximum file size: 5 MB.
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
       swal('File Too Large', 'Photo size must be less than 5 MB.', 'warning');
 
       input.value = '';
-
+      this.selectedPhotoFile = null;
       return;
     }
 
@@ -295,28 +310,42 @@ export class ChildComponent {
 
     const reader = new FileReader();
 
-    reader.onload = () => {
-      this.photoPreviewUrl = reader.result as string;
+    reader.onload = (): void => {
+      if (typeof reader.result !== 'string') {
+        swal('Error!', 'Unable to read the selected photo.', 'error');
+        return;
+      }
+
+      // Display the selected photo.
+      this.photoPreviewUrl = reader.result;
+
+      // Include the image data in the JSON payload sent to the API.
+      this.childObj.photoUrl = reader.result;
+    };
+
+    reader.onerror = (): void => {
+      swal('Error!', 'Unable to read the selected photo.', 'error');
     };
 
     reader.readAsDataURL(file);
   }
 
-  getPhotoUrl(photoUrl: string | undefined): string {
-    if (!photoUrl) {
-      return '';
-    }
-
-    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
-      return photoUrl;
-    }
-
-    if (photoUrl.startsWith('data:image')) {
-      return photoUrl;
-    }
-
-    return `http://localhost:8010${photoUrl}`;
+  
+getPhotoUrl(photoUrl: string | undefined): string {
+  if (!photoUrl) {
+    return '';
   }
+
+  const value = photoUrl.trim();
+
+  if (/^(https?:\/\/|data:image\/)/i.test(value)) {
+    return value;
+  }
+
+  return `http://localhost:8010${
+    value.startsWith('/') ? value : '/' + value
+  }`;
+}
 
   get filteredChildren(): any[] {
     if (!this.children) {
@@ -374,38 +403,63 @@ export class ChildComponent {
   }
 
   isChildActive(child: any): boolean {
-    return String(child.status?.name || '').toLowerCase() === 'active';
+    const status = child._pendingStatus ?? child.status;
+
+    return this.normalizeStatusName(this.getStatusName(status)) === 'active';
   }
 
   onStatusToggle(child: any, event: Event): void {
     const input = event.target as HTMLInputElement;
 
-    const newStatusName = input.checked ? 'Active' : 'Inactive';
+    const requestedStatus = input.checked ? 'Active' : 'Inactive';
+    const currentlyActive = this.isChildActive(child);
 
-    const selectedStatus = this.allStatus.find(
-      (status: any) =>
-        String(status.name).toLowerCase() === newStatusName.toLowerCase(),
-    );
+    const selectedStatus = this.findStatusByName(requestedStatus);
 
-    if (!selectedStatus) {
-      swal('Error!', `${newStatusName} status was not found.`, 'error');
+    // A valid status record, including its database ID, is required.
+    if (
+      !selectedStatus ||
+      selectedStatus.id === null ||
+      selectedStatus.id === undefined
+    ) {
+      input.checked = currentlyActive;
+
+      swal(
+        'Status Not Available',
+        `${requestedStatus} status was not found in the status list returned by the API.`,
+        'warning',
+      );
 
       return;
     }
 
-    child.status = selectedStatus;
+    child._pendingStatus = selectedStatus;
     child.statusChanged = true;
   }
 
   saveChildStatus(child: any): void {
-    const childToUpdate: ChildRepresentation = {
+    const selectedStatus = child._pendingStatus;
+
+    if (!selectedStatus || selectedStatus.id == null) {
+      swal('Error!', 'Please select a valid status.', 'error');
+      return;
+    }
+
+    const childToUpdate: any = {
       ...child,
-      status: child.status?.id,
+      status: selectedStatus.id,
     };
 
+    // Remove temporary frontend-only properties.
+    delete childToUpdate._pendingStatus;
+    delete childToUpdate.statusChanged;
+
     this.childService.createChild(childToUpdate, 'Update').subscribe({
-      next: (result: any): void => {
-        child.statusChanged = false;
+      next: (): void => {
+        child.status = selectedStatus;
+
+        delete child._pendingStatus;
+        delete child.statusChanged;
 
         swal('Successful!', 'Child status has been updated!', 'success');
 
@@ -413,12 +467,57 @@ export class ChildComponent {
       },
 
       error: (error: any): void => {
-        console.log(error);
+        console.error('Child status update error:', error);
 
-        swal('Error!', 'Unable to update child status.', 'error');
+        delete child._pendingStatus;
+        delete child.statusChanged;
+
+        swal(
+          'Error!',
+          error?.error?.message || 'Unable to update child status.',
+          'error',
+        );
 
         this.GetAllChildren();
       },
     });
+  }
+
+  private normalizeStatusName(value: any): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
+  }
+
+  private findStatusByName(name: string): any {
+    const expectedName = this.normalizeStatusName(name);
+
+    return (this.allStatus || []).find((status: any) => {
+      const actualName =
+        status?.name ?? status?.statusName ?? status?.label ?? '';
+
+      return this.normalizeStatusName(actualName) === expectedName;
+    });
+  }
+
+  private getStatusName(status: any): string {
+    if (status && typeof status === 'object') {
+      const directName = status.name ?? status.statusName ?? status.label;
+
+      if (directName) {
+        return String(directName);
+      }
+
+      status = status.id;
+    }
+
+    const matchedStatus = (this.allStatus || []).find(
+      (item: any) => String(item.id) === String(status),
+    );
+
+    return String(
+      matchedStatus?.name ?? matchedStatus?.statusName ?? status ?? '',
+    );
   }
 }

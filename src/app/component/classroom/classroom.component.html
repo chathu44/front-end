@@ -1,13 +1,8 @@
 <main class="classroom-page mt-5 pt-3">
-
   <div class="container-fluid px-4">
-
     <div class="page-heading mb-4">
-
       <div>
-        <h2 class="page-title mb-1">
-          CLASSROOM REGISTRATION
-        </h2>
+        <h2 class="page-title mb-1">CLASSROOM REGISTRATION</h2>
 
         <p class="page-subtitle mb-0">
           Register and manage daycare classrooms.
@@ -17,83 +12,54 @@
       <div class="page-heading-icon">
         <i class="bi bi-building-fill"></i>
       </div>
-
     </div>
 
     <div class="row g-4">
-
       <div class="col-xl-8 col-lg-7">
-
         <div class="card registration-card">
-
           <div class="card-header registration-header">
-
             <div class="header-left">
-
               <div class="header-icon">
                 <i class="bi bi-building-add"></i>
               </div>
 
               <div>
-
                 <h5 class="mb-1">
                   {{
                     isEditClassroom
-                      ? 'Edit Classroom Details'
-                      : 'Classroom Registration Form'
+                      ? "Edit Classroom Details"
+                      : "Classroom Registration Form"
                   }}
                 </h5>
 
                 <small>
                   {{
                     isEditClassroom
-                      ? 'Update the selected classroom details.'
-                      : 'Enter the classroom information.'
+                      ? "Update the selected classroom details."
+                      : "Enter the classroom information."
                   }}
                 </small>
-
               </div>
-
             </div>
-
           </div>
 
           <div class="card-body p-4">
-
-            <form
-              #classroomForm="ngForm"
-              (ngSubmit)="SaveClassroom()"
-            >
-
+            <form #classroomForm="ngForm" (ngSubmit)="SaveClassroom()">
               <div class="section-heading">
-
                 <div class="section-icon">
                   <i class="bi bi-door-open-fill"></i>
                 </div>
 
                 <div>
+                  <h6>Classroom Information</h6>
 
-                  <h6>
-                    Classroom Information
-                  </h6>
-
-                  <small>
-                    Basic information about the daycare room
-                  </small>
-
+                  <small> Basic information about the daycare room </small>
                 </div>
-
               </div>
 
-
               <div class="row g-3 mb-4">
-
                 <div class="col-md-8">
-
-                  <label
-                    for="roomName"
-                    class="form-label"
-                  >
+                  <label for="roomName" class="form-label">
                     Room Name
                     <span class="required">*</span>
                   </label>
@@ -107,28 +73,18 @@
                     required
                     #roomName="ngModel"
                     placeholder="Enter room name"
-                  >
+                  />
 
                   <small
                     class="error-text"
-                    *ngIf="
-                      roomName.invalid &&
-                      roomName.touched
-                    "
+                    *ngIf="roomName.invalid && roomName.touched"
                   >
                     Room name is required.
                   </small>
-
                 </div>
 
                 <div class="col-md-4">
-
-                  <label
-                    for="ageGroup"
-                    class="form-label"
-                  >
-                    Age Group
-                  </label>
+                  <label for="ageGroup" class="form-label"> Age Group </label>
 
                   <select
                     class="form-select"
@@ -136,37 +92,22 @@
                     name="ageGroup"
                     [(ngModel)]="classroomObj.ageGroup"
                   >
+                    <option value="">Select Age Group</option>
 
-                    <option value="">
-                      Select Age Group
-                    </option>
+                    <option value="0-1 Years">0-1 Years</option>
 
-                    <option value="Infants">
-                      Infants
-                    </option>
+                    <option value="1-2 Years">1-2 Years</option>
 
-                    <option value="Toddlers">
-                      Toddlers
-                    </option>
+                    <option value="2-3 Years">2-3 Years</option>
 
-                    <option value="Preschool">
-                      Preschool
-                    </option>
-
-                    <option value="School Age">
-                      School Age
-                    </option>
-
+                    <option value="3-5 Years">3-5 Years</option>
+                    
+                    <option value="5+ Years">5+ Years</option>
                   </select>
-
                 </div>
 
                 <div class="col-md-6">
-
-                  <label
-                    for="capacity"
-                    class="form-label"
-                  >
+                  <label for="capacity" class="form-label">
                     Capacity
                     <span class="required">*</span>
                   </label>
@@ -181,28 +122,18 @@
                     min="1"
                     #capacity="ngModel"
                     placeholder="Enter maximum capacity"
-                  >
+                  />
 
                   <small
                     class="error-text"
-                    *ngIf="
-                      capacity.invalid &&
-                      capacity.touched
-                    "
+                    *ngIf="capacity.invalid && capacity.touched"
                   >
                     Capacity is required.
                   </small>
-
                 </div>
 
                 <div class="col-md-6">
-
-                  <label
-                    for="floor"
-                    class="form-label"
-                  >
-                    Floor
-                  </label>
+                  <label for="floor" class="form-label"> Floor </label>
 
                   <select
                     class="form-select"
@@ -210,64 +141,39 @@
                     name="floor"
                     [(ngModel)]="classroomObj.floor"
                   >
+                    <option value="">Select Floor</option>
 
-                    <option value="">
-                      Select Floor
-                    </option>
+                    <option value="Ground Floor">Ground Floor</option>
 
-                    <option value="Ground Floor">
-                      Ground Floor
-                    </option>
+                    <option value="1st Floor">1st Floor</option>
 
-                    <option value="1st Floor">
-                      1st Floor
-                    </option>
+                    <option value="2nd Floor">2nd Floor</option>
 
-                    <option value="2nd Floor">
-                      2nd Floor
-                    </option>
-
-                    <option value="3rd Floor">
-                      3rd Floor
-                    </option>
-
+                    <option value="3rd Floor">3rd Floor</option>
                   </select>
-
                 </div>
-
               </div>
 
               <div class="info-box mb-4">
-
                 <div class="info-icon">
                   <i class="bi bi-shield-check"></i>
                 </div>
 
                 <div>
-
-                  <strong>
-                    Classroom Status
-                  </strong>
+                  <strong> Classroom Status </strong>
 
                   <p class="mb-0">
                     New classrooms are registered as
-                    <strong>Active</strong>.
-                    You can change the status from the
+                    <strong>Active</strong>. You can change the status from the
                     registered classrooms table.
                   </p>
-
                 </div>
-
               </div>
 
               <div
                 class="form-actions"
-                *ngIf="
-                  canCreate ||
-                  (isEditClassroom && canUpdate)
-                "
+                *ngIf="canCreate || (isEditClassroom && canUpdate)"
               >
-
                 <button
                   type="button"
                   class="btn clear-btn"
@@ -277,248 +183,153 @@
                   Clear
                 </button>
 
-
                 <button
                   type="submit"
                   class="btn register-btn"
                   [disabled]="classroomForm.invalid"
                 >
-
                   <i
                     class="bi me-1"
                     [ngClass]="
-                      isEditClassroom
-                        ? 'bi-check-circle'
-                        : 'bi-building-add'
+                      isEditClassroom ? 'bi-check-circle' : 'bi-building-add'
                     "
                   ></i>
 
                   {{
-                    isEditClassroom
-                      ? 'Update Classroom'
-                      : 'Register Classroom'
+                    isEditClassroom ? "Update Classroom" : "Register Classroom"
                   }}
-
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       </div>
 
       <div class="col-xl-4 col-lg-5">
-
         <div class="card profile-card">
-
           <div class="profile-card-header">
-
-            <span>
-              CLASSROOM PROFILE
-            </span>
+            <span> CLASSROOM PROFILE </span>
 
             <i class="bi bi-building"></i>
-
           </div>
 
-
           <div class="profile-icon-area">
-
             <div class="profile-icon-circle">
               <i class="bi bi-door-open-fill"></i>
             </div>
-
           </div>
 
-
           <div class="profile-name-area">
-
             <h4>
-              {{
-                classroomObj.roomName ||
-                'Classroom Name'
-              }}
+              {{ classroomObj.roomName || "Classroom Name" }}
             </h4>
 
             <span>
-              {{
-                classroomObj.roomCode ||
-                'New Registration'
-              }}
+              {{ classroomObj.roomCode || "New Registration" }}
             </span>
-
           </div>
 
-
           <div class="profile-details">
-
             <div class="profile-detail">
-
               <div class="detail-icon">
                 <i class="bi bi-people-fill"></i>
               </div>
 
               <div>
-
-                <small>
-                  Age Group
-                </small>
+                <small> Age Group </small>
 
                 <strong>
-                  {{
-                    classroomObj.ageGroup ||
-                    'Not selected'
-                  }}
+                  {{ classroomObj.ageGroup || "Not selected" }}
                 </strong>
-
               </div>
-
             </div>
 
             <div class="profile-detail">
-
               <div class="detail-icon">
                 <i class="bi bi-person-lines-fill"></i>
               </div>
 
               <div>
-
-                <small>
-                  Capacity
-                </small>
+                <small> Capacity </small>
 
                 <strong>
-                  {{
-                    classroomObj.capacity ||
-                    'Not provided'
-                  }}
+                  {{ classroomObj.capacity || "Not provided" }}
                 </strong>
-
               </div>
-
             </div>
 
             <div class="profile-detail">
-
               <div class="detail-icon">
                 <i class="bi bi-layers-fill"></i>
               </div>
 
               <div>
-
-                <small>
-                  Floor
-                </small>
+                <small> Floor </small>
 
                 <strong>
-                  {{
-                    classroomObj.floor ||
-                    'Not selected'
-                  }}
+                  {{ classroomObj.floor || "Not selected" }}
                 </strong>
-
               </div>
-
             </div>
 
             <div class="profile-detail">
-
               <div class="detail-icon">
                 <i class="bi bi-shield-check"></i>
               </div>
 
               <div>
-
-                <small>
-                  Status
-                </small>
+                <small> Status </small>
 
                 <strong>
-                  {{
-                    classroomObj.status?.name ||
-                    statusValue ||
-                    'Active'
-                  }}
+                  {{ classroomObj.status?.name || statusValue || "Active" }}
                 </strong>
-
               </div>
-
             </div>
-
-
           </div>
 
-
           <div class="profile-notice">
-
             <div class="profile-notice-icon">
               <i class="bi bi-info-circle-fill"></i>
             </div>
 
             <div>
-
-              <strong>
-                Classroom Management
-              </strong>
+              <strong> Classroom Management </strong>
 
               <p>
-                Keep classroom capacity and availability
-                updated for proper child enrollment.
+                Keep classroom capacity and availability updated for proper
+                child enrollment.
               </p>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
 
     <div class="row mt-4">
-
       <div class="col-12">
-
         <div class="card classroom-table-card">
-
           <div class="table-header">
-
             <div class="header-left">
-
               <div class="header-icon">
                 <i class="bi bi-building-fill"></i>
               </div>
 
               <div>
-
-                <h5 class="mb-1">
-                  Registered Classrooms
-                </h5>
+                <h5 class="mb-1">Registered Classrooms</h5>
 
                 <small>
                   Select a classroom to load the details into the form
                 </small>
-
               </div>
-
             </div>
-
 
             <div class="classrooms-count">
               {{ filteredClassrooms.length }} Classrooms
             </div>
-
           </div>
 
           <div class="search-area">
-
             <div class="search-box">
-
               <i class="bi bi-search"></i>
 
               <input
@@ -527,153 +338,95 @@
                 [(ngModel)]="searchText"
                 name="classroomTableSearch"
                 placeholder="Search by room name, room code, age group or floor"
-              >
-
+              />
             </div>
 
             <div class="search-help">
-
               <i class="bi bi-info-circle me-1"></i>
 
               Search using classroom name, room code, age group or floor.
-
             </div>
-
           </div>
 
           <div class="table-responsive">
-
             <table class="table classroom-table align-middle mb-0">
-
               <thead>
-
                 <tr>
+                  <th>Classroom</th>
 
-                  <th>
-                    Classroom
-                  </th>
+                  <th>Age Group</th>
 
-                  <th>
-                    Age Group
-                  </th>
+                  <th>Capacity</th>
 
-                  <th>
-                    Capacity
-                  </th>
+                  <th>Floor</th>
 
-                  <th>
-                    Floor
-                  </th>
+                  <th>Status</th>
 
-                  <th>
-                    Status
-                  </th>
-
-                  <th class="text-center">
-                    Modify
-                  </th>
-
+                  <th class="text-center">Modify</th>
                 </tr>
-
               </thead>
 
-
               <tbody>
-
                 <tr
                   *ngFor="let classroom of filteredClassrooms"
                   class="classroom-row"
-                  [class.selected-row]="
-                    selectedClassroomId == classroom.id
-                  "
+                  [class.selected-row]="selectedClassroomId == classroom.id"
                   (click)="SelectClassroomRow(classroom)"
                 >
-
                   <td>
-
                     <div class="table-classroom">
-
                       <div class="table-classroom-icon">
-
                         <i class="bi bi-building-fill"></i>
-
                       </div>
 
                       <div>
-
                         <div class="table-classroom-name">
                           {{ classroom.roomName }}
                         </div>
 
                         <small>
-                          {{
-                            classroom.roomCode ||
-                            classroom.id
-                          }}
+                          {{ classroom.roomCode || classroom.id }}
                         </small>
-
                       </div>
-
                     </div>
-
                   </td>
 
                   <td>
-                    {{ classroom.ageGroup || '-' }}
+                    {{ classroom.ageGroup || "-" }}
                   </td>
 
                   <td>
-
                     <span class="capacity-badge">
                       {{ classroom.capacity || 0 }}
                     </span>
-
                   </td>
 
                   <td>
-                    {{ classroom.floor || '-' }}
+                    {{ classroom.floor || "-" }}
                   </td>
 
                   <td>
-
                     <div class="status-toggle-wrapper">
-
                       <label class="status-switch">
-
                         <input
                           type="checkbox"
-                          [checked]="
-                            isClassroomActive(classroom)
-                          "
-                          (change)="
-                            onStatusToggle(classroom, $event)
-                          "
+                          [checked]="isClassroomActive(classroom)"
+                          (change)="onStatusToggle(classroom, $event)"
                           (click)="$event.stopPropagation()"
-                        >
+                        />
 
                         <span class="status-slider"></span>
-
                       </label>
-
 
                       <span
                         class="status-text"
-                        [class.active-text]="
-                          isClassroomActive(classroom)
-                        "
-                        [class.inactive-text]="
-                          !isClassroomActive(classroom)
-                        "
+                        [class.active-text]="isClassroomActive(classroom)"
+                        [class.inactive-text]="!isClassroomActive(classroom)"
                       >
-
                         {{
-                          isClassroomActive(classroom)
-                            ? 'Active'
-                            : 'Inactive'
+                          isClassroomActive(classroom) ? "Active" : "Inactive"
                         }}
-
                       </span>
-
 
                       <button
                         *ngIf="classroom.statusChanged"
@@ -685,21 +438,15 @@
                           $event.stopPropagation()
                         "
                       >
-
                         <i class="bi bi-check-lg"></i>
 
                         Save
-
                       </button>
-
                     </div>
-
                   </td>
 
                   <td>
-
                     <div class="table-actions">
-
                       <button
                         type="button"
                         class="action-btn view-btn"
@@ -731,62 +478,31 @@
                         *ngIf="canDelete"
                         title="Delete Classroom"
                         (click)="
-                          DeleteById(classroom.id);
-                          $event.stopPropagation()
+                          DeleteById(classroom.id); $event.stopPropagation()
                         "
                       >
                         <i class="bi bi-trash3"></i>
                       </button>
-
-
                     </div>
-
                   </td>
-
                 </tr>
 
-                <tr
-                  *ngIf="
-                    filteredClassrooms.length === 0
-                  "
-                >
-
-                  <td
-                    colspan="6"
-                    class="empty-table"
-                  >
-
+                <tr *ngIf="filteredClassrooms.length === 0">
+                  <td colspan="6" class="empty-table">
                     <div class="empty-state">
-
                       <i class="bi bi-building"></i>
 
-                      <h6>
-                        No Classrooms Found
-                      </h6>
+                      <h6>No Classrooms Found</h6>
 
-                      <p>
-                        No registered classroom matches your search.
-                      </p>
-
+                      <p>No registered classroom matches your search.</p>
                     </div>
-
                   </td>
-
                 </tr>
-
-
               </tbody>
-
             </table>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
-
   </div>
-
 </main>
