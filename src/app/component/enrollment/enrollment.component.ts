@@ -3,6 +3,10 @@ import { EnrollmentRepresentation } from '../services/api/module/enrollment-repr
 import { EnrollmentService } from '../services/api/enrollment/enrollment.service';
 import { StatusService } from '../services/api/status/status.service';
 import swal from 'sweetalert';
+import {
+  AuthIds,
+  PermissionHelperService,
+} from '../services/permission-helper.service';
 
 @Component({
   selector: 'app-enrollment',
@@ -25,9 +29,10 @@ export class EnrollmentComponent {
 
   isEditEnrollment: boolean = false;
 
-  canCreate: boolean = true;
-  canUpdate: boolean = true;
-  canDelete: boolean = true;
+  canView = false;
+  canCreate = false;
+  canUpdate = false;
+  canDelete = false;
 
   searchText: string = '';
 
@@ -36,12 +41,21 @@ export class EnrollmentComponent {
   constructor(
     private enrollmentService: EnrollmentService,
     private statusService: StatusService,
+    private permissionHelper: PermissionHelperService,
   ) {}
 
   ngOnInit(): void {
-    this.canCreate = true;
-    this.canUpdate = true;
-    this.canDelete = true;
+    this.canView = this.permissionHelper.has(AuthIds.ENROLLMENT_VIEW);
+    this.canCreate = this.permissionHelper.has(AuthIds.ENROLLMENT_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.ENROLLMENT_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.ENROLLMENT_DELETE);
+
+    console.log('Enrollment permissions:', {
+      view: this.canView,
+      create: this.canCreate,
+      update: this.canUpdate,
+      delete: this.canDelete,
+    });
 
     this.GetAllChildList();
     this.GetAllParentList();
@@ -52,6 +66,16 @@ export class EnrollmentComponent {
   }
 
   SaveEnrollment(): void {
+    if (this.isEditEnrollment ? !this.canUpdate : !this.canCreate) {
+      swal(
+        'Permission denied',
+        this.isEditEnrollment
+          ? 'You do not have permission to update enrollments.'
+          : 'You do not have permission to create enrollments.',
+        'warning',
+      );
+      return;
+    }
     this.type = this.isEditEnrollment ? 'Update' : 'Add';
 
     if (
@@ -184,6 +208,14 @@ export class EnrollmentComponent {
   }
 
   DeleteById(ID: any): void {
+    if (!this.canDelete) {
+      swal(
+        'Permission denied',
+        'You do not have permission to delete enrollments.',
+        'warning',
+      );
+      return;
+    }
     swal({
       title: 'Are you sure?',
       text: 'Do you want to delete this enrollment?',
@@ -250,7 +282,7 @@ export class EnrollmentComponent {
 
     this.enrollmentObj.parent = linkedParentId;
   }
-  
+
   GetAllParentList(): void {
     this.enrollmentService.GetAllParentList().subscribe({
       next: (allData: any): void => {
@@ -300,80 +332,83 @@ export class EnrollmentComponent {
   }
 
   isEnrollmentActive(enrollment: any): boolean {
-  const status = enrollment._pendingStatus ?? enrollment.status;
+    const status = enrollment._pendingStatus ?? enrollment.status;
 
-  return (
-    this.normalizeStatusName(
-      this.getEnrollmentStatusName(status)
-    ) === 'active'
-  );
-}
-
-onStatusToggle(enrollment: any, event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const currentlyActive = this.isEnrollmentActive(enrollment);
-
-  const requestedStatus = input.checked ? 'Active' : 'Inactive';
-  const selectedStatus = this.findEnrollmentStatus(requestedStatus);
-
-  if (!selectedStatus || selectedStatus.id == null) {
-    input.checked = currentlyActive;
-
-    swal(
-      'Status Not Available',
-      `${requestedStatus} status was not found in the status list returned by the API.`,
-      'warning'
+    return (
+      this.normalizeStatusName(this.getEnrollmentStatusName(status)) ===
+      'active'
     );
-
-    return;
   }
 
-  enrollment._pendingStatus = selectedStatus;
-  enrollment.statusChanged = true;
-}
+  onStatusToggle(enrollment: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const currentlyActive = this.isEnrollmentActive(enrollment);
 
-saveEnrollmentStatus(enrollment: any): void {
-  const selectedStatus = enrollment._pendingStatus;
+    const requestedStatus = input.checked ? 'Active' : 'Inactive';
+    const selectedStatus = this.findEnrollmentStatus(requestedStatus);
 
-  if (!selectedStatus || selectedStatus.id == null) {
-    swal('Error!', 'Please select a valid status.', 'error');
-    return;
-  }
-
-  const payload: any = {
-    ...enrollment,
-    status: selectedStatus.id
-  };
-
-  delete payload._pendingStatus;
-  delete payload.statusChanged;
-
-  this.enrollmentService.createEnrollment(payload, 'Update').subscribe({
-    next: (): void => {
-      swal(
-        'Successful!',
-        'Enrollment status has been updated!',
-        'success'
-      );
-
-      this.GetAllEnrollments();
-    },
-
-    error: (error: any): void => {
-      console.error('Enrollment status update error:', error);
+    if (!selectedStatus || selectedStatus.id == null) {
+      input.checked = currentlyActive;
 
       swal(
-        'Error!',
-        error?.error?.message ||
-          error?.error?.error ||
-          'Unable to update enrollment status.',
-        'error'
+        'Status Not Available',
+        `${requestedStatus} status was not found in the status list returned by the API.`,
+        'warning',
       );
 
-      this.GetAllEnrollments();
+      return;
     }
-  });
-}
+
+    enrollment._pendingStatus = selectedStatus;
+    enrollment.statusChanged = true;
+  }
+
+  saveEnrollmentStatus(enrollment: any): void {
+    if (!this.canUpdate) {
+      swal(
+        'Permission denied',
+        'You do not have permission to update enrollment status.',
+        'warning',
+      );
+      return;
+    }
+    const selectedStatus = enrollment._pendingStatus;
+
+    if (!selectedStatus || selectedStatus.id == null) {
+      swal('Error!', 'Please select a valid status.', 'error');
+      return;
+    }
+
+    const payload: any = {
+      ...enrollment,
+      status: selectedStatus.id,
+    };
+
+    delete payload._pendingStatus;
+    delete payload.statusChanged;
+
+    this.enrollmentService.createEnrollment(payload, 'Update').subscribe({
+      next: (): void => {
+        swal('Successful!', 'Enrollment status has been updated!', 'success');
+
+        this.GetAllEnrollments();
+      },
+
+      error: (error: any): void => {
+        console.error('Enrollment status update error:', error);
+
+        swal(
+          'Error!',
+          error?.error?.message ||
+            error?.error?.error ||
+            'Unable to update enrollment status.',
+          'error',
+        );
+
+        this.GetAllEnrollments();
+      },
+    });
+  }
 
   formatDate(date: any): string {
     return date ? String(date).slice(0, 10) : '-';
@@ -494,41 +529,37 @@ saveEnrollmentStatus(enrollment: any): void {
     this.selectedEnrollmentId = null;
   }
   private normalizeStatusName(value: any): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '');
-}
-
-private getEnrollmentStatusName(status: any): string {
-  if (status && typeof status === 'object') {
-    const name = status.name ?? status.statusName ?? status.label;
-
-    if (name) {
-      return String(name);
-    }
-
-    status = status.id;
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
   }
 
-  const match = this.allStatus.find(
-    (item: any) => String(item.id) === String(status)
-  );
+  private getEnrollmentStatusName(status: any): string {
+    if (status && typeof status === 'object') {
+      const name = status.name ?? status.statusName ?? status.label;
 
-  return String(match?.name ?? match?.statusName ?? '');
-}
+      if (name) {
+        return String(name);
+      }
 
-private findEnrollmentStatus(name: string): any {
-  const expected = this.normalizeStatusName(name);
+      status = status.id;
+    }
 
-  return this.allStatus.find((status: any) => {
-    const actual =
-      status?.name ??
-      status?.statusName ??
-      status?.label ??
-      '';
+    const match = this.allStatus.find(
+      (item: any) => String(item.id) === String(status),
+    );
 
-    return this.normalizeStatusName(actual) === expected;
-  });
-}
+    return String(match?.name ?? match?.statusName ?? '');
+  }
+
+  private findEnrollmentStatus(name: string): any {
+    const expected = this.normalizeStatusName(name);
+
+    return this.allStatus.find((status: any) => {
+      const actual = status?.name ?? status?.statusName ?? status?.label ?? '';
+
+      return this.normalizeStatusName(actual) === expected;
+    });
+  }
 }

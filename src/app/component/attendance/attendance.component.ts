@@ -4,6 +4,10 @@ import swal from 'sweetalert';
 import { AttendanceRepresentation } from '../services/api/module/attendance-representation';
 import { AttendanceService } from '../services/api/attendance/attendance.service';
 import { StatusService } from '../services/api/status/status.service';
+import {
+  AuthIds,
+  PermissionHelperService,
+} from '../services/permission-helper.service';
 
 interface AttendanceRosterRow {
   enrollment: any;
@@ -15,7 +19,7 @@ interface AttendanceRosterRow {
   selector: 'app-attendance',
   standalone: false,
   templateUrl: './attendance.component.html',
-  styleUrls: ['./attendance.component.scss']
+  styleUrls: ['./attendance.component.scss'],
 })
 export class AttendanceComponent implements OnInit {
   attendances: AttendanceRepresentation[] = [];
@@ -48,19 +52,33 @@ export class AttendanceComponent implements OnInit {
   private attendanceLoading = true;
   staffLoading = true;
 
-  canCreate = true;
-  canUpdate = true;
-  canDelete = true;
+  canView = false;
+  canCreate = false;
+  canUpdate = false;
+  canDelete = false;
 
   private currentUserClaims: any = null;
   currentStaffProfile: any = null;
 
   constructor(
     private attendanceService: AttendanceService,
-    private statusService: StatusService
+    private statusService: StatusService,
+    private permissionHelper: PermissionHelperService,
   ) {}
 
   ngOnInit(): void {
+    this.canView = this.permissionHelper.has(AuthIds.ATTENDANCE_VIEW);
+    this.canCreate = this.permissionHelper.has(AuthIds.ATTENDANCE_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.ATTENDANCE_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.ATTENDANCE_DELETE);
+
+    console.log('Attendance permissions:', {
+      view: this.canView,
+      create: this.canCreate,
+      update: this.canUpdate,
+      delete: this.canDelete,
+    });
+
     this.selectedDate = this.localDate(new Date());
     this.todayLabel = this.formatDate(this.selectedDate);
     this.currentUserClaims = this.readCurrentUserClaims();
@@ -92,17 +110,20 @@ export class AttendanceComponent implements OnInit {
       const classroomId = this.relationId(enrollment.classroom);
       const childId = this.relationId(enrollment.child);
 
-      return childId !== null &&
+      return (
+        childId !== null &&
         String(classroomId) === String(this.selectedClassroomId) &&
-        this.isEnrollmentCurrent(enrollment);
+        this.isEnrollmentCurrent(enrollment)
+      );
     });
 
     const uniqueRows = new Map<string, AttendanceRosterRow>();
 
     for (const enrollment of activeEnrollments) {
-      const child = enrollment.child && typeof enrollment.child === 'object'
-        ? enrollment.child
-        : null;
+      const child =
+        enrollment.child && typeof enrollment.child === 'object'
+          ? enrollment.child
+          : null;
 
       if (!child || child.id === null || child.id === undefined) {
         continue;
@@ -113,13 +134,13 @@ export class AttendanceComponent implements OnInit {
         uniqueRows.set(key, {
           enrollment,
           child,
-          attendance: this.findAttendanceForChild(child.id)
+          attendance: this.findAttendanceForChild(child.id),
         });
       }
     }
 
     return Array.from(uniqueRows.values()).sort((a, b) =>
-      this.childName(a.child).localeCompare(this.childName(b.child))
+      this.childName(a.child).localeCompare(this.childName(b.child)),
     );
   }
 
@@ -137,8 +158,9 @@ export class AttendanceComponent implements OnInit {
         row.child?.parent?.fullName,
         row.attendance?.pickupPerson,
         row.attendance?.notes,
-        this.attendanceStateLabel(row)
-      ].filter((value: any) => value !== null && value !== undefined)
+        this.attendanceStateLabel(row),
+      ]
+        .filter((value: any) => value !== null && value !== undefined)
         .join(' ')
         .toLowerCase();
 
@@ -151,14 +173,15 @@ export class AttendanceComponent implements OnInit {
   }
 
   get childrenInCare(): number {
-    return this.classroomChildren.filter((row: AttendanceRosterRow) =>
-      !!row.attendance?.checkInTime && !row.attendance?.checkOutTime
+    return this.classroomChildren.filter(
+      (row: AttendanceRosterRow) =>
+        !!row.attendance?.checkInTime && !row.attendance?.checkOutTime,
     ).length;
   }
 
   get childrenPickedUp(): number {
-    return this.classroomChildren.filter((row: AttendanceRosterRow) =>
-      !!row.attendance?.checkOutTime
+    return this.classroomChildren.filter(
+      (row: AttendanceRosterRow) => !!row.attendance?.checkOutTime,
     ).length;
   }
 
@@ -176,8 +199,13 @@ export class AttendanceComponent implements OnInit {
     if (!this.currentStaffProfile) {
       return 'Your login could not be matched to a Staff profile. Link your app user to a staff profile before recording arrival or pickup, so attendance is attributed correctly.';
     }
-    return 'Attendance actions will be recorded under ' +
-      (this.currentStaffProfile.fullName || this.currentStaffProfile.staffCode || 'your staff profile') + '.';
+    return (
+      'Attendance actions will be recorded under ' +
+      (this.currentStaffProfile.fullName ||
+        this.currentStaffProfile.staffCode ||
+        'your staff profile') +
+      '.'
+    );
   }
 
   GetAllClassroomList(): void {
@@ -194,8 +222,11 @@ export class AttendanceComponent implements OnInit {
         this.classrooms = [];
         this.classroomsLoading = false;
         this.updateRosterLoading();
-        this.showMessage('Could not load classrooms. Please refresh and try again.', true);
-      }
+        this.showMessage(
+          'Could not load classrooms. Please refresh and try again.',
+          true,
+        );
+      },
     });
   }
 
@@ -212,8 +243,11 @@ export class AttendanceComponent implements OnInit {
         this.enrollments = [];
         this.enrollmentsLoading = false;
         this.updateRosterLoading();
-        this.showMessage('Could not load current enrollments. The classroom roster is unavailable.', true);
-      }
+        this.showMessage(
+          'Could not load current enrollments. The classroom roster is unavailable.',
+          true,
+        );
+      },
     });
   }
 
@@ -230,8 +264,11 @@ export class AttendanceComponent implements OnInit {
         this.attendances = [];
         this.attendanceLoading = false;
         this.updateRosterLoading();
-        this.showMessage('Could not load attendance records. Please refresh and try again.', true);
-      }
+        this.showMessage(
+          'Could not load attendance records. Please refresh and try again.',
+          true,
+        );
+      },
     });
   }
 
@@ -248,7 +285,7 @@ export class AttendanceComponent implements OnInit {
         this.allStaff = [];
         this.currentStaffProfile = null;
         this.staffLoading = false;
-      }
+      },
     });
   }
 
@@ -259,7 +296,7 @@ export class AttendanceComponent implements OnInit {
       },
       error: () => {
         this.allStatus = [];
-      }
+      },
     });
   }
 
@@ -272,6 +309,13 @@ export class AttendanceComponent implements OnInit {
   }
 
   CheckIn(row: AttendanceRosterRow): void {
+    if (!this.canCreate) {
+      this.showMessage(
+        'You do not have permission to record attendance.',
+        true,
+      );
+      return;
+    }
     if (!this.ensureTodayAction()) {
       return;
     }
@@ -283,7 +327,10 @@ export class AttendanceComponent implements OnInit {
     const existing = this.findAttendanceForChild(childId);
 
     if (existing?.checkOutTime) {
-      this.showMessage('This child already has a check-out record for the selected date.', true);
+      this.showMessage(
+        'This child already has a check-out record for the selected date.',
+        true,
+      );
       this.GetAllAttendances();
       return;
     }
@@ -293,9 +340,13 @@ export class AttendanceComponent implements OnInit {
       return;
     }
 
-    const presentStatusId = this.findStatusId('Present') ?? this.findStatusId('Active');
+    const presentStatusId =
+      this.findStatusId('Present') ?? this.findStatusId('Active');
     if (presentStatusId === null) {
-      this.showMessage('Please add a Present status in Status Management before recording attendance.', true);
+      this.showMessage(
+        'Please add a Present status in Status Management before recording attendance.',
+        true,
+      );
       return;
     }
 
@@ -311,59 +362,78 @@ export class AttendanceComponent implements OnInit {
       notes: existing?.notes || '',
       child: childId,
       classroom: this.selectedClassroomId,
-      status: presentStatusId
+      status: presentStatusId,
     };
 
-    const type = existing?.id === undefined || existing?.id === null ? 'Add' : 'Update';
+    const type =
+      existing?.id === undefined || existing?.id === null ? 'Add' : 'Update';
     this.attendanceService.createAttendance(payload, type).subscribe({
       next: () => {
-        this.showMessage(this.childName(row.child) + ' checked in at ' + this.formatTime(payload.checkInTime) + '.');
+        this.showMessage(
+          this.childName(row.child) +
+            ' checked in at ' +
+            this.formatTime(payload.checkInTime) +
+            '.',
+        );
         this.GetAllAttendances();
       },
-     error: (error: any): void => {
-  console.error('CHECK-IN HTTP STATUS:', error?.status);
+      error: (error: any): void => {
+        console.error('CHECK-IN HTTP STATUS:', error?.status);
 
-  console.error(
-    'CHECK-IN RESPONSE:',
-    JSON.stringify(error?.error, null, 2)
-  );
+        console.error(
+          'CHECK-IN RESPONSE:',
+          JSON.stringify(error?.error, null, 2),
+        );
 
-  console.error(
-    'CHECK-IN PAYLOAD:',
-    JSON.stringify(payload, null, 2)
-  );
+        console.error('CHECK-IN PAYLOAD:', JSON.stringify(payload, null, 2));
 
-  this.showMessage(
-    this.getAttendanceRequestError('Check-in', error),
-    true
-  );
-}
+        this.showMessage(
+          this.getAttendanceRequestError('Check-in', error),
+          true,
+        );
+      },
     });
   }
 
   MarkAbsent(row: AttendanceRosterRow): void {
+    if (!this.canCreate) {
+      this.showMessage(
+        'You do not have permission to record attendance.',
+        true,
+      );
+      return;
+    }
     if (!this.ensureTodayAction() || !this.ensureCurrentStaff()) {
       return;
     }
 
     const existing = this.findAttendanceForChild(row.child.id);
     if (existing?.checkInTime || existing?.checkOutTime) {
-      this.showMessage('This child already has arrival or departure times, so they cannot be marked absent.', true);
+      this.showMessage(
+        'This child already has arrival or departure times, so they cannot be marked absent.',
+        true,
+      );
       return;
     }
 
     const absentStatusId = this.findStatusId('Absent');
     if (absentStatusId === null) {
-      this.showMessage('Please add an Absent status in Status Management before marking absences.', true);
+      this.showMessage(
+        'Please add an Absent status in Status Management before marking absences.',
+        true,
+      );
       return;
     }
 
     swal({
       title: 'Mark child absent?',
-      text: 'This records the child as absent for ' + this.formatDate(this.selectedDate) + '. You can still check them in later if they arrive.',
+      text:
+        'This records the child as absent for ' +
+        this.formatDate(this.selectedDate) +
+        '. You can still check them in later if they arrive.',
       icon: 'warning',
       buttons: ['Cancel', 'Mark Absent'],
-      dangerMode: true
+      dangerMode: true,
     }).then((confirmed: any) => {
       if (!confirmed) {
         return;
@@ -381,43 +451,58 @@ export class AttendanceComponent implements OnInit {
         notes: existing?.notes || '',
         child: row.child.id,
         classroom: this.selectedClassroomId,
-        status: absentStatusId
+        status: absentStatusId,
       };
 
-      const type = existing?.id === undefined || existing?.id === null ? 'Add' : 'Update';
+      const type =
+        existing?.id === undefined || existing?.id === null ? 'Add' : 'Update';
       this.attendanceService.createAttendance(payload, type).subscribe({
         next: () => {
           this.showMessage(this.childName(row.child) + ' marked absent.');
           this.GetAllAttendances();
         },
-       error: (error: any): void => {
-  console.error('MARK ABSENT HTTP STATUS:', error?.status);
+        error: (error: any): void => {
+          console.error('MARK ABSENT HTTP STATUS:', error?.status);
 
-  console.error(
-    'MARK ABSENT RESPONSE:',
-    JSON.stringify(error?.error, null, 2)
-  );
+          console.error(
+            'MARK ABSENT RESPONSE:',
+            JSON.stringify(error?.error, null, 2),
+          );
 
-  console.error(
-    'MARK ABSENT PAYLOAD:',
-    JSON.stringify(payload, null, 2)
-  );
+          console.error(
+            'MARK ABSENT PAYLOAD:',
+            JSON.stringify(payload, null, 2),
+          );
 
-  this.showMessage(
-    this.getAttendanceRequestError('Mark absent', error),
-    true
-  );
-}
+          this.showMessage(
+            this.getAttendanceRequestError('Mark absent', error),
+            true,
+          );
+        },
       });
     });
   }
 
   OpenCheckOut(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     if (!this.ensureTodayAction() || !this.ensureCurrentStaff()) {
       return;
     }
-    if (!row.attendance?.id || !row.attendance.checkInTime || row.attendance.checkOutTime) {
-      this.showMessage('Only a child currently checked in can be checked out.', true);
+    if (
+      !row.attendance?.id ||
+      !row.attendance.checkInTime ||
+      row.attendance.checkOutTime
+    ) {
+      this.showMessage(
+        'Only a child currently checked in can be checked out.',
+        true,
+      );
       return;
     }
 
@@ -438,24 +523,40 @@ export class AttendanceComponent implements OnInit {
   }
 
   ConfirmCheckOut(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     if (!this.ensureTodayAction() || !this.ensureCurrentStaff()) {
       return;
     }
 
     const existing = this.findAttendanceForChild(row.child.id);
     if (!existing?.id || !existing.checkInTime || existing.checkOutTime) {
-      this.showMessage('This attendance record is no longer available for check-out. Refresh the page.', true);
+      this.showMessage(
+        'This attendance record is no longer available for check-out. Refresh the page.',
+        true,
+      );
       this.CancelCheckOut();
       return;
     }
 
     const pickupPerson = this.pickupPersonDraft.trim();
     if (!pickupPerson) {
-      this.showMessage('Enter the name of the person collecting the child.', true);
+      this.showMessage(
+        'Enter the name of the person collecting the child.',
+        true,
+      );
       return;
     }
     if (!this.pickupVerified) {
-      this.showMessage('Confirm that the pickup person’s identity and authorization have been checked.', true);
+      this.showMessage(
+        'Confirm that the pickup person’s identity and authorization have been checked.',
+        true,
+      );
       return;
     }
 
@@ -471,22 +572,41 @@ export class AttendanceComponent implements OnInit {
       notes: this.checkoutNotesDraft.trim(),
       child: row.child.id,
       classroom: this.selectedClassroomId,
-      status: leftStatusId ?? this.relationId(existing.status)
+      status: leftStatusId ?? this.relationId(existing.status),
     };
 
     this.attendanceService.createAttendance(payload, 'Update').subscribe({
       next: () => {
-        this.showMessage(this.childName(row.child) + ' checked out. Pickup recorded: ' + pickupPerson + '.');
+        this.showMessage(
+          this.childName(row.child) +
+            ' checked out. Pickup recorded: ' +
+            pickupPerson +
+            '.',
+        );
         this.CancelCheckOut();
         this.GetAllAttendances();
       },
-      error: () => this.showMessage('Check-out failed. Please verify the record and try again.', true)
+      error: () =>
+        this.showMessage(
+          'Check-out failed. Please verify the record and try again.',
+          true,
+        ),
     });
   }
 
   OpenNotes(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     if (!row.attendance?.id) {
-      this.showMessage('Notes can be saved after an attendance record exists.', true);
+      this.showMessage(
+        'Notes can be saved after an attendance record exists.',
+        true,
+      );
       return;
     }
     this.notesChildId = row.child.id;
@@ -502,22 +622,33 @@ export class AttendanceComponent implements OnInit {
   }
 
   SaveNotes(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     const existing = this.findAttendanceForChild(row.child.id);
     if (!existing?.id) {
-      this.showMessage('Attendance record not found. Refresh and try again.', true);
+      this.showMessage(
+        'Attendance record not found. Refresh and try again.',
+        true,
+      );
       this.CancelNotes();
       return;
     }
 
     const payload: AttendanceRepresentation = {
       ...existing,
-      attendanceDate: this.dateOnly(existing.attendanceDate) || this.selectedDate,
+      attendanceDate:
+        this.dateOnly(existing.attendanceDate) || this.selectedDate,
       child: this.relationId(existing.child),
       classroom: this.relationId(existing.classroom),
       checkedInBy: this.relationId(existing.checkedInBy),
       checkedOutBy: this.relationId(existing.checkedOutBy),
       status: this.relationId(existing.status),
-      notes: this.notesDraft.trim()
+      notes: this.notesDraft.trim(),
     };
 
     this.attendanceService.createAttendance(payload, 'Update').subscribe({
@@ -526,26 +657,46 @@ export class AttendanceComponent implements OnInit {
         this.CancelNotes();
         this.GetAllAttendances();
       },
-      error: () => this.showMessage('Could not save notes. Please try again.', true)
+      error: () =>
+        this.showMessage('Could not save notes. Please try again.', true),
     });
   }
 
   isCheckoutRow(row: AttendanceRosterRow): boolean {
-    return this.checkoutChildId !== null && String(this.checkoutChildId) === String(row.child?.id);
+    return (
+      this.checkoutChildId !== null &&
+      String(this.checkoutChildId) === String(row.child?.id)
+    );
   }
 
   isNotesRow(row: AttendanceRosterRow): boolean {
-    return this.notesChildId !== null && String(this.notesChildId) === String(row.child?.id);
+    return (
+      this.notesChildId !== null &&
+      String(this.notesChildId) === String(row.child?.id)
+    );
   }
 
   isEditingRow(row: AttendanceRosterRow): boolean {
-    return this.editingChildId !== null && String(this.editingChildId) === String(row.child?.id);
+    return (
+      this.editingChildId !== null &&
+      String(this.editingChildId) === String(row.child?.id)
+    );
   }
 
   OpenEditRecord(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     const record = this.findAttendanceForChild(row.child.id);
     if (!record?.id) {
-      this.showMessage('Attendance record not found. Refresh and try again.', true);
+      this.showMessage(
+        'Attendance record not found. Refresh and try again.',
+        true,
+      );
       return;
     }
 
@@ -561,7 +712,7 @@ export class AttendanceComponent implements OnInit {
       checkedOutBy: this.relationId(record.checkedOutBy),
       child: this.relationId(record.child),
       classroom: this.relationId(record.classroom),
-      status: this.relationId(record.status)
+      status: this.relationId(record.status),
     };
     this.actionMessage = '';
   }
@@ -572,9 +723,19 @@ export class AttendanceComponent implements OnInit {
   }
 
   SaveEditedRecord(row: AttendanceRosterRow): void {
+    if (!this.canUpdate) {
+      this.showMessage(
+        'You do not have permission to update attendance.',
+        true,
+      );
+      return;
+    }
     const existing = this.findAttendanceForChild(row.child.id);
     if (!existing?.id) {
-      this.showMessage('Attendance record not found. Refresh and try again.', true);
+      this.showMessage(
+        'Attendance record not found. Refresh and try again.',
+        true,
+      );
       this.CancelEditRecord();
       return;
     }
@@ -583,17 +744,33 @@ export class AttendanceComponent implements OnInit {
       this.showMessage('Attendance date is required.', true);
       return;
     }
-    if (this.editAttendanceDraft.checkOutTime && !this.editAttendanceDraft.checkInTime) {
+    if (
+      this.editAttendanceDraft.checkOutTime &&
+      !this.editAttendanceDraft.checkInTime
+    ) {
       this.showMessage('A check-out time requires a check-in time.', true);
       return;
     }
-    if (this.editAttendanceDraft.checkInTime && this.editAttendanceDraft.checkOutTime &&
-        new Date(this.editAttendanceDraft.checkOutTime).getTime() < new Date(this.editAttendanceDraft.checkInTime).getTime()) {
-      this.showMessage('Check-out time cannot be earlier than check-in time.', true);
+    if (
+      this.editAttendanceDraft.checkInTime &&
+      this.editAttendanceDraft.checkOutTime &&
+      new Date(this.editAttendanceDraft.checkOutTime).getTime() <
+        new Date(this.editAttendanceDraft.checkInTime).getTime()
+    ) {
+      this.showMessage(
+        'Check-out time cannot be earlier than check-in time.',
+        true,
+      );
       return;
     }
-    if (this.editAttendanceDraft.checkOutTime && !String(this.editAttendanceDraft.pickupPerson || '').trim()) {
-      this.showMessage('Enter the pickup person for a completed check-out.', true);
+    if (
+      this.editAttendanceDraft.checkOutTime &&
+      !String(this.editAttendanceDraft.pickupPerson || '').trim()
+    ) {
+      this.showMessage(
+        'Enter the pickup person for a completed check-out.',
+        true,
+      );
       return;
     }
 
@@ -609,44 +786,73 @@ export class AttendanceComponent implements OnInit {
       notes: String(this.editAttendanceDraft.notes || '').trim(),
       child: this.relationId(existing.child),
       classroom: this.relationId(existing.classroom),
-      status: this.relationId(this.editAttendanceDraft.status) ?? this.relationId(existing.status)
+      status:
+        this.relationId(this.editAttendanceDraft.status) ??
+        this.relationId(existing.status),
     };
 
     this.attendanceService.createAttendance(payload, 'Update').subscribe({
       next: () => {
-        this.showMessage('Attendance record corrected for ' + this.childName(row.child) + '.');
+        this.showMessage(
+          'Attendance record corrected for ' + this.childName(row.child) + '.',
+        );
         this.CancelEditRecord();
         this.GetAllAttendances();
       },
-      error: () => this.showMessage('Could not update the attendance record. Please try again.', true)
+      error: () =>
+        this.showMessage(
+          'Could not update the attendance record. Please try again.',
+          true,
+        ),
     });
   }
 
   DeleteAttendanceRecord(row: AttendanceRosterRow): void {
+    if (!this.canDelete) {
+      this.showMessage(
+        'You do not have permission to delete attendance records.',
+        true,
+      );
+      return;
+    }
     const record = this.findAttendanceForChild(row.child.id);
-    if (!record?.id) { return; }
+    if (!record?.id) {
+      return;
+    }
 
     swal({
       title: 'Delete attendance record?',
-      text: 'This removes the attendance record for ' + this.childName(row.child) + ' on ' + this.formatDate(record.attendanceDate) + '.',
+      text:
+        'This removes the attendance record for ' +
+        this.childName(row.child) +
+        ' on ' +
+        this.formatDate(record.attendanceDate) +
+        '.',
       icon: 'warning',
       buttons: ['Cancel', 'Delete'],
-      dangerMode: true
+      dangerMode: true,
     }).then((confirmed: any) => {
-      if (!confirmed) { return; }
+      if (!confirmed) {
+        return;
+      }
       this.attendanceService.DeleteAttendanceById(record.id).subscribe({
         next: () => {
-          this.showMessage('Attendance record deleted for ' + this.childName(row.child) + '.');
+          this.showMessage(
+            'Attendance record deleted for ' + this.childName(row.child) + '.',
+          );
           this.CancelEditRecord();
           this.GetAllAttendances();
         },
-        error: () => this.showMessage('Could not delete the attendance record.', true)
+        error: () =>
+          this.showMessage('Could not delete the attendance record.', true),
       });
     });
   }
 
   private toDateTimeLocal(value: any): string {
-    if (!value) { return ''; }
+    if (!value) {
+      return '';
+    }
     return String(value).replace(' ', 'T').slice(0, 16);
   }
 
@@ -666,9 +872,15 @@ export class AttendanceComponent implements OnInit {
 
   attendanceStateClass(row: AttendanceRosterRow): string {
     const label = this.attendanceStateLabel(row);
-    if (label === 'Picked up') { return 'state-picked-up'; }
-    if (label === 'In daycare') { return 'state-in-care'; }
-    if (label === 'Absent') { return 'state-absent'; }
+    if (label === 'Picked up') {
+      return 'state-picked-up';
+    }
+    if (label === 'In daycare') {
+      return 'state-in-care';
+    }
+    if (label === 'Absent') {
+      return 'state-absent';
+    }
     return 'state-not-arrived';
   }
 
@@ -689,57 +901,92 @@ export class AttendanceComponent implements OnInit {
   }
 
   childName(child: any): string {
-    if (!child) { return 'Unknown child'; }
-    const name = [child.firstName, child.lastName].filter(Boolean).join(' ').trim();
-    return name || child.fullName || child.childCode || ('Child #' + child.id);
+    if (!child) {
+      return 'Unknown child';
+    }
+    const name = [child.firstName, child.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return name || child.fullName || child.childCode || 'Child #' + child.id;
   }
 
   childCode(child: any): string {
-    return child?.childCode || ('CH-' + child?.id);
+    return child?.childCode || 'CH-' + child?.id;
   }
 
   parentName(row: AttendanceRosterRow): string {
     const childParent = row.child?.parent;
     const enrollmentParent = row.enrollment?.parent;
-    const parent = childParent && typeof childParent === 'object'
-      ? childParent
-      : enrollmentParent;
-    if (!parent || typeof parent !== 'object') { return '—'; }
-    return parent.fullName || [parent.firstName, parent.lastName].filter(Boolean).join(' ') || '—';
+    const parent =
+      childParent && typeof childParent === 'object'
+        ? childParent
+        : enrollmentParent;
+    if (!parent || typeof parent !== 'object') {
+      return '—';
+    }
+    return (
+      parent.fullName ||
+      [parent.firstName, parent.lastName].filter(Boolean).join(' ') ||
+      '—'
+    );
   }
 
   childInitials(child: any): string {
     const name = this.childName(child).split(' ').filter(Boolean);
-    return name.slice(0, 2).map((part: string) => part.charAt(0).toUpperCase()).join('') || 'CH';
+    return (
+      name
+        .slice(0, 2)
+        .map((part: string) => part.charAt(0).toUpperCase())
+        .join('') || 'CH'
+    );
   }
 
   staffName(value: any): string {
-    if (!value) { return '—'; }
+    if (!value) {
+      return '—';
+    }
     if (typeof value === 'object') {
       return value.fullName || value.name || value.staffCode || '—';
     }
-    const staff = this.allStaff.find((item: any) => String(item.id) === String(value));
+    const staff = this.allStaff.find(
+      (item: any) => String(item.id) === String(value),
+    );
     return staff?.fullName || staff?.staffCode || '—';
   }
 
   formatDate(value: any): string {
     const dateText = this.dateOnly(value);
-    if (!dateText) { return '—'; }
+    if (!dateText) {
+      return '—';
+    }
     const parsed = new Date(dateText + 'T00:00:00');
-    return Number.isNaN(parsed.getTime()) ? dateText : parsed.toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
+    return Number.isNaN(parsed.getTime())
+      ? dateText
+      : parsed.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
   }
 
   formatTime(value: any): string {
-    if (!value) { return '—'; }
+    if (!value) {
+      return '—';
+    }
     const textValue = String(value);
-    const timePart = textValue.includes('T') ? textValue.split('T')[1] : textValue;
+    const timePart = textValue.includes('T')
+      ? textValue.split('T')[1]
+      : textValue;
     const hourMinute = timePart.slice(0, 5);
     const parts = hourMinute.split(':');
-    if (parts.length !== 2) { return hourMinute || '—'; }
+    if (parts.length !== 2) {
+      return hourMinute || '—';
+    }
     const hour = Number(parts[0]);
-    if (Number.isNaN(hour)) { return hourMinute; }
+    if (Number.isNaN(hour)) {
+      return hourMinute;
+    }
     const period = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return displayHour + ':' + parts[1] + ' ' + period;
@@ -762,33 +1009,48 @@ export class AttendanceComponent implements OnInit {
   }
 
   private updateRosterLoading(): void {
-    this.loading = this.classroomsLoading || this.enrollmentsLoading || this.attendanceLoading;
+    this.loading =
+      this.classroomsLoading ||
+      this.enrollmentsLoading ||
+      this.attendanceLoading;
   }
 
-  private findAttendanceForChild(childId: any): AttendanceRepresentation | null {
+  private findAttendanceForChild(
+    childId: any,
+  ): AttendanceRepresentation | null {
     const date = this.selectedDate || this.localDate(new Date());
-    const matchingRecords = this.attendances.filter((record: any) =>
-      String(this.relationId(record.child)) === String(childId) &&
-      this.dateOnly(record.attendanceDate) === date
+    const matchingRecords = this.attendances.filter(
+      (record: any) =>
+        String(this.relationId(record.child)) === String(childId) &&
+        this.dateOnly(record.attendanceDate) === date,
     );
 
-    const inSelectedRoom = matchingRecords.find((record: any) =>
-      String(this.relationId(record.classroom)) === String(this.selectedClassroomId)
+    const inSelectedRoom = matchingRecords.find(
+      (record: any) =>
+        String(this.relationId(record.classroom)) ===
+        String(this.selectedClassroomId),
     );
     return inSelectedRoom || matchingRecords[0] || null;
   }
 
   private isEnrollmentCurrent(enrollment: any): boolean {
     const status = this.statusName(enrollment.status).trim().toLowerCase();
-    if (status && !['active', 'approved', 'enrolled', 'current'].includes(status)) {
+    if (
+      status &&
+      !['active', 'approved', 'enrolled', 'current'].includes(status)
+    ) {
       return false;
     }
 
     const date = this.selectedDate;
     const startDate = this.dateOnly(enrollment.startDate);
     const endDate = this.dateOnly(enrollment.endDate);
-    if (startDate && startDate > date) { return false; }
-    if (endDate && endDate < date) { return false; }
+    if (startDate && startDate > date) {
+      return false;
+    }
+    if (endDate && endDate < date) {
+      return false;
+    }
     return true;
   }
 
@@ -796,19 +1058,26 @@ export class AttendanceComponent implements OnInit {
     if (value && typeof value === 'object') {
       return value.name || '';
     }
-    const found = this.allStatus.find((item: any) => String(item.id) === String(value));
+    const found = this.allStatus.find(
+      (item: any) => String(item.id) === String(value),
+    );
     return found?.name || '';
   }
 
   private findStatusId(name: string): any | null {
-    const found = this.allStatus.find((item: any) =>
-      String(item.name || '').trim().toLowerCase() === name.toLowerCase()
+    const found = this.allStatus.find(
+      (item: any) =>
+        String(item.name || '')
+          .trim()
+          .toLowerCase() === name.toLowerCase(),
     );
     return found?.id ?? null;
   }
 
   private relationId(value: any): any {
-    if (value === null || value === undefined || value === '') { return null; }
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
     return typeof value === 'object' ? (value.id ?? null) : value;
   }
 
@@ -828,41 +1097,66 @@ export class AttendanceComponent implements OnInit {
 
   private ensureTodayAction(): boolean {
     if (!this.isTodaySelected) {
-      this.showMessage('Check-in and check-out actions are available only for today. Select today to record a live attendance event.', true);
+      this.showMessage(
+        'Check-in and check-out actions are available only for today. Select today to record a live attendance event.',
+        true,
+      );
       return false;
     }
     return true;
   }
 
   private ensureCurrentStaff(): boolean {
-    if (this.currentStaffProfile?.id !== undefined && this.currentStaffProfile?.id !== null) {
+    if (
+      this.currentStaffProfile?.id !== undefined &&
+      this.currentStaffProfile?.id !== null
+    ) {
       return true;
     }
-    this.showMessage('Your logged-in account is not linked to a Staff profile. Please link the User and Staff records before recording attendance.', true);
+    this.showMessage(
+      'Your logged-in account is not linked to a Staff profile. Please link the User and Staff records before recording attendance.',
+      true,
+    );
     return false;
   }
 
   private defaultPickupPerson(row: AttendanceRosterRow): string {
     const child = row.child;
     const enrollmentParent = row.enrollment?.parent;
-    const parent = child?.parent && typeof child.parent === 'object'
-      ? child.parent
-      : enrollmentParent;
+    const parent =
+      child?.parent && typeof child.parent === 'object'
+        ? child.parent
+        : enrollmentParent;
 
-    if (!parent || typeof parent !== 'object') { return ''; }
-    return parent.fullName || [parent.firstName, parent.lastName].filter(Boolean).join(' ') || '';
+    if (!parent || typeof parent !== 'object') {
+      return '';
+    }
+    return (
+      parent.fullName ||
+      [parent.firstName, parent.lastName].filter(Boolean).join(' ') ||
+      ''
+    );
   }
 
   private trySelectStaffClassroom(): void {
-    if (this.selectedClassroomId !== null && this.selectedClassroomId !== '') { return; }
+    if (this.selectedClassroomId !== null && this.selectedClassroomId !== '') {
+      return;
+    }
     const classroomId = this.relationId(this.currentStaffProfile?.classroom);
-    if (classroomId !== null && this.availableClassrooms.some((room: any) => String(room.id) === String(classroomId))) {
+    if (
+      classroomId !== null &&
+      this.availableClassrooms.some(
+        (room: any) => String(room.id) === String(classroomId),
+      )
+    ) {
       this.selectedClassroomId = classroomId;
     }
   }
 
   private findCurrentStaffProfile(): any | null {
-    if (!this.currentUserClaims) { return null; }
+    if (!this.currentUserClaims) {
+      return null;
+    }
 
     const candidateValues = [
       this.currentUserClaims.userId,
@@ -874,24 +1168,31 @@ export class AttendanceComponent implements OnInit {
       this.currentUserClaims.user?.userId,
       this.currentUserClaims.user?.login,
       this.currentUserClaims.login,
-      this.currentUserClaims.username
-    ].filter((value: any) => value !== null && value !== undefined && String(value).trim() !== '');
+      this.currentUserClaims.username,
+    ].filter(
+      (value: any) =>
+        value !== null && value !== undefined && String(value).trim() !== '',
+    );
 
-    return this.allStaff.find((staff: any) => {
-      const linkedUser = staff.user;
-      const linkedUserId = this.relationId(linkedUser);
-      const linkedLogin = typeof linkedUser === 'object'
-        ? (linkedUser.login || linkedUser.username)
-        : null;
+    return (
+      this.allStaff.find((staff: any) => {
+        const linkedUser = staff.user;
+        const linkedUserId = this.relationId(linkedUser);
+        const linkedLogin =
+          typeof linkedUser === 'object'
+            ? linkedUser.login || linkedUser.username
+            : null;
 
-      return candidateValues.some((candidate: any) =>
-        String(candidate) === String(linkedUserId) ||
-        (!!linkedLogin && String(candidate).toLowerCase() === String(linkedLogin).toLowerCase())
-      );
-    }) || null;
+        return candidateValues.some(
+          (candidate: any) =>
+            String(candidate) === String(linkedUserId) ||
+            (!!linkedLogin &&
+              String(candidate).toLowerCase() ===
+                String(linkedLogin).toLowerCase()),
+        );
+      }) || null
+    );
   }
-
-
 
   private readCurrentUserClaims(): any | null {
     try {
@@ -901,7 +1202,9 @@ export class AttendanceComponent implements OnInit {
         for (let index = 0; index < store.length; index++) {
           const key = store.key(index) || '';
 
-          if (!/(token|jwt|auth|current.?user|user.?id|^user$|login)/i.test(key)) {
+          if (
+            !/(token|jwt|auth|current.?user|user.?id|^user$|login)/i.test(key)
+          ) {
             continue;
           }
 
@@ -925,22 +1228,30 @@ export class AttendanceComponent implements OnInit {
                 return parsed;
               }
 
-              ['token', 'accessToken', 'access_token', 'jwt', 'authToken', 'idToken']
-                .forEach((field: string) => {
-                  if (typeof parsed[field] === 'string') {
-                    tokenCandidates.push(parsed[field]);
-                  }
-                });
+              [
+                'token',
+                'accessToken',
+                'access_token',
+                'jwt',
+                'authToken',
+                'idToken',
+              ].forEach((field: string) => {
+                if (typeof parsed[field] === 'string') {
+                  tokenCandidates.push(parsed[field]);
+                }
+              });
 
-              if (parsed.user && typeof parsed.user === 'object' && parsed.user.id !== undefined) {
+              if (
+                parsed.user &&
+                typeof parsed.user === 'object' &&
+                parsed.user.id !== undefined
+              ) {
                 return { ...parsed, ...parsed.user, user: parsed.user };
               }
             } else if (/(user.?id)/i.test(key) && String(parsed).trim()) {
               return { userId: parsed };
             }
-          } catch (_error) {
-           
-          }
+          } catch (_error) {}
 
           for (const candidate of tokenCandidates) {
             const token = candidate.replace(/^Bearer\s+/i, '').trim();
@@ -952,84 +1263,79 @@ export class AttendanceComponent implements OnInit {
 
             try {
               const base64 = sections[1].replace(/-/g, '+').replace(/_/g, '/');
-              const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+              const padded = base64.padEnd(
+                Math.ceil(base64.length / 4) * 4,
+                '=',
+              );
 
               const claims = JSON.parse(
                 decodeURIComponent(
-                  Array.prototype.map.call(atob(padded), (character: string) =>
-                    '%' + ('00' + character.charCodeAt(0).toString(16)).slice(-2)
-                  ).join('')
-                )
+                  Array.prototype.map
+                    .call(
+                      atob(padded),
+                      (character: string) =>
+                        '%' +
+                        ('00' + character.charCodeAt(0).toString(16)).slice(-2),
+                    )
+                    .join(''),
+                ),
               );
 
               if (claims && typeof claims === 'object') {
                 return claims;
               }
-            } catch (_error) {
-            
-            }
+            } catch (_error) {}
           }
         }
       }
-    } catch (_error) {
-    
-    }
+    } catch (_error) {}
 
     return null;
   }
 
-  private getAttendanceRequestError(
-  action: string,
-  error: any
-): string {
-  const status = error?.status;
-  const body = error?.error;
+  private getAttendanceRequestError(action: string, error: any): string {
+    const status = error?.status;
+    const body = error?.error;
 
-  if (status === 0) {
-    return `${action} failed. The API could not be reached. Check that Spring Boot is running at http://localhost:8010.`;
-  }
-
-  let details = '';
-
-  if (typeof body === 'string') {
-    details = body;
-  } else if (body && typeof body === 'object') {
-    details =
-      body.message ||
-      body.error ||
-      body.detail ||
-      body.title ||
-      '';
-
-    if (!details && body.errors) {
-      details = JSON.stringify(body.errors);
+    if (status === 0) {
+      return `${action} failed. The API could not be reached. Check that Spring Boot is running at http://localhost:8010.`;
     }
 
-    if (!details && Object.keys(body).length > 0) {
-      details = JSON.stringify(body);
+    let details = '';
+
+    if (typeof body === 'string') {
+      details = body;
+    } else if (body && typeof body === 'object') {
+      details = body.message || body.error || body.detail || body.title || '';
+
+      if (!details && body.errors) {
+        details = JSON.stringify(body.errors);
+      }
+
+      if (!details && Object.keys(body).length > 0) {
+        details = JSON.stringify(body);
+      }
     }
-  }
 
-  if (status === 400) {
-    return `${action} failed (HTTP 400). Check the submitted fields and relationships. ${details}`;
-  }
+    if (status === 400) {
+      return `${action} failed (HTTP 400). Check the submitted fields and relationships. ${details}`;
+    }
 
-  if (status === 401 || status === 403) {
-    return `${action} failed (HTTP ${status}). Your login may not have permission to perform this operation. ${details}`;
-  }
+    if (status === 401 || status === 403) {
+      return `${action} failed (HTTP ${status}). Your login may not have permission to perform this operation. ${details}`;
+    }
 
-  if (status === 404) {
-    return `${action} failed (HTTP 404). Check the attendance API endpoint. ${details}`;
-  }
+    if (status === 404) {
+      return `${action} failed (HTTP 404). Check the attendance API endpoint. ${details}`;
+    }
 
-  return `${action} failed (HTTP ${status ?? 'unknown'}). ${
-    details || error?.message || 'No additional error details were returned.'
-  }`;
-}
+    return `${action} failed (HTTP ${status ?? 'unknown'}). ${
+      details || error?.message || 'No additional error details were returned.'
+    }`;
+  }
 
   private showMessage(message: string, isError = false): void {
     this.actionMessage = message;
     this.actionMessageIsError = isError;
   }
 }
-

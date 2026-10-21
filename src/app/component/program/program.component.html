@@ -195,10 +195,7 @@
                 </div>
               </div>
 
-              <div
-                class="form-actions"
-                *ngIf="canCreate || (isEditProgram && canUpdate)"
-              >
+              <div class="form-actions">
                 <button
                   type="button"
                   class="btn clear-btn"
@@ -209,6 +206,7 @@
                 </button>
 
                 <button
+                  *ngIf="isEditProgram ? canUpdate : canCreate"
                   type="submit"
                   class="btn register-btn"
                   [disabled]="
@@ -358,7 +356,7 @@
 
     <div class="row mt-4">
       <div class="col-12">
-        <div class="card program-table-card">
+        <div class="card program-table-card" *ngIf="canView">
           <div class="table-header">
             <div class="header-left">
               <div class="header-icon">
@@ -476,6 +474,7 @@
                         <input
                           type="checkbox"
                           [checked]="isProgramActive(program)"
+                          [disabled]="!canUpdate"
                           (change)="onStatusToggle(program, $event)"
                           (click)="$event.stopPropagation()"
                         />
@@ -492,7 +491,7 @@
                       </span>
 
                       <button
-                        *ngIf="program.statusChanged"
+                        *ngIf="canUpdate && program.statusChanged"
                         type="button"
                         class="status-save-btn"
                         title="Save Status"

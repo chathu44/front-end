@@ -25,6 +25,7 @@ import { ClassroomComponent } from './component/classroom/classroom.component';
 import { ProgramComponent } from './component/program/program.component';
 import { EnrollmentComponent } from './component/enrollment/enrollment.component';
 import { AttendanceComponent } from './component/attendance/attendance.component';
+import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
 
 @NgModule({
   declarations: [
@@ -44,7 +45,8 @@ import { AttendanceComponent } from './component/attendance/attendance.component
     ClassroomComponent,
     ProgramComponent,
     EnrollmentComponent,
-    AttendanceComponent
+    AttendanceComponent,
+    MealPlanComponent
   ],
   imports: [
     BrowserModule,

@@ -17,6 +17,7 @@ import { ClassroomComponent } from './component/classroom/classroom.component';
 import { ProgramComponent } from './component/program/program.component';
 import { EnrollmentComponent } from './component/enrollment/enrollment.component';
 import { AttendanceComponent } from './component/attendance/attendance.component';
+import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -38,6 +39,8 @@ const routes: Routes = [
   { path: 'program', component: ProgramComponent, canActivate: [AuthGuard] },
   { path: 'enrollment', component: EnrollmentComponent, canActivate: [AuthGuard] },
   { path: 'attendance', component: AttendanceComponent, canActivate: [AuthGuard] },
+  { path: 'meal-plan', component: MealPlanComponent, canActivate: [AuthGuard] },
+  { path: 'meal-record', redirectTo: 'meal-plan', pathMatch: 'full' },
 
   { path: '**', redirectTo: 'login' }
 ];

@@ -6,7 +6,7 @@ import { FormBuilder } from '@angular/forms';
 import swal from 'sweetalert';
 import {
   AuthIds,
-  PermissionHelperService
+  PermissionHelperService,
 } from '../services/permission-helper.service';
 
 @Component({
@@ -23,6 +23,7 @@ export class ClassroomComponent implements OnInit {
   type = '';
   isEditClassroom = false;
   dtDynamicVerticalScrollExample: any;
+  canView = false;
   canCreate = false;
   canUpdate = false;
   canDelete = false;
@@ -31,43 +32,37 @@ export class ClassroomComponent implements OnInit {
     private classroomService: ClassroomService,
     private statusService: StatusService,
     private permissionHelper: PermissionHelperService,
-    public fb: FormBuilder
+    public fb: FormBuilder,
   ) {}
 
-  // ngOnInit(): void {
-  //   this.canCreate = this.permissionHelper.has(AuthIds.CLASSROOM_CREATE);
-  //   this.canUpdate = this.permissionHelper.has(AuthIds.CLASSROOM_UPDATE);
-  //   this.canDelete = this.permissionHelper.has(AuthIds.CLASSROOM_DELETE);
-
-  //   this.GetAllStatus();
-  //   this.GetAllClassrooms();
-  // }
-
-  
-ngOnInit(): void {
-  const hasClassroomCrudPermission = this.permissionHelper.hasAny(
-    AuthIds.CLASSROOM_CREATE,
-    AuthIds.CLASSROOM_UPDATE,
-    AuthIds.CLASSROOM_DELETE
-  );
-
-  if (hasClassroomCrudPermission) {
+  ngOnInit(): void {
+    this.canView = this.permissionHelper.has(AuthIds.CLASSROOM_VIEW);
     this.canCreate = this.permissionHelper.has(AuthIds.CLASSROOM_CREATE);
     this.canUpdate = this.permissionHelper.has(AuthIds.CLASSROOM_UPDATE);
     this.canDelete = this.permissionHelper.has(AuthIds.CLASSROOM_DELETE);
-  } else {
-    // Frontend testing fallback when no classroom CRUD permissions are assigned.
-    this.canCreate = true;
-    this.canUpdate = true;
-    this.canDelete = true;
+
+    console.log('Classroom permissions:', {
+      view: this.canView,
+      create: this.canCreate,
+      update: this.canUpdate,
+      delete: this.canDelete,
+    });
+
+    this.GetAllStatus();
+    this.GetAllClassrooms();
   }
 
-  this.GetAllStatus();
-  this.GetAllClassrooms();
-}
-
-
   SaveClassroom(): void {
+    if (this.isEditClassroom ? !this.canUpdate : !this.canCreate) {
+      swal(
+        'Permission denied',
+        this.isEditClassroom
+          ? 'You do not have permission to update classrooms.'
+          : 'You do not have permission to create classrooms.',
+        'warning',
+      );
+      return;
+    }
     this.type = this.isEditClassroom ? 'Update' : 'Add';
 
     const statusId = this.getStatusId(this.classroomObj.status);
@@ -79,7 +74,7 @@ ngOnInit(): void {
 
     const classroomToSave: ClassroomRepresentation = {
       ...this.classroomObj,
-      status: statusId
+      status: statusId,
     };
 
     const saveClassroom = (): void => {
@@ -92,7 +87,7 @@ ngOnInit(): void {
               this.type === 'Add'
                 ? 'Classroom has been added!'
                 : 'Classroom has been updated!',
-              'success'
+              'success',
             );
             this.GetAllClassrooms();
             this.ClearForm();
@@ -104,9 +99,9 @@ ngOnInit(): void {
               error?.error?.message ||
                 error?.error?.error ||
                 'Unable to save classroom. Please check the entered details.',
-              'error'
+              'error',
             );
-          }
+          },
         });
     };
 
@@ -115,7 +110,7 @@ ngOnInit(): void {
         title: 'Are you sure?',
         text: 'Do you want to add this classroom?',
         icon: 'warning',
-        dangerMode: true
+        dangerMode: true,
       }).then((confirmed) => {
         if (confirmed) {
           saveClassroom();
@@ -146,7 +141,7 @@ ngOnInit(): void {
 
         this.classroomObj = {
           ...record,
-          status: record.status?.id ?? record.status ?? null
+          status: record.status?.id ?? record.status ?? null,
         };
 
         this.statusValue = record.status?.name || 'Select Value';
@@ -157,7 +152,7 @@ ngOnInit(): void {
       error: (error: any): void => {
         console.error('Get classroom error:', error);
         swal('Error!', 'Unable to load classroom details.', 'error');
-      }
+      },
     });
   }
 
@@ -169,16 +164,24 @@ ngOnInit(): void {
       error: (error: any): void => {
         console.error('Get classrooms error:', error);
         swal('Error!', 'Unable to load classrooms.', 'error');
-      }
+      },
     });
   }
 
   DeleteById(ID: any): void {
+    if (!this.canDelete) {
+      swal(
+        'Permission denied',
+        'You do not have permission to delete classrooms.',
+        'warning',
+      );
+      return;
+    }
     swal({
       title: 'Are you sure?',
       text: 'Do you want to delete this classroom?',
       icon: 'warning',
-      dangerMode: true
+      dangerMode: true,
     }).then((confirmed) => {
       if (confirmed) {
         this.classroomService.DeleteClassroomById(ID).subscribe({
@@ -191,9 +194,9 @@ ngOnInit(): void {
             swal(
               'Error!',
               error?.error?.message || 'Unable to delete classroom.',
-              'error'
+              'error',
             );
-          }
+          },
         });
       }
     });
@@ -206,8 +209,7 @@ ngOnInit(): void {
 
         if (!this.isEditClassroom && !this.classroomObj.status) {
           const activeStatus = this.allStatus.find(
-            (status: any) =>
-              String(status.name).toLowerCase() === 'active'
+            (status: any) => String(status.name).toLowerCase() === 'active',
           );
 
           if (activeStatus) {
@@ -218,7 +220,7 @@ ngOnInit(): void {
       error: (error: any): void => {
         console.error('Get statuses error:', error);
         swal('Error!', 'Unable to load statuses.', 'error');
-      }
+      },
     });
   }
 
@@ -233,7 +235,7 @@ ngOnInit(): void {
     this.isEditClassroom = false;
 
     const activeStatus = this.allStatus.find(
-      (status: any) => String(status.name).toLowerCase() === 'active'
+      (status: any) => String(status.name).toLowerCase() === 'active',
     );
 
     if (activeStatus) {
@@ -243,168 +245,152 @@ ngOnInit(): void {
   }
 
   searchText: string = '';
-selectedClassroomId: any = null;
+  selectedClassroomId: any = null;
 
+  get filteredClassrooms(): any[] {
+    const search = this.searchText.trim().toLowerCase();
 
-get filteredClassrooms(): any[] {
-  const search = this.searchText.trim().toLowerCase();
+    return (this.classrooms || []).filter((classroom: any) => {
+      const name = String(classroom.roomName || '').toLowerCase();
+      const code = String(classroom.roomCode || '').toLowerCase();
+      const ageGroup = String(classroom.ageGroup || '').toLowerCase();
+      const floor = String(classroom.floor || '').toLowerCase();
 
-  return (this.classrooms || []).filter((classroom: any) => {
-    const name = String(classroom.roomName || '').toLowerCase();
-    const code = String(classroom.roomCode || '').toLowerCase();
-    const ageGroup = String(classroom.ageGroup || '').toLowerCase();
-    const floor = String(classroom.floor || '').toLowerCase();
-
-    return (
-      name.includes(search) ||
-      code.includes(search) ||
-      ageGroup.includes(search) ||
-      floor.includes(search)
-    );
-  });
-}
-
-
-
-SelectClassroomRow(classroom: any): void {
-  this.selectedClassroomId = classroom.id;
-
-  this.classroomObj = {
-    ...classroom,
-    status: this.getStatusId(classroom.status)
-  };
-
-  this.statusValue =
-    this.getStatusName(classroom.status) || 'Select Value';
-
-  this.isEditClassroom = true;
-}
-
-
-
-isClassroomActive(classroom: any): boolean {
-  const status = classroom._pendingStatus ?? classroom.status;
-
-  return (
-    this.normalizeStatusName(this.getStatusName(status)) === 'active'
-  );
-}
-
-onStatusToggle(classroom: any, event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const currentlyActive = this.isClassroomActive(classroom);
-
-  const requestedStatus = input.checked ? 'Active' : 'Inactive';
-  const selectedStatus = this.findStatusByName(requestedStatus);
-
-  if (!selectedStatus || selectedStatus.id == null) {
-    input.checked = currentlyActive;
-
-    swal(
-      'Status Not Available',
-      `${requestedStatus} status was not found in the status list returned by the API.`,
-      'warning'
-    );
-
-    return;
+      return (
+        name.includes(search) ||
+        code.includes(search) ||
+        ageGroup.includes(search) ||
+        floor.includes(search)
+      );
+    });
   }
 
-  classroom._pendingStatus = selectedStatus;
-  classroom.statusChanged = true;
-}
+  SelectClassroomRow(classroom: any): void {
+    this.selectedClassroomId = classroom.id;
 
-saveClassroomStatus(classroom: any): void {
-  const selectedStatus = classroom._pendingStatus;
+    this.classroomObj = {
+      ...classroom,
+      status: this.getStatusId(classroom.status),
+    };
 
-  if (!selectedStatus || selectedStatus.id == null) {
-    swal('Error!', 'Please select a valid status.', 'error');
-    return;
+    this.statusValue = this.getStatusName(classroom.status) || 'Select Value';
+
+    this.isEditClassroom = true;
   }
 
-  const payload: any = {
-    ...classroom,
-    status: selectedStatus.id
-  };
+  isClassroomActive(classroom: any): boolean {
+    const status = classroom._pendingStatus ?? classroom.status;
 
-  delete payload._pendingStatus;
-  delete payload.statusChanged;
+    return this.normalizeStatusName(this.getStatusName(status)) === 'active';
+  }
 
-  this.classroomService.createClassroom(payload, 'Update').subscribe({
-    next: (): void => {
-      classroom.status = selectedStatus;
+  onStatusToggle(classroom: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const currentlyActive = this.isClassroomActive(classroom);
 
-      delete classroom._pendingStatus;
-      delete classroom.statusChanged;
+    const requestedStatus = input.checked ? 'Active' : 'Inactive';
+    const selectedStatus = this.findStatusByName(requestedStatus);
+
+    if (!selectedStatus || selectedStatus.id == null) {
+      input.checked = currentlyActive;
 
       swal(
-        'Successful!',
-        'Classroom status has been updated!',
-        'success'
+        'Status Not Available',
+        `${requestedStatus} status was not found in the status list returned by the API.`,
+        'warning',
       );
 
-      this.GetAllClassrooms();
-    },
-
-    error: (error: any): void => {
-      console.error('Classroom status update error:', error);
-
-      delete classroom._pendingStatus;
-      delete classroom.statusChanged;
-
-      swal('Error!', 'Unable to update classroom status.', 'error');
-
-      this.GetAllClassrooms();
-    }
-  });
-}
-
-
-
-private normalizeStatusName(value: any): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '');
-}
-
-private findStatusByName(name: string): any {
-  const expectedName = this.normalizeStatusName(name);
-
-  return (this.allStatus || []).find((status: any) => {
-    const actualName =
-      status?.name ??
-      status?.statusName ??
-      status?.label ??
-      '';
-
-    return this.normalizeStatusName(actualName) === expectedName;
-  });
-}
-
-private getStatusName(status: any): string {
-  if (status && typeof status === 'object') {
-    const directName =
-      status.name ??
-      status.statusName ??
-      status.label;
-
-    if (directName) {
-      return String(directName);
+      return;
     }
 
-    status = status.id;
+    classroom._pendingStatus = selectedStatus;
+    classroom.statusChanged = true;
   }
 
-  const matchedStatus = (this.allStatus || []).find(
-    (item: any) => String(item.id) === String(status)
-  );
+  saveClassroomStatus(classroom: any): void {
+    if (!this.canUpdate) {
+      swal(
+        'Permission denied',
+        'You do not have permission to update classroom status.',
+        'warning',
+      );
+      return;
+    }
+    const selectedStatus = classroom._pendingStatus;
 
-  return String(
-    matchedStatus?.name ??
-    matchedStatus?.statusName ??
-    status ??
-    ''
-  );
-}
+    if (!selectedStatus || selectedStatus.id == null) {
+      swal('Error!', 'Please select a valid status.', 'error');
+      return;
+    }
 
+    const payload: any = {
+      ...classroom,
+      status: selectedStatus.id,
+    };
+
+    delete payload._pendingStatus;
+    delete payload.statusChanged;
+
+    this.classroomService.createClassroom(payload, 'Update').subscribe({
+      next: (): void => {
+        classroom.status = selectedStatus;
+
+        delete classroom._pendingStatus;
+        delete classroom.statusChanged;
+
+        swal('Successful!', 'Classroom status has been updated!', 'success');
+
+        this.GetAllClassrooms();
+      },
+
+      error: (error: any): void => {
+        console.error('Classroom status update error:', error);
+
+        delete classroom._pendingStatus;
+        delete classroom.statusChanged;
+
+        swal('Error!', 'Unable to update classroom status.', 'error');
+
+        this.GetAllClassrooms();
+      },
+    });
+  }
+
+  private normalizeStatusName(value: any): string {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
+  }
+
+  private findStatusByName(name: string): any {
+    const expectedName = this.normalizeStatusName(name);
+
+    return (this.allStatus || []).find((status: any) => {
+      const actualName =
+        status?.name ?? status?.statusName ?? status?.label ?? '';
+
+      return this.normalizeStatusName(actualName) === expectedName;
+    });
+  }
+
+  private getStatusName(status: any): string {
+    if (status && typeof status === 'object') {
+      const directName = status.name ?? status.statusName ?? status.label;
+
+      if (directName) {
+        return String(directName);
+      }
+
+      status = status.id;
+    }
+
+    const matchedStatus = (this.allStatus || []).find(
+      (item: any) => String(item.id) === String(status),
+    );
+
+    return String(
+      matchedStatus?.name ?? matchedStatus?.statusName ?? status ?? '',
+    );
+  }
 }

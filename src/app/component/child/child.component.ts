@@ -31,6 +31,8 @@ export class ChildComponent {
 
   isEditChild: boolean = false;
 
+  canView = false;
+
   canCreate = false;
 
   canUpdate = false;
@@ -57,16 +59,33 @@ export class ChildComponent {
   ngOnInit(): void {
     this.isEditChild = false;
 
-    this.canCreate = true;
-    this.canUpdate = true;
-    this.canDelete = true;
+    this.canView = this.permissionHelper.has(AuthIds.CHILD_VIEW);
+    this.canCreate = this.permissionHelper.has(AuthIds.CHILD_CREATE);
+    this.canUpdate = this.permissionHelper.has(AuthIds.CHILD_UPDATE);
+    this.canDelete = this.permissionHelper.has(AuthIds.CHILD_DELETE);
+
+    console.log('Child permissions:', {
+      view: this.canView,
+      create: this.canCreate,
+      update: this.canUpdate,
+      delete: this.canDelete,
+    });
 
     this.GetAllParents();
     this.GetAllStatus();
     this.GetAllChildren();
   }
-
   SaveChild(): void {
+    if (this.isEditChild ? !this.canUpdate : !this.canCreate) {
+      swal(
+        'Permission denied',
+        this.isEditChild
+          ? 'You do not have permission to update children.'
+          : 'You do not have permission to register children.',
+        'warning',
+      );
+      return;
+    }
     this.type = this.isEditChild === false ? 'Add' : 'Update';
 
     let statusId: any = this.childObj.status;
@@ -196,6 +215,14 @@ export class ChildComponent {
   }
 
   DeleteById(ID: any): void {
+    if (!this.canDelete) {
+      swal(
+        'Permission denied',
+        'You do not have permission to delete children.',
+        'warning',
+      );
+      return;
+    }
     swal({
       title: 'Are you sure',
       text: 'That you want to Delete this Child?',
@@ -330,22 +357,21 @@ export class ChildComponent {
     reader.readAsDataURL(file);
   }
 
-  
-getPhotoUrl(photoUrl: string | undefined): string {
-  if (!photoUrl) {
-    return '';
+  getPhotoUrl(photoUrl: string | undefined): string {
+    if (!photoUrl) {
+      return '';
+    }
+
+    const value = photoUrl.trim();
+
+    if (/^(https?:\/\/|data:image\/)/i.test(value)) {
+      return value;
+    }
+
+    return `http://localhost:8010${
+      value.startsWith('/') ? value : '/' + value
+    }`;
   }
-
-  const value = photoUrl.trim();
-
-  if (/^(https?:\/\/|data:image\/)/i.test(value)) {
-    return value;
-  }
-
-  return `http://localhost:8010${
-    value.startsWith('/') ? value : '/' + value
-  }`;
-}
 
   get filteredChildren(): any[] {
     if (!this.children) {
