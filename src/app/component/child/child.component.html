@@ -345,7 +345,7 @@
                     <div class="selected-file" *ngIf="selectedPhotoFile">
                       <i class="bi bi-check-circle-fill"></i>
 
-                     {{ selectedPhotoFile.name }}
+                      {{ selectedPhotoFile.name }}
                     </div>
                   </div>
 
@@ -369,21 +369,18 @@
                 </div>
               </div>
 
-              <div
-                class="form-actions"
-                *ngIf="canCreate || (isEditChild && canUpdate)"
-              >
+              <div class="form-actions">
                 <button
                   type="button"
                   class="btn clear-btn"
                   (click)="ClearForm()"
                 >
                   <i class="bi bi-arrow-counterclockwise me-1"></i>
-
                   Clear
                 </button>
 
                 <button
+                  *ngIf="isEditChild ? canUpdate : canCreate"
                   type="submit"
                   class="btn register-btn"
                   [disabled]="childForm.invalid"
@@ -393,8 +390,7 @@
                     [ngClass]="
                       isEditChild ? 'bi-check-circle' : 'bi-person-plus-fill'
                     "
-                  >
-                  </i>
+                  ></i>
 
                   {{ isEditChild ? "Update Child" : "Register Child" }}
                 </button>
@@ -530,7 +526,7 @@
 
     <div class="row mt-4">
       <div class="col-12">
-        <div class="card child-table-card">
+        <div class="card child-table-card" *ngIf="canView">
           <div class="table-header">
             <div class="header-left">
               <div class="header-icon">
@@ -674,6 +670,7 @@
                         <input
                           type="checkbox"
                           [checked]="isChildActive(child)"
+                          [disabled]="!canUpdate"
                           (change)="onStatusToggle(child, $event)"
                           (click)="$event.stopPropagation()"
                         />
@@ -690,7 +687,7 @@
                       </span>
 
                       <button
-                        *ngIf="child.statusChanged"
+                        *ngIf="canUpdate && child.statusChanged"
                         type="button"
                         class="status-save-btn"
                         title="Save Status"

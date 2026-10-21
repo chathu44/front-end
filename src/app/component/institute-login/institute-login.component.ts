@@ -45,10 +45,35 @@ export class InstituteLoginComponent implements OnInit {
           this.router.navigate(['/dashboard']);
         };
         if (user?.id) {
-          this.userService.getAuthIds(user.id).subscribe({ next: go, error: go });
-        } else {
-          go();
-        }
+  this.userService.getAuthIds(user.id).subscribe({
+    next: (ids) => {
+      console.log('Permissions received after login:', ids);
+
+      go();
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        this.toast.error(
+          'Login succeeded, but no permissions were returned. Check the user permission assignments.'
+        );
+      }
+    },
+
+    error: (err) => {
+      console.error('Failed to load permissions:', err);
+
+      this.userAuthService.setAuthIds([]);
+
+      this.toast.error(
+        `Permission loading failed. HTTP status: ${err.status || 'unknown'}. Check the Network tab.`
+      );
+
+      go();
+    }
+  });
+} else {
+  console.error('The login response does not contain a user ID.');
+  go();
+}
       },
       error: (err) => {
         this.loading = false;

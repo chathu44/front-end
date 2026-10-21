@@ -101,7 +101,7 @@
                     <option value="2-3 Years">2-3 Years</option>
 
                     <option value="3-5 Years">3-5 Years</option>
-                    
+
                     <option value="5+ Years">5+ Years</option>
                   </select>
                 </div>
@@ -170,10 +170,7 @@
                 </div>
               </div>
 
-              <div
-                class="form-actions"
-                *ngIf="canCreate || (isEditClassroom && canUpdate)"
-              >
+              <div class="form-actions">
                 <button
                   type="button"
                   class="btn clear-btn"
@@ -184,6 +181,7 @@
                 </button>
 
                 <button
+                  *ngIf="isEditClassroom ? canUpdate : canCreate"
                   type="submit"
                   class="btn register-btn"
                   [disabled]="classroomForm.invalid"
@@ -307,7 +305,7 @@
 
     <div class="row mt-4">
       <div class="col-12">
-        <div class="card classroom-table-card">
+        <div class="card classroom-table-card" *ngIf="canView">
           <div class="table-header">
             <div class="header-left">
               <div class="header-icon">
@@ -411,6 +409,7 @@
                         <input
                           type="checkbox"
                           [checked]="isClassroomActive(classroom)"
+                          [disabled]="!canUpdate"
                           (change)="onStatusToggle(classroom, $event)"
                           (click)="$event.stopPropagation()"
                         />
@@ -429,7 +428,7 @@
                       </span>
 
                       <button
-                        *ngIf="classroom.statusChanged"
+                        *ngIf="canUpdate && classroom.statusChanged"
                         type="button"
                         class="status-save-btn"
                         title="Save Status"
@@ -439,7 +438,6 @@
                         "
                       >
                         <i class="bi bi-check-lg"></i>
-
                         Save
                       </button>
                     </div>

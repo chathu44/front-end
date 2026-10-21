@@ -1,0 +1,553 @@
+<main class="meal-page container-fluid py-4">
+  <section class="meal-heading mb-4">
+    <div>
+      <div class="meal-eyebrow">DAYCARE MANAGEMENT</div>
+      <h1>Meal Management</h1>
+      <p class="text-muted mb-0">
+        Plan daily menus and record each child's meals in one place.
+      </p>
+    </div>
+    <div class="meal-heading-icon" aria-hidden="true">
+      <i class="bi bi-egg-fried"></i>
+    </div>
+  </section>
+
+  <section class="meal-stats row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="meal-stat-card">
+        <span class="meal-stat-icon plan-icon"
+          ><i class="bi bi-calendar-week"></i
+        ></span>
+        <div>
+          <span>Meal plans</span><strong>{{ mealPlans.length }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="meal-stat-card">
+        <span class="meal-stat-icon record-icon"
+          ><i class="bi bi-clipboard2-check"></i
+        ></span>
+        <div>
+          <span>Meal records</span><strong>{{ mealRecords.length }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="meal-stat-card">
+        <span class="meal-stat-icon child-icon"
+          ><i class="bi bi-people"></i
+        ></span>
+        <div>
+          <span>Registered children</span
+          ><strong>{{ allChildList.length }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="meal-tabs" role="tablist" aria-label="Meal management sections">
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="activeTab === 'plans'"
+      [class.active]="activeTab === 'plans'"
+      (click)="setTab('plans')"
+    >
+      <i class="bi bi-calendar2-week me-2"></i>Meal Plans
+      <span>{{ mealPlans.length }}</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [attr.aria-selected]="activeTab === 'records'"
+      [class.active]="activeTab === 'records'"
+      (click)="setTab('records')"
+    >
+      <i class="bi bi-journal-check me-2"></i>Meal Records
+      <span>{{ mealRecords.length }}</span>
+    </button>
+  </div>
+
+  <!-- MEAL PLAN TAB -->
+  <section *ngIf="activeTab === 'plans'" class="meal-panel">
+    <div class="panel-title-row">
+      <div>
+        <h2>
+          {{ isEditMealPlan ? "Update meal plan" : "Create a meal plan" }}
+        </h2>
+        <p>Choose a date and define the menu for the daycare.</p>
+      </div>
+      <span class="mode-tag" *ngIf="isEditMealPlan"
+        >Editing #{{ mealPlanObj.id }}</span
+      >
+    </div>
+
+    <form class="meal-form" (ngSubmit)="saveMealPlan()" #mealPlanForm="ngForm">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="planDate"
+            >Meal date <span class="required-star">*</span></label
+          >
+          <input
+            class="form-control"
+            type="date"
+            id="planDate"
+            name="planDate"
+            [(ngModel)]="mealPlanObj.mealDate"
+            required
+          />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="planType"
+            >Meal type <span class="required-star">*</span></label
+          >
+          <select
+            class="form-select"
+            id="planType"
+            name="planType"
+            [(ngModel)]="mealPlanObj.mealType"
+            required
+          >
+            <option value="Breakfast">Breakfast</option>
+            <option value="Morning Snack">Morning Snack</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Afternoon Snack">Afternoon Snack</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="planClassroom">Classroom</label>
+          <select
+            class="form-select"
+            id="planClassroom"
+            name="planClassroom"
+            [(ngModel)]="selectedClassroomId"
+          >
+            <option value="">All classrooms</option>
+            <option *ngFor="let room of allClassroomList" [value]="room.id">
+              {{
+                room.roomName || room.classroomName || "Classroom " + room.id
+              }}
+            </option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="menuItems"
+            >Menu items <span class="required-star">*</span></label
+          >
+          <textarea
+            class="form-control"
+            id="menuItems"
+            name="menuItems"
+            rows="3"
+            [(ngModel)]="mealPlanObj.menuItems"
+            placeholder="Example: rice, chicken, vegetables and fruit"
+            required
+          ></textarea>
+          <div class="form-hint">
+            Add the main meal and any sides or snacks in the menu description.
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button
+          *ngIf="isEditMealPlan ? canUpdate : canCreate"
+          class="btn btn-primary meal-primary-btn"
+          type="submit"
+          [disabled]="savingPlan || !mealPlanForm.valid"
+        >
+          <span
+            *ngIf="savingPlan"
+            class="spinner-border spinner-border-sm me-2"
+            aria-hidden="true"
+          ></span>
+          <i
+            *ngIf="!savingPlan"
+            class="bi me-1"
+            [ngClass]="isEditMealPlan ? 'bi-check2-circle' : 'bi-plus-circle'"
+          ></i>
+          {{
+            savingPlan
+              ? "Saving..."
+              : isEditMealPlan
+                ? "Update meal plan"
+                : "Save meal plan"
+          }}
+        </button>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="resetMealPlanForm()"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i
+          >{{ isEditMealPlan ? "Cancel edit" : "Clear form" }}
+        </button>
+        <small class="permission-note" *ngIf="!canCreate && !canUpdate"
+          >You do not have permission to create or update meal plans.</small
+        >
+      </div>
+    </form>
+
+    <div class="table-section" *ngIf="canView">
+      <div class="table-heading">
+        <div>
+          <h2>Meal plan list</h2>
+          <p>Review existing menus and make changes.</p>
+        </div>
+        <div class="search-box">
+          <i class="bi bi-search"></i
+          ><input
+            type="search"
+            aria-label="Search meal plans"
+            placeholder="Search meal plans..."
+            [(ngModel)]="searchText"
+            name="planSearch"
+          />
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle meal-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Meal</th>
+              <th>Menu</th>
+              <th>Classroom</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loadingPlans">
+              <td colspan="6" class="table-message">
+                <span class="spinner-border spinner-border-sm me-2"></span
+                >Loading meal plans...
+              </td>
+            </tr>
+            <tr *ngFor="let plan of filteredMealPlans">
+              <td>
+                <span class="id-chip">#{{ plan.id }}</span>
+              </td>
+              <td>{{ plan.mealDate | date: "mediumDate" }}</td>
+              <td>
+                <span class="meal-type-pill">{{
+                  plan.mealType || "Meal"
+                }}</span>
+              </td>
+              <td class="menu-cell">{{ plan.menuItems || "—" }}</td>
+              <td>{{ plan.classroom?.roomName || "All classrooms" }}</td>
+              <td class="text-end actions-cell">
+                <button
+                  *ngIf="canUpdate"
+                  type="button"
+                  class="btn btn-sm btn-light action-edit"
+                  title="Edit meal plan"
+                  aria-label="Edit meal plan"
+                  (click)="editMealPlan(plan)"
+                >
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button
+                  *ngIf="canDelete"
+                  type="button"
+                  class="btn btn-sm btn-light action-delete"
+                  title="Delete meal plan"
+                  aria-label="Delete meal plan"
+                  (click)="deleteMealPlan(plan.id)"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!loadingPlans && filteredMealPlans.length === 0">
+              <td colspan="6" class="table-message">
+                {{
+                  searchText
+                    ? "No meal plans match your search."
+                    : "No meal plans have been added yet."
+                }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEAL RECORD TAB -->
+  <section *ngIf="activeTab === 'records'" class="meal-panel">
+    <div class="panel-title-row">
+      <div>
+        <h2>
+          {{
+            isEditMealRecord ? "Update meal record" : "Record a child’s meal"
+          }}
+        </h2>
+        <p>Track the meal offered to a child and whether they ate it.</p>
+      </div>
+      <span class="mode-tag" *ngIf="isEditMealRecord"
+        >Editing #{{ mealRecordObj.id }}</span
+      >
+    </div>
+
+    <form
+      class="meal-form"
+      (ngSubmit)="saveMealRecord()"
+      #mealRecordForm="ngForm"
+    >
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="recordDate"
+            >Meal date <span class="required-star">*</span></label
+          >
+          <input
+            class="form-control"
+            type="date"
+            id="recordDate"
+            name="recordDate"
+            [(ngModel)]="mealRecordObj.mealDate"
+            required
+          />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="recordType"
+            >Meal type <span class="required-star">*</span></label
+          >
+          <select
+            class="form-select"
+            id="recordType"
+            name="recordType"
+            [(ngModel)]="mealRecordObj.mealType"
+            required
+          >
+            <option value="Breakfast">Breakfast</option>
+            <option value="Morning Snack">Morning Snack</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Afternoon Snack">Afternoon Snack</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="ateMeal">Did the child eat?</label>
+          <select
+            class="form-select"
+            id="ateMeal"
+            name="ateMeal"
+            [(ngModel)]="ateMealValue"
+          >
+            <option value="">Not recorded</option>
+            <option value="true">Yes, ate the meal</option>
+            <option value="false">No, did not eat</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="recordChild"
+            >Child <span class="required-star">*</span></label
+          >
+          <select
+            class="form-select"
+            id="recordChild"
+            name="recordChild"
+            [(ngModel)]="selectedChildId"
+            required
+          >
+            <option value="" disabled>Select a child</option>
+            <option *ngFor="let child of allChildList" [value]="child.id">
+              {{ childName(child)
+              }}{{ child.childCode ? " (" + child.childCode + ")" : "" }}
+            </option>
+          </select>
+          <div class="form-hint" *ngIf="allChildList.length === 0">
+            No children loaded. Check that the child API is available and
+            children are registered.
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="recordPlan"
+            >Related meal plan <span class="required-star">*</span></label
+          >
+          <select
+            class="form-select"
+            id="recordPlan"
+            name="recordPlan"
+            [(ngModel)]="selectedMealPlanId"
+            required
+          >
+            <option value="" disabled>Select a meal plan</option>
+            <option *ngFor="let plan of allMealPlanList" [value]="plan.id">
+              {{ mealPlanLabel(plan) }}
+            </option>
+          </select>
+          <div class="form-hint" *ngIf="allMealPlanList.length === 0">
+            Add a meal plan first using the Meal Plans tab.
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="recordNotes">Notes</label>
+          <textarea
+            class="form-control"
+            id="recordNotes"
+            name="recordNotes"
+            rows="3"
+            [(ngModel)]="mealRecordObj.notes"
+            placeholder="Example: ate half the portion, requested extra water, allergy observation..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button
+          *ngIf="isEditMealRecord ? canUpdate : canCreate"
+          class="btn btn-primary meal-primary-btn"
+          type="submit"
+          [disabled]="
+            savingRecord ||
+            (isEditMealRecord ? !canUpdate : !canCreate) ||
+            !mealRecordForm.valid ||
+            !selectedChildId ||
+            !selectedMealPlanId
+          "
+        >
+          <span
+            *ngIf="savingRecord"
+            class="spinner-border spinner-border-sm me-2"
+            aria-hidden="true"
+          ></span>
+          <i
+            *ngIf="!savingRecord"
+            class="bi me-1"
+            [ngClass]="isEditMealRecord ? 'bi-check2-circle' : 'bi-plus-circle'"
+          ></i>
+          {{
+            savingRecord
+              ? "Saving..."
+              : isEditMealRecord
+                ? "Update meal record"
+                : "Save meal record"
+          }}
+        </button>
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="resetMealRecordForm()"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i
+          >{{ isEditMealRecord ? "Cancel edit" : "Clear form" }}
+        </button>
+        <small class="permission-note" *ngIf="!canCreate && !canUpdate"
+          >You do not have permission to create or update meal records.</small
+        >
+      </div>
+    </form>
+
+    <div class="table-section" *ngIf="canView">
+      <div class="table-heading">
+        <div>
+          <h2>Meal record list</h2>
+          <p>Review each child's meal record.</p>
+        </div>
+        <div class="search-box">
+          <i class="bi bi-search"></i
+          ><input
+            type="search"
+            aria-label="Search meal records"
+            placeholder="Search records..."
+            [(ngModel)]="searchText"
+            name="recordSearch"
+          />
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle meal-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Child</th>
+              <th>Meal</th>
+              <th>Ate meal?</th>
+              <th>Notes</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loadingRecords">
+              <td colspan="7" class="table-message">
+                <span class="spinner-border spinner-border-sm me-2"></span
+                >Loading meal records...
+              </td>
+            </tr>
+            <tr *ngFor="let record of filteredMealRecords">
+              <td>
+                <span class="id-chip">#{{ record.id }}</span>
+              </td>
+              <td>{{ record.mealDate | date: "mediumDate" }}</td>
+              <td class="child-cell">{{ childName(record.child) }}</td>
+              <td>
+                <span class="meal-type-pill">{{
+                  record.mealType || record.mealPlan?.mealType || "Meal"
+                }}</span
+                ><small class="d-block text-muted mt-1">{{
+                  record.mealPlan?.menuItems || ""
+                }}</small>
+              </td>
+              <td>
+                <span
+                  class="status-pill"
+                  [ngClass]="
+                    record.ateMeal == null
+                      ? 'status-unknown'
+                      : record.ateMeal
+                        ? 'status-yes'
+                        : 'status-no'
+                  "
+                  >{{
+                    record.ateMeal == null
+                      ? "Not recorded"
+                      : record.ateMeal
+                        ? "Yes"
+                        : "No"
+                  }}</span
+                >
+              </td>
+              <td class="notes-cell">{{ record.notes || "—" }}</td>
+              <td class="text-end actions-cell">
+                <button
+                  *ngIf="canUpdate"
+                  type="button"
+                  class="btn btn-sm btn-light action-edit"
+                  title="Edit meal record"
+                  aria-label="Edit meal record"
+                  (click)="editMealRecord(record)"
+                >
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button
+                  *ngIf="canDelete"
+                  type="button"
+                  class="btn btn-sm btn-light action-delete"
+                  title="Delete meal record"
+                  aria-label="Delete meal record"
+                  (click)="deleteMealRecord(record.id)"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!loadingRecords && filteredMealRecords.length === 0">
+              <td colspan="7" class="table-message">
+                {{
+                  searchText
+                    ? "No meal records match your search."
+                    : "No meal records have been entered yet."
+                }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>

@@ -47,10 +47,31 @@ export class UserService {
   }
 
   getAuthIds(userId: number): Observable<number[]> {
-    return this.httpClient.get<number[]>(`${this.baseUrl}/get-auth-ids/${userId}`).pipe(
-      tap((ids) => this.userAuthService.setAuthIds(ids))
-    );
-  }
+  const url = `${this.baseUrl}/get-auth-ids/${userId}`;
+
+  console.log('Requesting permissions for user ID:', userId);
+  console.log('Permission API URL:', url);
+
+  return this.httpClient.get<number[]>(url).pipe(
+    tap((ids) => {
+      console.log('Permission API response:', ids);
+
+      this.userAuthService.setAuthIds(
+        Array.isArray(ids) ? ids : []
+      );
+
+      console.log(
+        'Permissions saved to localStorage:',
+        this.userAuthService.getAuthIds()
+      );
+    })
+  );
+}
+  // getAuthIds(userId: number): Observable<number[]> {
+  //   return this.httpClient.get<number[]>(`${this.baseUrl}/get-auth-ids/${userId}`).pipe(
+  //     tap((ids) => this.userAuthService.setAuthIds(ids))
+  //   );
+  // }
 
   private persistSession(user: UserDto): void {
     if (user?.token) {
