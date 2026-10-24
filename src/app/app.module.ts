@@ -26,6 +26,7 @@ import { ProgramComponent } from './component/program/program.component';
 import { EnrollmentComponent } from './component/enrollment/enrollment.component';
 import { AttendanceComponent } from './component/attendance/attendance.component';
 import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
+import { IncidentComponent } from './component/incident/incident.component';
 
 @NgModule({
   declarations: [
@@ -46,7 +47,8 @@ import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
     ProgramComponent,
     EnrollmentComponent,
     AttendanceComponent,
-    MealPlanComponent
+    MealPlanComponent,
+    IncidentComponent
   ],
   imports: [
     BrowserModule,
