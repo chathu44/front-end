@@ -1,0 +1,468 @@
+:host {
+  display: block;
+  color: #26364a;
+}
+
+.incident-page {
+  width: 100%;
+  max-width: 1700px;
+  margin: 0 auto;
+}
+
+/* PAGE HEADER */
+
+.incident-eyebrow {
+  margin-bottom: 0.4rem;
+  color: #138274;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.incident-title {
+  color: #1c2b40;
+  font-size: clamp(1.55rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.incident-subtitle {
+  max-width: 760px;
+  color: #758396;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.incident-total-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #dce8ed;
+  border-radius: 999px;
+  background: #fff;
+  color: #42546a;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.incident-total-number {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.35rem;
+  border-radius: 50%;
+  background: #e4f4f1;
+  color: #126f65;
+}
+
+/* SUMMARY CARDS */
+
+.incident-summary-card {
+  position: relative;
+  height: 100%;
+  padding: 1.2rem 1.25rem;
+  overflow: hidden;
+  border: 1px solid #e4ebf0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(31, 49, 70, 0.035);
+}
+
+.summary-icon {
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  margin-bottom: 1rem;
+  border-radius: 0.8rem;
+  font-size: 1.15rem;
+}
+
+.summary-icon-blue {
+  background: #e8f1ff;
+  color: #326db4;
+}
+
+.summary-icon-orange {
+  background: #fff1df;
+  color: #b56c17;
+}
+
+.summary-icon-green {
+  background: #e4f6ed;
+  color: #20815b;
+}
+
+.summary-caption {
+  color: #677789;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.summary-number {
+  margin: 0.35rem 0;
+  color: #1c2b40;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.summary-footnote {
+  color: #8a98a8;
+  font-size: 0.75rem;
+}
+
+/* CARDS */
+
+.incident-card {
+  overflow: hidden;
+  border: 1px solid #e3eaf0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(31, 49, 70, 0.045);
+}
+
+.incident-card-header {
+  padding: 1.15rem 1.35rem;
+  background: #fff;
+  border-bottom: 1px solid #e8eef2;
+}
+
+.incident-card-header h2 {
+  color: #243449;
+  font-weight: 800;
+}
+
+.incident-form-label {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #e7f5f2;
+  color: #12776b;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* FORM */
+
+.incident-page .form-label {
+  margin-bottom: 0.45rem;
+  color: #34465c;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.incident-page .form-control,
+.incident-page .form-select {
+  min-height: 2.75rem;
+  border-color: #dce5eb;
+  border-radius: 0.65rem;
+  color: #26374b;
+  font-size: 0.9rem;
+}
+
+.incident-page textarea.form-control {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.incident-page .form-control::placeholder {
+  color: #9aa6b3;
+}
+
+.incident-page .form-control:focus,
+.incident-page .form-select:focus {
+  border-color: #64b9af;
+  box-shadow: 0 0 0 0.2rem rgba(35, 143, 129, 0.12);
+}
+
+.incident-save-button {
+  min-width: 10rem;
+  border-color: #176f82;
+  border-radius: 0.65rem;
+  background: #176f82;
+  font-weight: 700;
+}
+
+.incident-save-button:hover:not(:disabled) {
+  border-color: #115a69;
+  background: #115a69;
+}
+
+.incident-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* CHILD HEALTH PROFILE */
+
+.health-profile-panel {
+  padding: 1rem 1.1rem;
+  border: 1px solid #d9e9e5;
+  border-radius: 0.85rem;
+  background: #f6fbf9;
+}
+
+.health-profile-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: #17786e;
+}
+
+.health-profile-heading > i {
+  padding-top: 0.05rem;
+  font-size: 1.35rem;
+}
+
+.health-profile-heading strong,
+.health-profile-heading small {
+  display: block;
+}
+
+.health-profile-heading strong {
+  color: #294651;
+  font-size: 0.9rem;
+}
+
+.health-profile-heading small {
+  margin-top: 0.2rem;
+  color: #738890;
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+.health-detail-label {
+  margin-bottom: 0.3rem;
+  color: #718391;
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.health-detail-value {
+  color: #304858;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* PARENT NOTIFICATION CHECKBOX */
+
+.incident-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #dbe9e5;
+  border-radius: 0.8rem;
+  background: #f5fbf9;
+  cursor: pointer;
+}
+
+.incident-checkbox-row .form-check-input {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.incident-checkbox-row strong,
+.incident-checkbox-row small {
+  display: block;
+}
+
+.incident-checkbox-row strong {
+  color: #2c4351;
+  font-size: 0.88rem;
+}
+
+.incident-checkbox-row small {
+  margin-top: 0.2rem;
+  color: #718293;
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+/* SEARCH */
+
+.incident-search-wrap {
+  position: relative;
+  width: min(100%, 21rem);
+}
+
+.incident-search-wrap > i {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #8392a1;
+}
+
+.incident-search-wrap .form-control {
+  padding-left: 2.4rem;
+}
+
+/* TABLE */
+
+.incident-table {
+  min-width: 1150px;
+}
+
+.incident-table thead th {
+  padding: 0.95rem 0.85rem;
+  border-bottom: 1px solid #e4ebf0;
+  background: #f6f9fb;
+  color: #6e7d8d;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.incident-table tbody td {
+  padding: 0.9rem 0.85rem;
+  border-color: #edf1f4;
+  color: #425267;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+.incident-table tbody tr:hover > * {
+  background: #fbfdfd;
+}
+
+.date-cell {
+  min-width: 10.5rem;
+  white-space: nowrap;
+}
+
+.description-cell {
+  min-width: 10rem;
+  max-width: 17rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* BADGES */
+
+.incident-type-badge,
+.notification-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.incident-type-badge {
+  background: #edf3fb;
+  color: #3f6597;
+}
+
+.notification-done {
+  background: #e7f6ee;
+  color: #20784d;
+}
+
+.notification-pending {
+  background: #fff2dc;
+  color: #98610c;
+}
+
+.status-badge {
+  background: #eef2f6;
+  color: #526477;
+}
+
+/* LOADING / EMPTY STATE */
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 10rem;
+  color: #718293;
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  height: 12rem;
+  color: #8795a3 !important;
+  text-align: center;
+}
+
+.empty-state > i,
+.empty-state > strong,
+.empty-state > span {
+  display: block;
+}
+
+.empty-state > i {
+  margin-bottom: 0.55rem;
+  font-size: 1.7rem;
+}
+
+.empty-state > strong {
+  color: #4d5d6d;
+  font-size: 0.9rem;
+}
+
+.empty-state > span {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.incident-table-footer {
+  padding: 0.85rem 1.15rem;
+  border-top: 1px solid #edf1f4;
+  background: #fbfcfd;
+  color: #778696;
+  font-size: 0.75rem;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .incident-title {
+    font-size: 1.65rem;
+  }
+
+  .incident-card-header {
+    padding: 1rem;
+  }
+
+  .incident-card .card-body {
+    padding: 1rem !important;
+  }
+
+  .incident-search-wrap {
+    width: 100%;
+  }
+
+  .incident-total-pill {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 576px) {
+  .incident-page {
+    padding-right: 0.7rem;
+    padding-left: 0.7rem;
+  }
+
+  .incident-title {
+    font-size: 1.45rem;
+  }
+
+  .incident-summary-card {
+    padding: 1rem;
+  }
+}

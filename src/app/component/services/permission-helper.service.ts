@@ -59,6 +59,11 @@ export const AuthIds = {
   MEAL_CREATE: 91,
   MEAL_UPDATE: 92,
   MEAL_DELETE: 93,
+
+  INCIDENT_VIEW: 100,
+  INCIDENT_CREATE: 101,
+  INCIDENT_UPDATE: 102,
+  INCIDENT_DELETE: 103,
   
 } as const;
 
