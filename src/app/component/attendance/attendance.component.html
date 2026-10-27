@@ -59,7 +59,6 @@
     <span>{{ currentStaffMessage }}</span>
   </div>
 
-  <!-- Classroom and day selection: children load only for the selected classroom. -->
   <section class="filter-card mb-4">
     <div class="filter-card-title">
       <div class="title-icon"><i class="bi bi-door-open"></i></div>
@@ -74,19 +73,29 @@
     <div class="row g-3 align-items-end">
       <div class="col-12 col-lg-6">
         <label for="classroomSelect" class="form-label">Classroom</label>
-        <select
+        <ng-select
           id="classroomSelect"
-          class="form-select form-select-lg"
+          class="attendance-classroom-select"
           name="selectedClassroomId"
+          [items]="(availableClassrooms$ | async) ?? []"
+          bindLabel="displayLabel"
+          bindValue="id"
           [(ngModel)]="selectedClassroomId"
           (ngModelChange)="actionMessage = ''"
+          [clearable]="false"
+          [searchable]="true"
+          appendTo="body"
+          placeholder="Choose a classroom"
         >
-          <option [ngValue]="null">Choose a classroom</option>
-          <option *ngFor="let room of availableClassrooms" [ngValue]="room.id">
-            {{ room.roomName || room.roomCode || "Classroom #" + room.id }}
-            {{ room.roomCode ? " · " + room.roomCode : "" }}
-          </option>
-        </select>
+          <ng-template ng-label-tmp let-item="item">
+            {{ item.roomName || item.roomCode || "Classroom #" + item.id }}
+            {{ item.roomCode ? " · " + item.roomCode : "" }}
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item">
+            {{ item.roomName || item.roomCode || "Classroom #" + item.id }}
+            {{ item.roomCode ? " · " + item.roomCode : "" }}
+          </ng-template>
+        </ng-select>
       </div>
       <div class="col-12 col-sm-6 col-lg-3">
         <label for="attendanceDate" class="form-label">Attendance date</label>
@@ -119,7 +128,6 @@
     </div>
   </section>
 
-  <!-- Quick summary reflects the selected classroom and date. -->
   <section
     class="row g-3 mb-4"
     *ngIf="
@@ -169,7 +177,6 @@
     </div>
   </section>
 
-  <!-- Classroom roster -->
   <section class="roster-card" *ngIf="canView">
     <div
       class="roster-header d-flex flex-wrap justify-content-between align-items-center gap-3"
@@ -287,13 +294,26 @@
             <tr>
               <td>
                 <div class="child-identity">
-                  <span class="child-avatar">{{
-                    childInitials(row.child)
-                  }}</span>
-                  <span class="child-copy"
-                    ><strong>{{ childName(row.child) }}</strong
-                    ><small>{{ childCode(row.child) }}</small></span
+                  <ng-container
+                    *ngIf="row.child?.photoUrl; else attendanceChildInitials"
                   >
+                    <img
+                      [src]="getPhotoUrl(row.child.photoUrl)"
+                      [alt]="childName(row.child)"
+                      class="child-avatar child-avatar-photo"
+                    />
+                  </ng-container>
+
+                  <ng-template #attendanceChildInitials>
+                    <span class="child-avatar">
+                      {{ childInitials(row.child) }}
+                    </span>
+                  </ng-template>
+
+                  <span class="child-copy">
+                    <strong>{{ childName(row.child) }}</strong>
+                    <small>{{ childCode(row.child) }}</small>
+                  </span>
                 </div>
               </td>
               <td>{{ parentName(row) }}</td>
@@ -606,20 +626,19 @@
                         [for]="'editStatus-' + row.child.id"
                         >Attendance status</label
                       >
-                      <select
+                      <ng-select
                         [id]="'editStatus-' + row.child.id"
-                        class="form-select"
                         [name]="'editStatus-' + row.child.id"
-                        [(ngModel)]="editAttendanceDraft.status"
-                      >
-                        <option [ngValue]="null">Keep current status</option>
-                        <option
-                          *ngFor="let status of allStatus"
-                          [ngValue]="status.id"
-                        >
-                          {{ status.name }}
-                        </option>
-                      </select>
+                        [items]="(attendanceStatusOptions$ | async) ?? []"
+                        bindLabel="name"
+                        bindValue="id"
+                        [ngModel]="statusOptionId(editAttendanceDraft.status)"
+                        (ngModelChange)="editAttendanceDraft.status = $event"
+                        [clearable]="true"
+                        [searchable]="true"
+                        appendTo="body"
+                        placeholder="Keep current status"
+                      ></ng-select>
                     </div>
                     <div class="col-12 col-md-4">
                       <label

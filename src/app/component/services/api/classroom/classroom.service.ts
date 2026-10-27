@@ -4,24 +4,19 @@ import { ClassroomRepresentation } from '../module/classroom-representation';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ClassroomService {
+  private baseUrl: string = 'http://localhost:8010/api/v1/classroom';
 
-  private baseUrl: string =
-    'http://localhost:8010/api/v1/classroom';
-
-  constructor(
-    private http: HttpClient
-  ) { }
+  constructor(private http: HttpClient) {}
 
   createClassroom(
     classroom: ClassroomRepresentation,
-    type: string
+    type: string,
   ): Observable<any> {
-
     const payload: any = {
-      ...classroom
+      ...classroom,
     };
 
     if (
@@ -32,44 +27,30 @@ export class ClassroomService {
       payload.status = Number(payload.status);
     }
 
-    if (payload.capacity !== null &&
-        payload.capacity !== undefined &&
-        payload.capacity !== '') {
+    if (
+      payload.capacity !== null &&
+      payload.capacity !== undefined &&
+      payload.capacity !== ''
+    ) {
       payload.capacity = Number(payload.capacity);
     }
 
     if (type === 'Add') {
-      return this.http.post(
-        this.baseUrl,
-        payload
-      );
+      return this.http.post(this.baseUrl, payload);
     } else {
-      return this.http.put(
-        this.baseUrl + '/' + payload.id,
-        payload
-      );
+      return this.http.put(this.baseUrl + '/' + payload.id, payload);
     }
   }
 
   GetAllClassrooms(): Observable<any> {
-    return this.http.get(
-      this.baseUrl
-    );
+    return this.http.get(this.baseUrl);
   }
 
-  GetClassroomById(
-    ID: any
-  ): Observable<any> {
-    return this.http.get(
-      this.baseUrl + '/' + ID
-    );
+  GetClassroomById(ID: any): Observable<any> {
+    return this.http.get(this.baseUrl + '/' + ID);
   }
 
-  DeleteClassroomById(
-    ID: any
-  ): Observable<any> {
-    return this.http.delete(
-      this.baseUrl + '/' + ID
-    );
+  DeleteClassroomById(ID: any): Observable<any> {
+    return this.http.delete(this.baseUrl + '/' + ID);
   }
 }

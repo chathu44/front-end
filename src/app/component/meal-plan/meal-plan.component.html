@@ -69,17 +69,24 @@
     </button>
   </div>
 
-  <!-- MEAL PLAN TAB -->
   <section *ngIf="activeTab === 'plans'" class="meal-panel">
     <div class="panel-title-row">
       <div>
         <h2>
-          {{ isEditMealPlan ? "Update meal plan" : "Create a meal plan" }}
+          {{
+            isReadOnlyMealPlan
+              ? "View meal plan"
+              : isEditMealPlan
+                ? "Update meal plan"
+                : "Create a meal plan"
+          }}
         </h2>
         <p>Choose a date and define the menu for the daycare.</p>
       </div>
       <span class="mode-tag" *ngIf="isEditMealPlan"
-        >Editing #{{ mealPlanObj.id }}</span
+        >{{ isReadOnlyMealPlan ? "Viewing" : "Editing" }} #{{
+          mealPlanObj.id
+        }}</span
       >
     </div>
 
@@ -95,6 +102,7 @@
             id="planDate"
             name="planDate"
             [(ngModel)]="mealPlanObj.mealDate"
+            [disabled]="isReadOnlyMealPlan"
             required
           />
         </div>
@@ -102,36 +110,46 @@
           <label class="form-label" for="planType"
             >Meal type <span class="required-star">*</span></label
           >
-          <select
-            class="form-select"
+          <ng-select
+            class="standard-select"
             id="planType"
             name="planType"
+            [items]="mealTypeOptions"
             [(ngModel)]="mealPlanObj.mealType"
+            [readonly]="isReadOnlyMealPlan"
             required
-          >
-            <option value="Breakfast">Breakfast</option>
-            <option value="Morning Snack">Morning Snack</option>
-            <option value="Lunch">Lunch</option>
-            <option value="Afternoon Snack">Afternoon Snack</option>
-            <option value="Dinner">Dinner</option>
-            <option value="Other">Other</option>
-          </select>
+            [searchable]="true"
+            [clearable]="false"
+            appendTo="body"
+            placeholder="Select meal type"
+          ></ng-select>
         </div>
         <div class="col-12 col-md-4">
           <label class="form-label" for="planClassroom">Classroom</label>
-          <select
-            class="form-select"
+          <ng-select
             id="planClassroom"
             name="planClassroom"
+            [items]="(allClassroomList$ | async) ?? []"
+            bindLabel="dropdownLabel"
+            bindValue="id"
             [(ngModel)]="selectedClassroomId"
+            [readonly]="isReadOnlyMealPlan"
+            [clearable]="true"
+            [searchable]="true"
+            appendTo="body"
+            placeholder="All classrooms"
           >
-            <option value="">All classrooms</option>
-            <option *ngFor="let room of allClassroomList" [value]="room.id">
+            <ng-template ng-label-tmp let-item="item">
               {{
-                room.roomName || room.classroomName || "Classroom " + room.id
+                item.roomName || item.classroomName || "Classroom " + item.id
               }}
-            </option>
-          </select>
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{
+                item.roomName || item.classroomName || "Classroom " + item.id
+              }}
+            </ng-template>
+          </ng-select>
         </div>
         <div class="col-12">
           <label class="form-label" for="menuItems"
@@ -143,9 +161,19 @@
             name="menuItems"
             rows="3"
             [(ngModel)]="mealPlanObj.menuItems"
+            [readonly]="isReadOnlyMealPlan"
             placeholder="Example: rice, chicken, vegetables and fruit"
             required
+            minlength="2"
+            maxlength="255"
+            #menuItems="ngModel"
           ></textarea>
+          <small
+            class="error-text"
+            *ngIf="menuItems.invalid && menuItems.touched"
+          >
+            Enter 2–255 characters of menu information.
+          </small>
           <div class="form-hint">
             Add the main meal and any sides or snacks in the menu description.
           </div>
@@ -153,7 +181,9 @@
       </div>
       <div class="form-actions">
         <button
-          *ngIf="isEditMealPlan ? canUpdate : canCreate"
+          *ngIf="
+            !isReadOnlyMealPlan && (isEditMealPlan ? canUpdate : canCreate)
+          "
           class="btn btn-primary meal-primary-btn"
           type="submit"
           [disabled]="savingPlan || !mealPlanForm.valid"
@@ -182,7 +212,13 @@
           (click)="resetMealPlanForm()"
         >
           <i class="bi bi-arrow-counterclockwise me-1"></i
-          >{{ isEditMealPlan ? "Cancel edit" : "Clear form" }}
+          >{{
+            isReadOnlyMealPlan
+              ? "Close view"
+              : isEditMealPlan
+                ? "Cancel edit"
+                : "Clear form"
+          }}
         </button>
         <small class="permission-note" *ngIf="!canCreate && !canUpdate"
           >You do not have permission to create or update meal plans.</small
@@ -226,7 +262,11 @@
                 >Loading meal plans...
               </td>
             </tr>
-            <tr *ngFor="let plan of filteredMealPlans">
+            <tr
+              *ngFor="let plan of filteredMealPlans"
+              class="selectable-row"
+              (click)="editMealPlan(plan)"
+            >
               <td>
                 <span class="id-chip">#{{ plan.id }}</span>
               </td>
@@ -238,7 +278,20 @@
               </td>
               <td class="menu-cell">{{ plan.menuItems || "—" }}</td>
               <td>{{ plan.classroom?.roomName || "All classrooms" }}</td>
-              <td class="text-end actions-cell">
+              <td
+                class="text-end actions-cell"
+                (click)="$event.stopPropagation()"
+              >
+                <button
+                  *ngIf="canView"
+                  type="button"
+                  class="btn btn-sm btn-light action-view"
+                  title="View meal plan"
+                  aria-label="View meal plan"
+                  (click)="viewMealPlan(plan)"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
                 <button
                   *ngIf="canUpdate"
                   type="button"
@@ -276,7 +329,6 @@
     </div>
   </section>
 
-  <!-- MEAL RECORD TAB -->
   <section *ngIf="activeTab === 'records'" class="meal-panel">
     <div class="panel-title-row">
       <div>
@@ -288,7 +340,9 @@
         <p>Track the meal offered to a child and whether they ate it.</p>
       </div>
       <span class="mode-tag" *ngIf="isEditMealRecord"
-        >Editing #{{ mealRecordObj.id }}</span
+        >{{ isReadOnlyMealRecord ? "Viewing" : "Editing" }} #{{
+          mealRecordObj.id
+        }}</span
       >
     </div>
 
@@ -308,6 +362,7 @@
             id="recordDate"
             name="recordDate"
             [(ngModel)]="mealRecordObj.mealDate"
+            [disabled]="isReadOnlyMealRecord"
             required
           />
         </div>
@@ -315,51 +370,64 @@
           <label class="form-label" for="recordType"
             >Meal type <span class="required-star">*</span></label
           >
-          <select
-            class="form-select"
+          <ng-select
+            class="standard-select"
             id="recordType"
             name="recordType"
+            [items]="mealTypeOptions"
             [(ngModel)]="mealRecordObj.mealType"
+            [readonly]="isReadOnlyMealRecord"
             required
-          >
-            <option value="Breakfast">Breakfast</option>
-            <option value="Morning Snack">Morning Snack</option>
-            <option value="Lunch">Lunch</option>
-            <option value="Afternoon Snack">Afternoon Snack</option>
-            <option value="Dinner">Dinner</option>
-            <option value="Other">Other</option>
-          </select>
+            [searchable]="true"
+            [clearable]="false"
+            appendTo="body"
+            placeholder="Select meal type"
+          ></ng-select>
         </div>
         <div class="col-12 col-md-4">
           <label class="form-label" for="ateMeal">Did the child eat?</label>
-          <select
-            class="form-select"
+          <ng-select
+            class="standard-select"
             id="ateMeal"
             name="ateMeal"
+            [items]="ateMealOptions"
+            bindLabel="label"
+            bindValue="value"
             [(ngModel)]="ateMealValue"
-          >
-            <option value="">Not recorded</option>
-            <option value="true">Yes, ate the meal</option>
-            <option value="false">No, did not eat</option>
-          </select>
+            [readonly]="isReadOnlyMealRecord"
+            [searchable]="true"
+            [clearable]="false"
+            appendTo="body"
+            placeholder="Record meal outcome"
+          ></ng-select>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label" for="recordChild"
             >Child <span class="required-star">*</span></label
           >
-          <select
-            class="form-select"
+          <ng-select
             id="recordChild"
             name="recordChild"
+            [items]="(allChildList$ | async) ?? []"
+            bindLabel="dropdownLabel"
+            bindValue="id"
             [(ngModel)]="selectedChildId"
+            [readonly]="isReadOnlyMealRecord"
             required
+            [clearable]="false"
+            [searchable]="true"
+            appendTo="body"
+            placeholder="Select a child"
           >
-            <option value="" disabled>Select a child</option>
-            <option *ngFor="let child of allChildList" [value]="child.id">
-              {{ childName(child)
-              }}{{ child.childCode ? " (" + child.childCode + ")" : "" }}
-            </option>
-          </select>
+            <ng-template ng-label-tmp let-item="item">
+              {{ childName(item)
+              }}{{ item.childCode ? " (" + item.childCode + ")" : "" }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ childName(item)
+              }}{{ item.childCode ? " (" + item.childCode + ")" : "" }}
+            </ng-template>
+          </ng-select>
           <div class="form-hint" *ngIf="allChildList.length === 0">
             No children loaded. Check that the child API is available and
             children are registered.
@@ -369,18 +437,27 @@
           <label class="form-label" for="recordPlan"
             >Related meal plan <span class="required-star">*</span></label
           >
-          <select
-            class="form-select"
+          <ng-select
             id="recordPlan"
             name="recordPlan"
+            [items]="(allMealPlanList$ | async) ?? []"
+            bindLabel="dropdownLabel"
+            bindValue="id"
             [(ngModel)]="selectedMealPlanId"
+            [readonly]="isReadOnlyMealRecord"
             required
+            [clearable]="false"
+            [searchable]="true"
+            appendTo="body"
+            placeholder="Select a meal plan"
           >
-            <option value="" disabled>Select a meal plan</option>
-            <option *ngFor="let plan of allMealPlanList" [value]="plan.id">
-              {{ mealPlanLabel(plan) }}
-            </option>
-          </select>
+            <ng-template ng-label-tmp let-item="item">
+              {{ mealPlanLabel(item) }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ mealPlanLabel(item) }}
+            </ng-template>
+          </ng-select>
           <div class="form-hint" *ngIf="allMealPlanList.length === 0">
             Add a meal plan first using the Meal Plans tab.
           </div>
@@ -393,13 +470,24 @@
             name="recordNotes"
             rows="3"
             [(ngModel)]="mealRecordObj.notes"
+            [readonly]="isReadOnlyMealRecord"
+            maxlength="255"
+            #recordNotes="ngModel"
             placeholder="Example: ate half the portion, requested extra water, allergy observation..."
           ></textarea>
+          <small
+            class="error-text"
+            *ngIf="recordNotes.invalid && recordNotes.touched"
+          >
+            Notes cannot exceed 255 characters.
+          </small>
         </div>
       </div>
       <div class="form-actions">
         <button
-          *ngIf="isEditMealRecord ? canUpdate : canCreate"
+          *ngIf="
+            !isReadOnlyMealRecord && (isEditMealRecord ? canUpdate : canCreate)
+          "
           class="btn btn-primary meal-primary-btn"
           type="submit"
           [disabled]="
@@ -434,7 +522,13 @@
           (click)="resetMealRecordForm()"
         >
           <i class="bi bi-arrow-counterclockwise me-1"></i
-          >{{ isEditMealRecord ? "Cancel edit" : "Clear form" }}
+          >{{
+            isReadOnlyMealRecord
+              ? "Close view"
+              : isEditMealRecord
+                ? "Cancel edit"
+                : "Clear form"
+          }}
         </button>
         <small class="permission-note" *ngIf="!canCreate && !canUpdate"
           >You do not have permission to create or update meal records.</small
@@ -479,7 +573,11 @@
                 >Loading meal records...
               </td>
             </tr>
-            <tr *ngFor="let record of filteredMealRecords">
+            <tr
+              *ngFor="let record of filteredMealRecords"
+              class="selectable-row"
+              (click)="editMealRecord(record)"
+            >
               <td>
                 <span class="id-chip">#{{ record.id }}</span>
               </td>
@@ -513,7 +611,20 @@
                 >
               </td>
               <td class="notes-cell">{{ record.notes || "—" }}</td>
-              <td class="text-end actions-cell">
+              <td
+                class="text-end actions-cell"
+                (click)="$event.stopPropagation()"
+              >
+                <button
+                  *ngIf="canView"
+                  type="button"
+                  class="btn btn-sm btn-light action-view"
+                  title="View meal record"
+                  aria-label="View meal record"
+                  (click)="viewMealRecord(record)"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
                 <button
                   *ngIf="canUpdate"
                   type="button"

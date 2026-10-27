@@ -71,6 +71,8 @@
                     name="roomName"
                     [(ngModel)]="classroomObj.roomName"
                     required
+                    minlength="2"
+                    maxlength="100"
                     #roomName="ngModel"
                     placeholder="Enter room name"
                   />
@@ -86,24 +88,18 @@
                 <div class="col-md-4">
                   <label for="ageGroup" class="form-label"> Age Group </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
+                    class="standard-select"
                     id="ageGroup"
                     name="ageGroup"
+                    [items]="ageGroupOptions"
                     [(ngModel)]="classroomObj.ageGroup"
-                  >
-                    <option value="">Select Age Group</option>
-
-                    <option value="0-1 Years">0-1 Years</option>
-
-                    <option value="1-2 Years">1-2 Years</option>
-
-                    <option value="2-3 Years">2-3 Years</option>
-
-                    <option value="3-5 Years">3-5 Years</option>
-
-                    <option value="5+ Years">5+ Years</option>
-                  </select>
+                    [searchable]="true"
+                    [clearable]="true"
+                    appendTo="body"
+                    placeholder="Select age group"
+                    notFoundText="No matching age group"
+                  ></ng-select>
                 </div>
 
                 <div class="col-md-6">
@@ -120,6 +116,8 @@
                     [(ngModel)]="classroomObj.capacity"
                     required
                     min="1"
+                    max="200"
+                    step="1"
                     #capacity="ngModel"
                     placeholder="Enter maximum capacity"
                   />
@@ -128,29 +126,25 @@
                     class="error-text"
                     *ngIf="capacity.invalid && capacity.touched"
                   >
-                    Capacity is required.
+                    Capacity must be a whole number between 1 and 200.
                   </small>
                 </div>
 
                 <div class="col-md-6">
                   <label for="floor" class="form-label"> Floor </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
+                    class="standard-select"
                     id="floor"
                     name="floor"
+                    [items]="floorOptions"
                     [(ngModel)]="classroomObj.floor"
-                  >
-                    <option value="">Select Floor</option>
-
-                    <option value="Ground Floor">Ground Floor</option>
-
-                    <option value="1st Floor">1st Floor</option>
-
-                    <option value="2nd Floor">2nd Floor</option>
-
-                    <option value="3rd Floor">3rd Floor</option>
-                  </select>
+                    [searchable]="true"
+                    [clearable]="true"
+                    appendTo="body"
+                    placeholder="Select floor"
+                    notFoundText="No matching floor"
+                  ></ng-select>
                 </div>
               </div>
 
@@ -164,8 +158,8 @@
 
                   <p class="mb-0">
                     New classrooms are registered as
-                    <strong>Active</strong>. You can change the status from the
-                    registered classrooms table.
+                    <strong>Open</strong>. Use the classroom table to set a room
+                    to Open, Full, or Closed.
                   </p>
                 </div>
               </div>
@@ -279,7 +273,7 @@
                 <small> Status </small>
 
                 <strong>
-                  {{ classroomObj.status?.name || statusValue || "Active" }}
+                  {{ classroomObj.status?.name || statusValue || "Open" }}
                 </strong>
               </div>
             </div>
@@ -404,41 +398,34 @@
                   </td>
 
                   <td>
-                    <div class="status-toggle-wrapper">
-                      <label class="status-switch">
-                        <input
-                          type="checkbox"
-                          [checked]="isClassroomActive(classroom)"
-                          [disabled]="!canUpdate"
-                          (change)="onStatusToggle(classroom, $event)"
-                          (click)="$event.stopPropagation()"
-                        />
-
-                        <span class="status-slider"></span>
-                      </label>
-
-                      <span
-                        class="status-text"
-                        [class.active-text]="isClassroomActive(classroom)"
-                        [class.inactive-text]="!isClassroomActive(classroom)"
-                      >
-                        {{
-                          isClassroomActive(classroom) ? "Active" : "Inactive"
-                        }}
-                      </span>
-
+                    <div
+                      class="status-editor"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <ng-select
+                        [items]="(classroomStatusOptions$ | async) ?? []"
+                        bindLabel="name"
+                        bindValue="id"
+                        [ngModel]="statusOptionId(classroom.status)"
+                        (ngModelChange)="
+                          onClassroomStatusChange(classroom, $event)
+                        "
+                        [name]="'classroomStatus-' + classroom.id"
+                        [disabled]="!canUpdate"
+                        [clearable]="false"
+                        [searchable]="true"
+                        appendTo="body"
+                        placeholder="Select status"
+                        class="status-select"
+                      ></ng-select>
                       <button
                         *ngIf="canUpdate && classroom.statusChanged"
                         type="button"
-                        class="status-save-btn"
-                        title="Save Status"
-                        (click)="
-                          saveClassroomStatus(classroom);
-                          $event.stopPropagation()
-                        "
+                        class="btn btn-sm btn-primary status-save-btn"
+                        title="Save status"
+                        (click)="saveClassroomStatus(classroom)"
                       >
-                        <i class="bi bi-check-lg"></i>
-                        Save
+                        <i class="bi bi-check-lg"></i> Save
                       </button>
                     </div>
                   </td>

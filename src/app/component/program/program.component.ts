@@ -9,6 +9,16 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  scrollPageToTop,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-program',
   standalone: false,
@@ -19,6 +29,7 @@ export class ProgramComponent implements OnInit {
   programObj: ProgramRepresentation = {};
   programs: Array<any> = [];
   allStatus: Array<any> = [];
+  programStatusOptions$: Observable<any[]> = of([]);
   statusValue: any;
   type = '';
   isEditProgram = false;
@@ -63,6 +74,55 @@ export class ProgramComponent implements OnInit {
       );
       return;
     }
+
+    const programName = String(this.programObj.programName ?? '').trim();
+    const description = String(this.programObj.description ?? '').trim();
+    const monthlyFee = this.programObj.monthlyFee;
+    if (programName.length < 2 || programName.length > 100) {
+      swal(
+        'Validation error',
+        'Program name must contain 2–100 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (description.length > 255) {
+      swal(
+        'Validation error',
+        'Program description cannot exceed 255 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (monthlyFee !== null && monthlyFee !== undefined) {
+      const fee = Number(monthlyFee);
+      if (
+        !Number.isFinite(fee) ||
+        fee < 0 ||
+        fee > 99999999.99 ||
+        Math.abs(fee * 100 - Math.round(fee * 100)) > 1e-6
+      ) {
+        swal(
+          'Validation error',
+          'Monthly fee must be between Rs. 0 and Rs. 99,999,999.99, with no more than two decimal places.',
+          'warning',
+        );
+        return;
+      }
+      this.programObj.monthlyFee = fee;
+    }
+    if (this.isSessionScheduleInvalid()) {
+      swal(
+        'Validation error',
+        'Session end time must be later than session start time.',
+        'warning',
+      );
+      return;
+    }
+
+    this.programObj.programName = programName;
+    this.programObj.description = description;
+
     this.type = this.isEditProgram ? 'Update' : 'Add';
 
     const statusId = this.getStatusId(this.programObj.status);
@@ -146,6 +206,7 @@ export class ProgramComponent implements OnInit {
         this.isEditProgram = true;
 
         this.selectedProgramId = record.id;
+        scrollPageToTop();
       },
       error: (error: any): void => {
         console.error('Get program error:', error);
@@ -201,22 +262,36 @@ export class ProgramComponent implements OnInit {
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (allData: any): void => {
-        this.allStatus = allData?.data?.dataList || [];
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
 
+    this.programStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, ['Active', 'Inactive']),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]): void => {
+        this.allStatus = statuses;
         if (!this.isEditProgram && !this.programObj.status) {
-          const activeStatus = this.allStatus.find(
-            (status: any) => String(status.name).toLowerCase() === 'active',
+          const activeStatus = statuses.find(
+            (status: any) =>
+              normalizeLookupName(status?.name ?? status?.statusName) ===
+              'active',
           );
-
           if (activeStatus) {
             this.programObj.status = activeStatus.id;
+            this.statusValue = activeStatus.name ?? activeStatus.statusName;
           }
         }
       },
       error: (error: any): void => {
         console.error('Get statuses error:', error);
+        this.allStatus = [];
         swal('Error!', 'Unable to load statuses.', 'error');
       },
     });
@@ -278,7 +353,14 @@ export class ProgramComponent implements OnInit {
       'Select Value';
 
     this.isEditProgram = true;
+    scrollPageToTop();
   }
+  isSessionScheduleInvalid(): boolean {
+    const start = String(this.programObj.sessionStart ?? '').trim();
+    const end = String(this.programObj.sessionEnd ?? '').trim();
+    return !!start && !!end && end <= start;
+  }
+
   formatTime(value: any): string {
     if (!value) {
       return '';

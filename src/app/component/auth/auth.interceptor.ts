@@ -1,4 +1,10 @@
-import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandler,
+  HttpInterceptor,
+  HttpRequest,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, throwError } from 'rxjs';
@@ -6,13 +12,15 @@ import { UserAuthService } from '../services/api/user/user-auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-
   constructor(
     private userAuthService: UserAuthService,
-    private router: Router
-  ) { }
+    private router: Router,
+  ) {}
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler,
+  ): Observable<HttpEvent<any>> {
     if (req.headers.get('No-Auth') === 'True') {
       return next.handle(req.clone());
     }
@@ -31,7 +39,7 @@ export class AuthInterceptor implements HttpInterceptor {
           this.router.navigate(['/forbidden']);
         }
         return throwError(() => err);
-      })
+      }),
     );
   }
 }

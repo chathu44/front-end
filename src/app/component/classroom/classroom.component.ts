@@ -9,6 +9,16 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  scrollPageToTop,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-classroom',
   standalone: false,
@@ -19,6 +29,7 @@ export class ClassroomComponent implements OnInit {
   classroomObj: ClassroomRepresentation = {};
   classrooms: Array<any> = [];
   allStatus: Array<any> = [];
+  classroomStatusOptions$: Observable<any[]> = of([]);
   statusValue: any;
   type = '';
   isEditClassroom = false;
@@ -27,6 +38,20 @@ export class ClassroomComponent implements OnInit {
   canCreate = false;
   canUpdate = false;
   canDelete = false;
+
+  readonly ageGroupOptions = [
+    '0-1 Years',
+    '1-2 Years',
+    '2-3 Years',
+    '3-5 Years',
+    '5+ Years',
+  ];
+  readonly floorOptions = [
+    'Ground Floor',
+    '1st Floor',
+    '2nd Floor',
+    '3rd Floor',
+  ];
 
   constructor(
     private classroomService: ClassroomService,
@@ -63,6 +88,28 @@ export class ClassroomComponent implements OnInit {
       );
       return;
     }
+
+    const roomName = String(this.classroomObj.roomName ?? '').trim();
+    const capacity = Number(this.classroomObj.capacity);
+    if (roomName.length < 2 || roomName.length > 100) {
+      swal(
+        'Validation error',
+        'Classroom name must contain 2–100 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 200) {
+      swal(
+        'Validation error',
+        'Capacity must be a whole number between 1 and 200.',
+        'warning',
+      );
+      return;
+    }
+    this.classroomObj.roomName = roomName;
+    this.classroomObj.capacity = capacity;
+
     this.type = this.isEditClassroom ? 'Update' : 'Add';
 
     const statusId = this.getStatusId(this.classroomObj.status);
@@ -148,6 +195,7 @@ export class ClassroomComponent implements OnInit {
         this.isEditClassroom = true;
 
         this.selectedClassroomId = record.id;
+        scrollPageToTop();
       },
       error: (error: any): void => {
         console.error('Get classroom error:', error);
@@ -193,7 +241,12 @@ export class ClassroomComponent implements OnInit {
             console.error('Delete classroom error:', error);
             swal(
               'Error!',
-              error?.error?.message || 'Unable to delete classroom.',
+              error?.error?.message ||
+                (error?.status === 403
+                  ? 'The API denied deletion. Confirm CLASSROOM_DELETE exists and is assigned to your user or privilege group, then sign in again.'
+                  : error?.status === 409 || error?.status === 500
+                    ? 'The classroom may be referenced by enrollments, attendance, or meal plans. Close it instead of deleting it when history exists.'
+                    : 'Unable to delete classroom. Check the Network tab and Spring Boot console.'),
               'error',
             );
           },
@@ -203,22 +256,36 @@ export class ClassroomComponent implements OnInit {
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (allData: any): void => {
-        this.allStatus = allData?.data?.dataList || [];
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
 
+    this.classroomStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, ['Open', 'Full', 'Closed']),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]): void => {
+        this.allStatus = statuses;
         if (!this.isEditClassroom && !this.classroomObj.status) {
-          const activeStatus = this.allStatus.find(
-            (status: any) => String(status.name).toLowerCase() === 'active',
+          const openStatus = statuses.find(
+            (status: any) =>
+              normalizeLookupName(status?.name ?? status?.statusName) ===
+              'open',
           );
-
-          if (activeStatus) {
-            this.classroomObj.status = activeStatus.id;
+          if (openStatus) {
+            this.classroomObj.status = openStatus.id;
+            this.statusValue = openStatus.name ?? openStatus.statusName;
           }
         }
       },
       error: (error: any): void => {
         console.error('Get statuses error:', error);
+        this.allStatus = [];
         swal('Error!', 'Unable to load statuses.', 'error');
       },
     });
@@ -231,15 +298,17 @@ export class ClassroomComponent implements OnInit {
 
   ClearForm(): void {
     this.classroomObj = {};
-    this.statusValue = 'Select Value';
+    this.statusValue = 'Open';
     this.isEditClassroom = false;
 
-    const activeStatus = this.allStatus.find(
-      (status: any) => String(status.name).toLowerCase() === 'active',
+    const openStatus = this.allStatus.find(
+      (status: any) =>
+        normalizeLookupName(status?.name ?? status?.statusName) === 'open',
     );
 
-    if (activeStatus) {
-      this.classroomObj.status = activeStatus.id;
+    if (openStatus) {
+      this.classroomObj.status = openStatus.id;
+      this.statusValue = openStatus.name ?? openStatus.statusName ?? 'Open';
     }
     this.selectedClassroomId = null;
   }
@@ -276,6 +345,33 @@ export class ClassroomComponent implements OnInit {
     this.statusValue = this.getStatusName(classroom.status) || 'Select Value';
 
     this.isEditClassroom = true;
+    scrollPageToTop();
+  }
+
+  statusOptionId(status: any): string | number | null {
+    if (status && typeof status === 'object') return status.id ?? null;
+    return status == null || status === '' ? null : status;
+  }
+
+  onClassroomStatusChange(classroom: any, statusId: any): void {
+    const selectedStatus = findStatusById(this.allStatus, statusId);
+    if (!selectedStatus) {
+      delete classroom._pendingStatus;
+      classroom.statusChanged = false;
+      return;
+    }
+
+    if (
+      String(this.statusOptionId(classroom.status)) ===
+      String(selectedStatus.id)
+    ) {
+      delete classroom._pendingStatus;
+      classroom.statusChanged = false;
+      return;
+    }
+
+    classroom._pendingStatus = selectedStatus;
+    classroom.statusChanged = true;
   }
 
   isClassroomActive(classroom: any): boolean {

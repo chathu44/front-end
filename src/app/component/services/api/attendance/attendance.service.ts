@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { AttendanceRepresentation } from '../module/attendance-representation';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AttendanceService {
   private readonly baseUrl = 'http://localhost:8010/api/v1/attendance';
@@ -17,7 +17,7 @@ export class AttendanceService {
 
   createAttendance(
     attendance: AttendanceRepresentation,
-    type: 'Add' | 'Update' | string
+    type: 'Add' | 'Update' | string,
   ): Observable<any> {
     const payload: any = { ...attendance };
 
@@ -85,4 +85,3 @@ export class AttendanceService {
     return textValue.length === 16 ? textValue + ':00' : textValue;
   }
 }
-

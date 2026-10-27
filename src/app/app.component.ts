@@ -7,7 +7,7 @@ import { ToastService } from './component/services/toast.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
   title = 'template-angular';
@@ -16,17 +16,19 @@ export class AppComponent {
     private router: Router,
     private userAuthService: UserAuthService,
     private userService: UserService,
-    public toastService: ToastService
-  ) { }
+    public toastService: ToastService,
+  ) {}
 
   get displayName(): string {
     const user = this.userAuthService.getUser();
     if (!user) {
       return '';
     }
-    return `${user.firstName || ''} ${user.lastName || ''}`.trim()
-      || user.login
-      || `User #${user.id}`;
+    return (
+      `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+      user.login ||
+      `User #${user.id}`
+    );
   }
 
   get userId(): number | null {
@@ -48,7 +50,7 @@ export class AppComponent {
           this.userAuthService.clear();
           this.toastService.info('Signed out');
           this.router.navigate(['/login']);
-        }
+        },
       });
       return;
     }

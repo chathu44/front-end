@@ -9,6 +9,6 @@ export interface StudentRepresentation {
   studentName?: string;
   studentAge?: string;
   studentNic?: string;
-  /** Request: status id. Response: { id, name } */
+
   status?: any;
 }

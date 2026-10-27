@@ -70,6 +70,8 @@
                     name="programName"
                     [(ngModel)]="programObj.programName"
                     required
+                    minlength="2"
+                    maxlength="100"
                     #programName="ngModel"
                     placeholder="Enter program name"
                   />
@@ -78,7 +80,7 @@
                     class="error-text"
                     *ngIf="programName.invalid && programName.touched"
                   >
-                    Program name is required.
+                    Program name must contain 2–100 characters.
                   </small>
                 </div>
 
@@ -93,6 +95,7 @@
                     name="description"
                     rows="3"
                     [(ngModel)]="programObj.description"
+                    maxlength="255"
                     placeholder="Describe the program and its activities"
                   ></textarea>
                 </div>
@@ -165,6 +168,7 @@
                     name="monthlyFee"
                     [(ngModel)]="programObj.monthlyFee"
                     min="0"
+                    max="99999999.99"
                     step="0.01"
                     #monthlyFee="ngModel"
                     placeholder="Enter monthly fee"
@@ -174,9 +178,16 @@
                     class="error-text"
                     *ngIf="monthlyFee.invalid && monthlyFee.touched"
                   >
-                    Monthly fee cannot be negative.
+                    Monthly fee must be between Rs. 0 and Rs. 99,999,999.99.
                   </small>
                 </div>
+              </div>
+
+              <div
+                class="alert alert-warning py-2 mb-3"
+                *ngIf="isSessionScheduleInvalid()"
+              >
+                Session end time must be later than session start time.
               </div>
 
               <div class="info-box mb-4">
@@ -214,7 +225,8 @@
                     (monthlyFee.value !== null &&
                       monthlyFee.value !== undefined &&
                       monthlyFee.value !== '' &&
-                      monthlyFee.invalid)
+                      monthlyFee.invalid) ||
+                    isSessionScheduleInvalid()
                   "
                 >
                   <i

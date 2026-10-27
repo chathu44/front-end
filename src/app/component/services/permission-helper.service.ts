@@ -15,7 +15,7 @@ export const AuthIds = {
 
   // Course module
   COURSE_VIEW: 10,
-  COURSE_CREATE: 11, 
+  COURSE_CREATE: 11,
   COURSE_UPDATE: 12,
   COURSE_DELETE: 13,
 
@@ -64,21 +64,21 @@ export const AuthIds = {
   INCIDENT_CREATE: 101,
   INCIDENT_UPDATE: 102,
   INCIDENT_DELETE: 103,
-  
 } as const;
 
 @Injectable({ providedIn: 'root' })
 export class PermissionHelperService {
-
-  constructor(private userAuthService: UserAuthService) { }
+  constructor(private userAuthService: UserAuthService) {}
 
   /** True if the logged-in user has this privilege auth_id. */
   has(authId: number): boolean {
-    return this.userAuthService.getAuthIds().includes(authId);
+    return this.userAuthService
+      .getAuthIds()
+      .some((id) => Number(id) === Number(authId));
   }
 
   hasAny(...authIds: number[]): boolean {
-    const mine = this.userAuthService.getAuthIds();
-    return authIds.some(id => mine.includes(id));
+    const mine = this.userAuthService.getAuthIds().map((id) => Number(id));
+    return authIds.some((id) => mine.includes(Number(id)));
   }
 }

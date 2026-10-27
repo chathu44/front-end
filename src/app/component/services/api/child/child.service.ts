@@ -1,17 +1,29 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ChildRepresentation } from '../module/child-representation';
 import { Observable } from 'rxjs';
+
+import { ChildRepresentation } from '../module/child-representation';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ChildService {
-  private baseUrl: string = 'http://localhost:8010/api/v1/child';
+  private baseUrl = 'http://localhost:8010/api/v1/child';
 
-  private parentUrl: string = 'http://localhost:8010/api/v1/parent';
+  private parentUrl = 'http://localhost:8010/api/v1/parent';
 
   constructor(private http: HttpClient) {}
+
+  uploadChildPhoto(file: File): Observable<{ photoUrl: string }> {
+    const formData = new FormData();
+
+    formData.append('file', file);
+
+    return this.http.post<{ photoUrl: string }>(
+      `${this.baseUrl}/upload-photo`,
+      formData,
+    );
+  }
 
   createChild(child: ChildRepresentation, type: string): Observable<any> {
     const payload: any = {
@@ -40,9 +52,9 @@ export class ChildService {
 
     if (type === 'Add') {
       return this.http.post(this.baseUrl, payload);
-    } else {
-      return this.http.put(this.baseUrl + '/' + payload.id, payload);
     }
+
+    return this.http.put(`${this.baseUrl}/${payload.id}`, payload);
   }
 
   GetAllChildren(): Observable<any> {
@@ -50,11 +62,11 @@ export class ChildService {
   }
 
   GetChildById(ID: any): Observable<any> {
-    return this.http.get(this.baseUrl + '/' + ID);
+    return this.http.get(`${this.baseUrl}/${ID}`);
   }
 
   DeleteChildById(ID: any): Observable<any> {
-    return this.http.delete(this.baseUrl + '/' + ID);
+    return this.http.delete(`${this.baseUrl}/${ID}`);
   }
 
   GetAllParents(): Observable<any> {

@@ -19,6 +19,7 @@ import { InstituteLoginComponent } from './component/institute-login/institute-l
 import { RegisterComponent } from './component/register/register.component';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
 import { QualificationComponent } from './component/qualification/qualification.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { ChildComponent } from './component/child/child.component';
 import { ParentComponent } from './component/parent/parent.component';
 import { ClassroomComponent } from './component/classroom/classroom.component';
@@ -48,7 +49,7 @@ import { IncidentComponent } from './component/incident/incident.component';
     EnrollmentComponent,
     AttendanceComponent,
     MealPlanComponent,
-    IncidentComponent
+    IncidentComponent,
   ],
   imports: [
     BrowserModule,
@@ -57,15 +58,17 @@ import { IncidentComponent } from './component/incident/incident.component';
     FormsModule,
     NgbModule,
     RouterModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    NgSelectModule,
   ],
   providers: [
     AuthGuard,
     {
-      provide:HTTP_INTERCEPTORS,
-      useClass:AuthInterceptor,
-      multi:true
-    }],
-  bootstrap: [AppComponent]
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+  ],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

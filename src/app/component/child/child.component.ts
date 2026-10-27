@@ -9,6 +9,17 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  isValidPersonName,
+  scrollPageToTop,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-child',
   templateUrl: './child.component.html',
@@ -20,6 +31,9 @@ export class ChildComponent {
   children: Array<any> = [];
 
   allParents: Array<any> = [];
+  allParents$: Observable<any[]> = of([]);
+  childStatusOptions$: Observable<any[]> = of([]);
+  readonly maxDate = this.localToday();
 
   parentValue: any = '';
 
@@ -46,6 +60,18 @@ export class ChildComponent {
   selectedPhotoFile: File | null = null;
 
   photoPreviewUrl: string | null = null;
+
+  readonly genderOptions = ['Male', 'Female', 'Other'];
+  readonly bloodGroupOptions = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
 
   dtDynamicVerticalScrollExample: any;
 
@@ -76,17 +102,93 @@ export class ChildComponent {
     this.GetAllChildren();
   }
   SaveChild(): void {
-    if (this.isEditChild ? !this.canUpdate : !this.canCreate) {
+    const isAdding = !this.isEditChild;
+
+    if (isAdding ? !this.canCreate : !this.canUpdate) {
       swal(
         'Permission denied',
-        this.isEditChild
-          ? 'You do not have permission to update children.'
-          : 'You do not have permission to register children.',
+        isAdding
+          ? 'You do not have permission to register children.'
+          : 'You do not have permission to update children.',
         'warning',
       );
       return;
     }
-    this.type = this.isEditChild === false ? 'Add' : 'Update';
+
+    const firstName = String(this.childObj.firstName ?? '').trim();
+    const lastName = String(this.childObj.lastName ?? '').trim();
+    const dateOfBirth = String(this.childObj.dateOfBirth ?? '').trim();
+    const parentId =
+      this.childObj.parent && typeof this.childObj.parent === 'object'
+        ? this.childObj.parent.id
+        : this.childObj.parent;
+
+    if (!isValidPersonName(firstName, 80)) {
+      swal(
+        'Validation error',
+        'First name must contain 2–80 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (!isValidPersonName(lastName, 80)) {
+      swal(
+        'Validation error',
+        'Last name must contain 2–80 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (
+      !dateOfBirth ||
+      dateOfBirth > this.maxDate ||
+      Number.isNaN(new Date(dateOfBirth + 'T00:00:00').getTime())
+    ) {
+      swal(
+        'Validation error',
+        'Enter a valid date of birth that is not in the future.',
+        'warning',
+      );
+      return;
+    }
+    if (
+      !['Male', 'Female', 'Other'].includes(String(this.childObj.gender ?? ''))
+    ) {
+      swal('Validation error', 'Please select a gender.', 'warning');
+      return;
+    }
+    if (String(this.childObj.allergies ?? '').trim().length > 255) {
+      swal(
+        'Validation error',
+        'Allergy details cannot exceed 255 characters.',
+        'warning',
+      );
+      return;
+    }
+    if (String(this.childObj.medicalNotes ?? '').length > 2000) {
+      swal(
+        'Validation error',
+        'Medical notes cannot exceed 2,000 characters in this form.',
+        'warning',
+      );
+      return;
+    }
+    if (parentId === null || parentId === undefined || parentId === '') {
+      swal(
+        'Validation error',
+        'Please select a registered parent or guardian.',
+        'warning',
+      );
+      return;
+    }
+
+    this.childObj.firstName = firstName;
+    this.childObj.lastName = lastName;
+    this.childObj.parent = parentId;
+
+    const operation = isAdding ? 'Add' : 'Update';
+
+    this.type = operation;
 
     let statusId: any = this.childObj.status;
 
@@ -94,9 +196,11 @@ export class ChildComponent {
       statusId = statusId.id;
     }
 
-    if (!statusId) {
+    if (statusId === null || statusId === undefined || statusId === '') {
       const activeStatus = this.allStatus.find(
-        (status: any) => String(status.name).toLowerCase() === 'active',
+        (status: any) =>
+          String(status.name ?? status.statusName ?? '').toLowerCase() ===
+          'active',
       );
 
       if (activeStatus) {
@@ -104,7 +208,7 @@ export class ChildComponent {
       }
     }
 
-    if (!statusId) {
+    if (statusId === null || statusId === undefined || statusId === '') {
       swal(
         'Error!',
         'Status is required. Please check that statuses have loaded.',
@@ -113,57 +217,96 @@ export class ChildComponent {
       return;
     }
 
-    const childToSave: ChildRepresentation = {
-      ...this.childObj,
-      status: statusId,
+    const uploadAndSave = (): void => {
+      if (this.selectedPhotoFile) {
+        this.childService.uploadChildPhoto(this.selectedPhotoFile).subscribe({
+          next: (response: { photoUrl: string }): void => {
+            if (!response?.photoUrl) {
+              swal(
+                'Error!',
+                'The backend did not return the uploaded photo path.',
+                'error',
+              );
+              return;
+            }
+
+            const childToSave: ChildRepresentation = {
+              ...this.childObj,
+              status: statusId,
+              photoUrl: response.photoUrl,
+            };
+
+            this.saveChildRecord(childToSave, operation);
+          },
+
+          error: (error: any): void => {
+            console.error('Child photo upload error:', error);
+
+            swal(
+              'Photo Upload Failed',
+              error?.error?.message || 'Unable to upload the child photo.',
+              'error',
+            );
+          },
+        });
+
+        return;
+      }
+
+      const childToSave: ChildRepresentation = {
+        ...this.childObj,
+        status: statusId,
+      };
+
+      this.saveChildRecord(childToSave, operation);
     };
 
-    if (this.type === 'Add') {
+    if (isAdding) {
       swal({
         title: 'Are you sure?',
-        text: 'That you want to Add this details?',
+        text: 'Do you want to register this child?',
         icon: 'warning',
         dangerMode: true,
       }).then((willAdd: boolean) => {
         if (willAdd) {
-          this.childService.createChild(childToSave, this.type).subscribe({
-            next: (result: any): void => {
-              this.GetAllChildren();
-              swal('Successful!', 'Child has been Added!', 'success');
-              this.ClearForm();
-            },
-            error: (error: any): void => {
-              console.log('Add child error:', error);
-              console.log('Backend response:', error?.error);
-
-              swal(
-                'Error!',
-                error?.error?.message || 'Unable to add child.',
-                'error',
-              );
-            },
-          });
+          uploadAndSave();
         }
       });
     } else {
-      this.childService.createChild(childToSave, this.type).subscribe({
-        next: (result: any): void => {
-          this.GetAllChildren();
-          swal('Successful!', 'Child has been updated!', 'success');
-          this.ClearForm();
-        },
-        error: (error: any): void => {
-          console.log('Update child error:', error);
-          console.log('Backend response:', error?.error);
-
-          swal(
-            'Error!',
-            error?.error?.message || 'Unable to update child.',
-            'error',
-          );
-        },
-      });
+      uploadAndSave();
     }
+  }
+
+  private saveChildRecord(
+    childToSave: ChildRepresentation,
+    operation: string,
+  ): void {
+    this.childService.createChild(childToSave, operation).subscribe({
+      next: (): void => {
+        this.GetAllChildren();
+
+        swal(
+          'Successful!',
+          operation === 'Add'
+            ? 'Child has been registered successfully!'
+            : 'Child details have been updated successfully!',
+          'success',
+        );
+
+        this.ClearForm();
+      },
+
+      error: (error: any): void => {
+        console.error('Save child error:', error);
+        console.error('Backend response:', error?.error);
+
+        swal(
+          'Error!',
+          error?.error?.message || 'Unable to save the child details.',
+          'error',
+        );
+      },
+    });
   }
 
   GetChildById(ID: any): void {
@@ -199,6 +342,7 @@ export class ChildComponent {
       }
 
       this.selectedPhotoFile = null;
+      scrollPageToTop();
     });
   }
 
@@ -244,7 +388,14 @@ export class ChildComponent {
           error: (error: any): void => {
             console.log(error);
 
-            swal('Error!', 'Unable to delete child.', 'error');
+            const message =
+              error?.error?.message ||
+              (error?.status === 403
+                ? 'The API denied deletion. Confirm CHILD_DELETE exists and is assigned to your user or privilege group, then sign in again.'
+                : error?.status === 409 || error?.status === 500
+                  ? 'The child may be referenced by enrollments, attendance, meal records, or incidents. Retain the record and change its lifecycle status instead.'
+                  : 'Unable to delete child. Check the Network tab and Spring Boot console.');
+            swal('Delete failed', message, 'error');
           },
         });
       }
@@ -252,36 +403,64 @@ export class ChildComponent {
   }
 
   GetAllParents(): void {
-    this.childService.GetAllParents().subscribe((allData: any) => {
-      this.allParents = allData?.data?.dataList || [];
+    this.allParents$ = this.childService.GetAllParents().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    this.allParents$.subscribe({
+      next: (parents: any[]) => (this.allParents = parents),
+      error: (error: any) => {
+        console.error('Get parents error:', error);
+        this.allParents = [];
+        swal('Error!', 'Unable to load parents.', 'error');
+      },
     });
   }
 
-  onChangeParent(E: any): void {
-    const value = E.target.value;
-
-    this.childObj.parent = value === '' ? null : value;
-
+  onChangeParent(value: any): void {
+    const parentId = value === '' || value == null ? null : value;
+    this.childObj.parent = parentId;
     const selectedParent = this.allParents.find(
-      (parent: any) => String(parent.id) === String(value),
+      (parent: any) => String(parent.id) === String(parentId),
     );
-
-    if (selectedParent) {
-      this.parentValue = selectedParent.fullName;
-    }
+    this.parentValue = selectedParent?.fullName ?? '';
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe((allData: any) => {
-      this.allStatus = allData?.data?.dataList || [];
-    });
-    console.table(
-      this.allStatus.map((status: any) => ({
-        id: status.id,
-        name: status.name,
-        statusName: status.statusName,
-      })),
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+
+    this.childStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, ['Active', 'Withdrawn', 'Graduated']),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]) => {
+        this.allStatus = statuses;
+        if (!this.isEditChild && !this.childObj.status) {
+          const activeStatus = statuses.find(
+            (status: any) =>
+              normalizeLookupName(status?.name ?? status?.statusName) ===
+              'active',
+          );
+          if (activeStatus) {
+            this.childObj.status = activeStatus.id;
+            this.statusValue = activeStatus.name ?? activeStatus.statusName;
+          }
+        }
+      },
+      error: (error: any) => {
+        console.error('Get statuses error:', error);
+        this.allStatus = [];
+        swal('Error!', 'Unable to load statuses.', 'error');
+      },
+    });
   }
 
   onChangeStatus(E: any): void {
@@ -307,8 +486,7 @@ export class ChildComponent {
 
     const file = input.files[0];
 
-    // Accept JPG, JPEG, and PNG files only.
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypes = ['image/jpeg', 'image/png'];
 
     if (!allowedTypes.includes(file.type)) {
       swal(
@@ -322,11 +500,10 @@ export class ChildComponent {
       return;
     }
 
-    // Maximum file size: 5 MB.
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      swal('File Too Large', 'Photo size must be less than 5 MB.', 'warning');
+      swal('File Too Large', 'Photo size must not exceed 5 MB.', 'warning');
 
       input.value = '';
       this.selectedPhotoFile = null;
@@ -338,16 +515,11 @@ export class ChildComponent {
     const reader = new FileReader();
 
     reader.onload = (): void => {
-      if (typeof reader.result !== 'string') {
-        swal('Error!', 'Unable to read the selected photo.', 'error');
-        return;
+      if (typeof reader.result === 'string') {
+        this.photoPreviewUrl = reader.result;
+      } else {
+        swal('Error!', 'Unable to preview the selected photo.', 'error');
       }
-
-      // Display the selected photo.
-      this.photoPreviewUrl = reader.result;
-
-      // Include the image data in the JSON payload sent to the API.
-      this.childObj.photoUrl = reader.result;
     };
 
     reader.onerror = (): void => {
@@ -357,7 +529,7 @@ export class ChildComponent {
     reader.readAsDataURL(file);
   }
 
-  getPhotoUrl(photoUrl: string | undefined): string {
+  getPhotoUrl(photoUrl: string | null | undefined): string {
     if (!photoUrl) {
       return '';
     }
@@ -368,9 +540,9 @@ export class ChildComponent {
       return value;
     }
 
-    return `http://localhost:8010${
-      value.startsWith('/') ? value : '/' + value
-    }`;
+    const normalizedPath = value.replace(/\\/g, '/').replace(/^\/+/, '');
+
+    return `http://localhost:8010/${normalizedPath}`;
   }
 
   get filteredChildren(): any[] {
@@ -406,8 +578,13 @@ export class ChildComponent {
     this.childObj = {};
 
     this.parentValue = '';
+    this.statusValue = 'Active';
 
-    this.statusValue = '';
+    const activeStatus = this.allStatus.find(
+      (status: any) =>
+        normalizeLookupName(status?.name ?? status?.statusName) === 'active',
+    );
+    if (activeStatus) this.childObj.status = activeStatus.id;
 
     this.isEditChild = false;
 
@@ -428,6 +605,37 @@ export class ChildComponent {
     }
   }
 
+  statusOptionId(status: any): string | number | null {
+    if (status && typeof status === 'object') return status.id ?? null;
+    return status == null || status === '' ? null : status;
+  }
+
+  onChildStatusChange(child: any, statusId: any): void {
+    const selectedStatus = findStatusById(this.allStatus, statusId);
+    if (!selectedStatus) {
+      delete child._pendingStatus;
+      child.statusChanged = false;
+      return;
+    }
+
+    if (
+      String(this.statusOptionId(child.status)) === String(selectedStatus.id)
+    ) {
+      delete child._pendingStatus;
+      child.statusChanged = false;
+      return;
+    }
+
+    child._pendingStatus = selectedStatus;
+    child.statusChanged = true;
+  }
+
+  private localToday(): string {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
   isChildActive(child: any): boolean {
     const status = child._pendingStatus ?? child.status;
 
@@ -442,7 +650,6 @@ export class ChildComponent {
 
     const selectedStatus = this.findStatusByName(requestedStatus);
 
-    // A valid status record, including its database ID, is required.
     if (
       !selectedStatus ||
       selectedStatus.id === null ||
@@ -464,6 +671,14 @@ export class ChildComponent {
   }
 
   saveChildStatus(child: any): void {
+    if (!this.canUpdate) {
+      swal(
+        'Permission denied',
+        'You do not have permission to update child status.',
+        'warning',
+      );
+      return;
+    }
     const selectedStatus = child._pendingStatus;
 
     if (!selectedStatus || selectedStatus.id == null) {
@@ -476,7 +691,6 @@ export class ChildComponent {
       status: selectedStatus.id,
     };
 
-    // Remove temporary frontend-only properties.
     delete childToUpdate._pendingStatus;
     delete childToUpdate.statusChanged;
 

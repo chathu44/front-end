@@ -4,7 +4,7 @@ export interface EnrollmentRepresentation {
   enrollDate?: string;
   startDate?: string;
   endDate?: string;
-
+  
   child?: any;
   parent?: any;
   program?: any;

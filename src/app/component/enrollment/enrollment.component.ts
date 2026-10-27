@@ -8,6 +8,16 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  scrollPageToTop,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-enrollment',
   standalone: false,
@@ -24,6 +34,10 @@ export class EnrollmentComponent {
   allProgramList: Array<any> = [];
   allClassroomList: Array<any> = [];
   allStatus: Array<any> = [];
+  allChildList$: Observable<any[]> = of([]);
+  allProgramList$: Observable<any[]> = of([]);
+  allClassroomList$: Observable<any[]> = of([]);
+  enrollmentStatusOptions$: Observable<any[]> = of([]);
 
   type: string = '';
 
@@ -76,30 +90,96 @@ export class EnrollmentComponent {
       );
       return;
     }
+
+    const enrollDate = String(this.enrollmentObj.enrollDate ?? '').trim();
+    const startDate = String(this.enrollmentObj.startDate ?? '').trim();
+    const endDate = String(this.enrollmentObj.endDate ?? '').trim();
+    const childId =
+      this.enrollmentObj.child && typeof this.enrollmentObj.child === 'object'
+        ? this.enrollmentObj.child.id
+        : this.enrollmentObj.child;
+    const programId =
+      this.enrollmentObj.program &&
+      typeof this.enrollmentObj.program === 'object'
+        ? this.enrollmentObj.program.id
+        : this.enrollmentObj.program;
+    const classroomId =
+      this.enrollmentObj.classroom &&
+      typeof this.enrollmentObj.classroom === 'object'
+        ? this.enrollmentObj.classroom.id
+        : this.enrollmentObj.classroom;
+
+    const parentId =
+      this.enrollmentObj.parent && typeof this.enrollmentObj.parent === 'object'
+        ? this.enrollmentObj.parent.id
+        : this.enrollmentObj.parent;
+    if (
+      !enrollDate ||
+      !startDate ||
+      !childId ||
+      !parentId ||
+      !programId ||
+      !classroomId
+    ) {
+      swal(
+        'Validation error',
+        'Choose a child with a registered parent, program, classroom, enrollment date, and start date.',
+        'warning',
+      );
+      return;
+    }
+    if (startDate < enrollDate) {
+      swal(
+        'Validation error',
+        'Enrollment start date cannot be earlier than the enrollment date.',
+        'warning',
+      );
+      return;
+    }
+    if (endDate && endDate < startDate) {
+      swal(
+        'Validation error',
+        'End date cannot be earlier than the start date.',
+        'warning',
+      );
+      return;
+    }
+
+    this.enrollmentObj.child = childId;
+    this.enrollmentObj.parent = parentId;
+    this.enrollmentObj.program = programId;
+    this.enrollmentObj.classroom = classroomId;
+    this.enrollmentObj.enrollDate = enrollDate;
+    this.enrollmentObj.startDate = startDate;
+    this.enrollmentObj.endDate = endDate || undefined;
+
     this.type = this.isEditEnrollment ? 'Update' : 'Add';
 
+    let statusId =
+      this.enrollmentObj.status && typeof this.enrollmentObj.status === 'object'
+        ? this.enrollmentObj.status.id
+        : this.enrollmentObj.status;
+
     if (
-      this.type === 'Add' &&
-      (this.enrollmentObj.status === null ||
-        this.enrollmentObj.status === undefined ||
-        this.enrollmentObj.status === '')
+      (statusId === null || statusId === undefined || statusId === '') &&
+      this.type === 'Add'
     ) {
-      const activeStatus = this.allStatus.find(
-        (status: any) => String(status.name).toLowerCase() === 'active',
+      const pendingStatus = this.allStatus.find(
+        (status: any) =>
+          normalizeLookupName(status?.name ?? status?.statusName) === 'pending',
       );
-
-      if (!activeStatus) {
-        swal(
-          'Error!',
-          'Active status was not found. Check your status records.',
-          'error',
-        );
-
-        return;
-      }
-
-      this.enrollmentObj.status = activeStatus.id;
+      statusId = pendingStatus?.id ?? null;
     }
+
+    if (statusId === null || statusId === undefined || statusId === '') {
+      swal(
+        'Missing status',
+        'Select a valid enrollment status before saving.',
+        'warning',
+      );
+      return;
+    }
+    this.enrollmentObj.status = statusId;
 
     if (this.type === 'Add') {
       swal({
@@ -184,6 +264,7 @@ export class EnrollmentComponent {
       this.isEditEnrollment = true;
 
       this.selectedEnrollmentId = record.id;
+      scrollPageToTop();
     });
   }
 
@@ -251,14 +332,24 @@ export class EnrollmentComponent {
   }
 
   GetAllChildList(): void {
-    this.enrollmentService.GetAllChildList().subscribe({
-      next: (allData: any): void => {
-        this.allChildList = allData?.data?.dataList || [];
-      },
-
-      error: (error: any): void => {
-        console.error(error);
-      },
+    this.allChildList$ = this.enrollmentService.GetAllChildList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((child: any) => ({
+          ...child,
+          dropdownLabel: [
+            [child.firstName, child.lastName].filter(Boolean).join(' ').trim(),
+            child.childCode || child.id,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allChildList$.subscribe({
+      next: (items: any[]) => (this.allChildList = items),
+      error: (error: any) => console.error('Unable to load children', error),
     });
   }
 
@@ -275,8 +366,6 @@ export class EnrollmentComponent {
       return;
     }
 
-    // Automatically retrieve the parent's ID
-    // from the selected child's registration.
     const linkedParentId =
       selectedChild.parent?.id ?? selectedChild.parent ?? null;
 
@@ -296,39 +385,93 @@ export class EnrollmentComponent {
   }
 
   GetAllProgramList(): void {
-    this.enrollmentService.GetAllProgramList().subscribe({
-      next: (allData: any): void => {
-        this.allProgramList = allData?.data?.dataList || [];
-      },
-
-      error: (error: any): void => {
-        console.error(error);
-      },
+    this.allProgramList$ = this.enrollmentService.GetAllProgramList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((program: any) => ({
+          ...program,
+          dropdownLabel:
+            program.programName || program.name || `Program #${program.id}`,
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allProgramList$.subscribe({
+      next: (items: any[]) => (this.allProgramList = items),
+      error: (error: any) => console.error('Unable to load programs', error),
     });
   }
 
   GetAllClassroomList(): void {
-    this.enrollmentService.GetAllClassroomList().subscribe({
-      next: (allData: any): void => {
-        this.allClassroomList = allData?.data?.dataList || [];
-      },
-
-      error: (error: any): void => {
-        console.error(error);
-      },
+    this.allClassroomList$ = this.enrollmentService.GetAllClassroomList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((room: any) => ({
+          ...room,
+          dropdownLabel: [
+            room.roomName || room.classroomName || `Classroom #${room.id}`,
+            room.roomCode || room.classroomCode,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allClassroomList$.subscribe({
+      next: (items: any[]) => (this.allClassroomList = items),
+      error: (error: any) => console.error('Unable to load classrooms', error),
     });
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (allData: any): void => {
-        this.allStatus = allData?.data?.dataList || [];
-      },
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
 
-      error: (error: any): void => {
-        console.error(error);
-      },
+    this.enrollmentStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, [
+          'Pending',
+          'Active',
+          'Completed',
+          'Withdrawn',
+        ]),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]) => (this.allStatus = statuses),
+      error: (error: any) => console.error('Unable to load statuses', error),
     });
+  }
+
+  statusOptionId(status: any): string | number | null {
+    if (status && typeof status === 'object') return status.id ?? null;
+    return status == null || status === '' ? null : status;
+  }
+
+  onEnrollmentStatusChange(enrollment: any, statusId: any): void {
+    const selectedStatus = findStatusById(this.allStatus, statusId);
+    if (!selectedStatus) {
+      delete enrollment._pendingStatus;
+      enrollment.statusChanged = false;
+      return;
+    }
+
+    if (
+      String(this.statusOptionId(enrollment.status)) ===
+      String(selectedStatus.id)
+    ) {
+      delete enrollment._pendingStatus;
+      enrollment.statusChanged = false;
+      return;
+    }
+
+    enrollment._pendingStatus = selectedStatus;
+    enrollment.statusChanged = true;
   }
 
   isEnrollmentActive(enrollment: any): boolean {
@@ -509,18 +652,24 @@ export class EnrollmentComponent {
     const currentStatus = this.enrollmentObj.status;
 
     if (currentStatus && typeof currentStatus === 'object') {
-      return currentStatus.name || 'Active by default';
+      return currentStatus.name || 'Pending';
     }
 
     const status = this.allStatus.find(
       (item: any) => String(item.id) === String(currentStatus),
     );
 
-    return status?.name || 'Active by default';
+    return status?.name || 'Pending';
   }
 
   ClearForm(): void {
     this.enrollmentObj = {};
+
+    const pendingStatus = this.allStatus.find(
+      (status: any) =>
+        normalizeLookupName(status?.name ?? status?.statusName) === 'pending',
+    );
+    if (pendingStatus) this.enrollmentObj.status = pendingStatus.id;
 
     this.isEditEnrollment = false;
 
