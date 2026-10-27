@@ -4,24 +4,16 @@ import { ParentRepresentation } from '../module/parent-representation';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ParentService {
+  private baseUrl: string = 'http://localhost:8010/api/v1/parent';
 
-  private baseUrl: string =
-    'http://localhost:8010/api/v1/parent';
+  constructor(private http: HttpClient) {}
 
-  constructor(
-    private http: HttpClient
-  ) { }
-
-  createParent(
-    parent: ParentRepresentation,
-    type: string
-  ): Observable<any> {
-
+  createParent(parent: ParentRepresentation, type: string): Observable<any> {
     const payload: any = {
-      ...parent
+      ...parent,
     };
 
     if (
@@ -33,37 +25,21 @@ export class ParentService {
     }
 
     if (type === 'Add') {
-      return this.http.post(
-        this.baseUrl,
-        payload
-      );
+      return this.http.post(this.baseUrl, payload);
     } else {
-      return this.http.put(
-        this.baseUrl + '/' + payload.id,
-        payload
-      );
+      return this.http.put(this.baseUrl + '/' + payload.id, payload);
     }
   }
 
   GetAllParents(): Observable<any> {
-    return this.http.get(
-      this.baseUrl
-    );
+    return this.http.get(this.baseUrl);
   }
 
-  GetParentById(
-    ID: any
-  ): Observable<any> {
-    return this.http.get(
-      this.baseUrl + '/' + ID
-    );
+  GetParentById(ID: any): Observable<any> {
+    return this.http.get(this.baseUrl + '/' + ID);
   }
 
-  DeleteParentById(
-    ID: any
-  ): Observable<any> {
-    return this.http.delete(
-      this.baseUrl + '/' + ID
-    );
+  DeleteParentById(ID: any): Observable<any> {
+    return this.http.delete(this.baseUrl + '/' + ID);
   }
 }

@@ -10,17 +10,33 @@ export class MealPlanService {
 
   constructor(private http: HttpClient) {}
 
-  createMealPlan(mealPlan: MealPlanRepresentation, type: 'Add' | 'Update'): Observable<any> {
+  createMealPlan(
+    mealPlan: MealPlanRepresentation,
+    type: 'Add' | 'Update',
+  ): Observable<any> {
     const payload: any = { ...mealPlan };
     payload.mealDate = payload.mealDate || null;
     payload.mealType = payload.mealType || null;
     payload.menuItems = payload.menuItems?.trim() || null;
-    payload.classroom = payload.classroom === '' || payload.classroom === undefined ? null : payload.classroom;
-    return type === 'Add' ? this.http.post(this.baseUrl, payload) : this.http.put(`${this.baseUrl}/${payload.id}`, payload);
+    payload.classroom =
+      payload.classroom === '' || payload.classroom === undefined
+        ? null
+        : payload.classroom;
+    return type === 'Add'
+      ? this.http.post(this.baseUrl, payload)
+      : this.http.put(`${this.baseUrl}/${payload.id}`, payload);
   }
 
-  GetAllMealPlans(): Observable<any> { return this.http.get(this.baseUrl); }
-  GetMealPlanById(id: string | number): Observable<any> { return this.http.get(`${this.baseUrl}/${id}`); }
-  DeleteMealPlanById(id: string | number): Observable<any> { return this.http.delete(`${this.baseUrl}/${id}`); }
-  GetAllClassroomList(): Observable<any> { return this.http.get(this.classroomUrl); }
+  GetAllMealPlans(): Observable<any> {
+    return this.http.get(this.baseUrl);
+  }
+  GetMealPlanById(id: string | number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/${id}`);
+  }
+  DeleteMealPlanById(id: string | number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/${id}`);
+  }
+  GetAllClassroomList(): Observable<any> {
+    return this.http.get(this.classroomUrl);
+  }
 }

@@ -1,33 +1,49 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  CanActivate,
+  Router,
+  RouterStateSnapshot,
+  UrlTree,
+} from '@angular/router';
 import { Observable } from 'rxjs';
 import { UserAuthService } from '../services/api/user/user-auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
-
   constructor(
     private userAuthService: UserAuthService,
-    private router: Router
-  ) { }
+    private router: Router,
+  ) {}
 
   canActivate(
     route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-
+    state: RouterStateSnapshot,
+  ):
+    | Observable<boolean | UrlTree>
+    | Promise<boolean | UrlTree>
+    | boolean
+    | UrlTree {
     if (!this.userAuthService.isLoggedIn()) {
-      this.router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: state.url },
+      });
       return false;
     }
 
     // Optional: if route declares requiredAuthIds, check privilege IDs from /get-auth-ids/{id}
-    const requiredAuthIds = route.data['requiredAuthIds'] as number[] | undefined;
+    const requiredAuthIds = route.data['requiredAuthIds'] as
+      | number[]
+      | undefined;
     if (requiredAuthIds?.length) {
-      const userAuthIds = this.userAuthService.getAuthIds();
-      const allowed = requiredAuthIds.some(id => userAuthIds.includes(id));
+      const userAuthIds = this.userAuthService
+        .getAuthIds()
+        .map((id) => Number(id));
+      const allowed = requiredAuthIds.some((id) =>
+        userAuthIds.includes(Number(id)),
+      );
       if (!allowed) {
         this.router.navigate(['/forbidden']);
         return false;

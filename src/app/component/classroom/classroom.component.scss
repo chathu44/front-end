@@ -43,11 +43,7 @@
 
 .registration-header {
   padding: 18px 22px;
-  background: linear-gradient(
-    135deg,
-    #f7fbff,
-    #eef6ff
-  );
+  background: linear-gradient(135deg, #f7fbff, #eef6ff);
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -583,15 +579,12 @@
 }
 
 @media (max-width: 991px) {
-
   .page-heading {
     align-items: flex-start;
   }
-
 }
 
 @media (max-width: 767px) {
-
   .page-title {
     font-size: 22px;
   }

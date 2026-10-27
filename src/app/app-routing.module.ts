@@ -32,7 +32,7 @@ const routes: Routes = [
   { path: 'teacher', component: TeacherComponent, canActivate: [AuthGuard] },
   { path: 'qualification', component: QualificationComponent, canActivate: [AuthGuard] },
   { path: 'class', component: ClassComponent, canActivate: [AuthGuard] },
-  { path: 'privilege', component: PrivilegeComponent, canActivate: [AuthGuard] },
+  { path: 'privilege', component: PrivilegeComponent, canActivate: [AuthGuard], data: { requiredAuthIds: [6] } },
 
   { path: 'child', component: ChildComponent, canActivate: [AuthGuard] },
   { path: 'parent', component: ParentComponent, canActivate: [AuthGuard] },

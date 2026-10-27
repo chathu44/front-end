@@ -4,34 +4,23 @@ import { ProgramRepresentation } from '../module/program-representation';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProgramService {
+  private baseUrl: string = 'http://localhost:8010/api/v1/program';
 
-  private baseUrl: string =
-    'http://localhost:8010/api/v1/program';
+  constructor(private http: HttpClient) {}
 
-  constructor(
-    private http: HttpClient
-  ) { }
-
-  createProgram(
-    program: ProgramRepresentation,
-    type: string
-  ): Observable<any> {
-
+  createProgram(program: ProgramRepresentation, type: string): Observable<any> {
     const payload: any = {
-      ...program
+      ...program,
     };
 
     if (payload.sessionStart === '') {
       payload.sessionStart = null;
     }
 
-    if (
-      payload.sessionStart &&
-      payload.sessionStart.length === 5
-    ) {
+    if (payload.sessionStart && payload.sessionStart.length === 5) {
       payload.sessionStart += ':00';
     }
 
@@ -39,10 +28,7 @@ export class ProgramService {
       payload.sessionEnd = null;
     }
 
-    if (
-      payload.sessionEnd &&
-      payload.sessionEnd.length === 5
-    ) {
+    if (payload.sessionEnd && payload.sessionEnd.length === 5) {
       payload.sessionEnd += ':00';
     }
 
@@ -69,37 +55,21 @@ export class ProgramService {
     }
 
     if (type === 'Add') {
-      return this.http.post(
-        this.baseUrl,
-        payload
-      );
+      return this.http.post(this.baseUrl, payload);
     }
 
-    return this.http.put(
-      this.baseUrl + '/' + payload.id,
-      payload
-    );
+    return this.http.put(this.baseUrl + '/' + payload.id, payload);
   }
 
   GetAllPrograms(): Observable<any> {
-    return this.http.get(
-      this.baseUrl
-    );
+    return this.http.get(this.baseUrl);
   }
 
-  GetProgramById(
-    ID: any
-  ): Observable<any> {
-    return this.http.get(
-      this.baseUrl + '/' + ID
-    );
+  GetProgramById(ID: any): Observable<any> {
+    return this.http.get(this.baseUrl + '/' + ID);
   }
 
-  DeleteProgramById(
-    ID: any
-  ): Observable<any> {
-    return this.http.delete(
-      this.baseUrl + '/' + ID
-    );
+  DeleteProgramById(ID: any): Observable<any> {
+    return this.http.delete(this.baseUrl + '/' + ID);
   }
 }

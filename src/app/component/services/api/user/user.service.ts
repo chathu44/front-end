@@ -1,72 +1,77 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { UserAuthService } from './user-auth.service';
 import {
   LoginRepresentation,
   RegisterRepresentation,
-  UserDto
+  UserDto,
 } from '../module/login-representation';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserService {
-
   private readonly baseUrl = environment.apiUrl;
   private readonly noAuthHeaders = new HttpHeaders({ 'No-Auth': 'True' });
 
   constructor(
     private httpClient: HttpClient,
-    private userAuthService: UserAuthService
-  ) { }
+    private userAuthService: UserAuthService,
+  ) {}
 
   logout(): Observable<void> {
-    return this.httpClient.post<void>(`${this.baseUrl}/logout`, {}).pipe(
-      tap(() => this.userAuthService.clear())
-    );
+    return this.httpClient
+      .post<void>(`${this.baseUrl}/logout`, {})
+      .pipe(tap(() => this.userAuthService.clear()));
   }
 
   login(loginData: LoginRepresentation): Observable<UserDto> {
-    return this.httpClient.post<UserDto>(
-      `${this.baseUrl}/login`,
-      loginData,
-      { headers: this.noAuthHeaders }
-    ).pipe(
-      tap((user) => this.persistSession(user))
-    );
+    return this.httpClient
+      .post<UserDto>(`${this.baseUrl}/login`, loginData, {
+        headers: this.noAuthHeaders,
+      })
+      .pipe(tap((user) => this.persistSession(user)));
   }
 
   register(data: RegisterRepresentation): Observable<UserDto> {
-    return this.httpClient.post<UserDto>(
-      `${this.baseUrl}/register`,
-      data,
-      { headers: this.noAuthHeaders }
-    );
+    return this.httpClient.post<UserDto>(`${this.baseUrl}/register`, data, {
+      headers: this.noAuthHeaders,
+    });
   }
 
   getAuthIds(userId: number): Observable<number[]> {
-  const url = `${this.baseUrl}/get-auth-ids/${userId}`;
+    const url = `${this.baseUrl}/get-auth-ids/${userId}`;
 
-  console.log('Requesting permissions for user ID:', userId);
-  console.log('Permission API URL:', url);
-
-  return this.httpClient.get<number[]>(url).pipe(
-    tap((ids) => {
-      console.log('Permission API response:', ids);
-
-      this.userAuthService.setAuthIds(
-        Array.isArray(ids) ? ids : []
-      );
-
-      console.log(
-        'Permissions saved to localStorage:',
-        this.userAuthService.getAuthIds()
-      );
-    })
-  );
-}
+    return this.httpClient.get<any>(url).pipe(
+      map((response: any): number[] => {
+        const candidates = [
+          response?.data?.dataList,
+          response?.dataList,
+          response?.data?.content,
+          response?.content,
+          response?.data,
+          response,
+        ];
+        const values =
+          candidates.find((candidate) => Array.isArray(candidate)) ?? [];
+        return values
+          .map((item: any) =>
+            Number(
+              item && typeof item === 'object'
+                ? (item.auth_id ??
+                    item.authId ??
+                    item.authID ??
+                    item.authenticationId)
+                : item,
+            ),
+          )
+          .filter((id: number) => Number.isFinite(id));
+      }),
+      tap((ids: number[]) => this.userAuthService.setAuthIds(ids)),
+    );
+  }
   // getAuthIds(userId: number): Observable<number[]> {
   //   return this.httpClient.get<number[]>(`${this.baseUrl}/get-auth-ids/${userId}`).pipe(
   //     tap((ids) => this.userAuthService.setAuthIds(ids))

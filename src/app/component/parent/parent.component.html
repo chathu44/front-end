@@ -1,6 +1,5 @@
 <main class="parent-page mt-5 pt-3">
   <div class="container-fluid px-4">
-    <!-- PAGE HEADER -->
     <div class="page-heading mb-4">
       <div>
         <h2 class="page-title mb-1">PARENT REGISTRATION</h2>
@@ -15,12 +14,9 @@
       </div>
     </div>
 
-    <!-- REGISTRATION AREA -->
     <div class="row g-4">
-      <!-- FORM -->
       <div class="col-xl-8 col-lg-7">
         <div class="card registration-card">
-          <!-- HEADER -->
           <div class="card-header registration-header">
             <div class="header-left">
               <div class="header-icon">
@@ -47,10 +43,8 @@
             </div>
           </div>
 
-          <!-- BODY -->
           <div class="card-body p-4">
             <form #parentForm="ngForm" (ngSubmit)="SaveParent()">
-              <!-- PERSONAL INFORMATION -->
               <div class="section-heading">
                 <div class="section-icon">
                   <i class="bi bi-person-vcard"></i>
@@ -64,7 +58,6 @@
               </div>
 
               <div class="row g-3 mb-4">
-                <!-- FULL NAME -->
                 <div class="col-md-8">
                   <label for="fullName" class="form-label">
                     Full Name
@@ -78,6 +71,8 @@
                     name="fullName"
                     [(ngModel)]="parentObj.fullName"
                     required
+                    minlength="2"
+                    maxlength="150"
                     #fullName="ngModel"
                     placeholder="Enter full name"
                   />
@@ -86,35 +81,29 @@
                     class="error-text"
                     *ngIf="fullName.invalid && fullName.touched"
                   >
-                    Full name is required.
+                    Enter a valid name containing 2–150 characters.
                   </small>
                 </div>
 
-                <!-- RELATIONSHIP -->
                 <div class="col-md-4">
                   <label for="relationship" class="form-label">
                     Relationship
                   </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
+                    class="standard-select"
                     id="relationship"
                     name="relationship"
+                    [items]="relationshipOptions"
                     [(ngModel)]="parentObj.relationship"
-                  >
-                    <option value="">Select Relationship</option>
-
-                    <option value="Mother">Mother</option>
-
-                    <option value="Father">Father</option>
-
-                    <option value="Guardian">Guardian</option>
-
-                    <option value="Other">Other</option>
-                  </select>
+                    [searchable]="true"
+                    [clearable]="true"
+                    appendTo="body"
+                    placeholder="Select relationship"
+                    notFoundText="No matching relationship"
+                  ></ng-select>
                 </div>
 
-                <!-- PHONE -->
                 <div class="col-md-6">
                   <label for="phone" class="form-label">
                     Phone
@@ -122,12 +111,17 @@
                   </label>
 
                   <input
-                    type="text"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel"
                     class="form-control"
                     id="phone"
                     name="phone"
                     [(ngModel)]="parentObj.phone"
                     required
+                    minlength="9"
+                    maxlength="20"
+                    pattern="^(?:0|94|\+94)?[0-9()\s-]{9,16}$"
                     #phone="ngModel"
                     placeholder="Enter phone number"
                   />
@@ -136,27 +130,36 @@
                     class="error-text"
                     *ngIf="phone.invalid && phone.touched"
                   >
-                    Phone number is required.
+                    Please enter a valid 10-digit  phone number
                   </small>
                 </div>
 
-                <!-- ALTERNATE PHONE -->
                 <div class="col-md-6">
                   <label for="alternatePhone" class="form-label">
                     Alternate Phone
                   </label>
 
                   <input
-                    type="text"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel-national"
                     class="form-control"
                     id="alternatePhone"
                     name="alternatePhone"
                     [(ngModel)]="parentObj.alternatePhone"
+                    maxlength="20"
+                    pattern="^(?:0|94|\+94)?[0-9()\s-]{9,16}$"
+                    #alternatePhone="ngModel"
                     placeholder="Enter alternate phone"
                   />
+                  <small
+                    class="error-text"
+                    *ngIf="alternatePhone.invalid && alternatePhone.touched"
+                  >
+                    Enter a valid 10-digit  phone number or leave this field blank.
+                  </small>
                 </div>
 
-                <!-- EMAIL -->
                 <div class="col-md-6">
                   <label for="email" class="form-label"> Email </label>
 
@@ -166,6 +169,7 @@
                     id="email"
                     name="email"
                     [(ngModel)]="parentObj.email"
+                    maxlength="100"
                     #email="ngModel"
                     placeholder="Enter email address"
                   />
@@ -178,7 +182,6 @@
                   </small>
                 </div>
 
-                <!-- NIC -->
                 <div class="col-md-6">
                   <label for="nic" class="form-label"> NIC </label>
 
@@ -188,12 +191,17 @@
                     id="nic"
                     name="nic"
                     [(ngModel)]="parentObj.nic"
+                    maxlength="20"
+                    pattern="^([0-9]{9}[vVxX]|[0-9]{12})$"
+                    #nic="ngModel"
                     placeholder="Enter NIC number"
                   />
+                  <small class="error-text" *ngIf="nic.invalid && nic.touched">
+                    NIC must be 9 digits followed by V/X or 12 digits.
+                  </small>
                 </div>
               </div>
 
-              <!-- CONTACT / ADDRESS -->
               <div class="section-heading">
                 <div class="section-icon contact-icon">
                   <i class="bi bi-geo-alt-fill"></i>
@@ -207,7 +215,6 @@
               </div>
 
               <div class="row g-3 mb-4">
-                <!-- ADDRESS -->
                 <div class="col-md-7">
                   <label for="address" class="form-label"> Address </label>
 
@@ -217,11 +224,11 @@
                     name="address"
                     rows="3"
                     [(ngModel)]="parentObj.address"
+                    maxlength="255"
                     placeholder="Enter residential address"
                   ></textarea>
                 </div>
 
-                <!-- WORKPLACE -->
                 <div class="col-md-5">
                   <label for="workplace" class="form-label"> Workplace </label>
 
@@ -231,12 +238,12 @@
                     name="workplace"
                     rows="3"
                     [(ngModel)]="parentObj.workplace"
+                    maxlength="100"
                     placeholder="Enter workplace"
                   ></textarea>
                 </div>
               </div>
 
-              <!-- STATUS INFORMATION -->
               <div class="info-box mb-4">
                 <div class="info-icon">
                   <i class="bi bi-shield-check"></i>
@@ -247,13 +254,13 @@
 
                   <p class="mb-0">
                     New parents are registered as
-                    <strong>Active</strong>. You can change the status from the
-                    registered parents table.
+                    <strong>Active</strong>. Changing a parent’s status affects
+                    the parent record only; it does not automatically change a
+                    child’s lifecycle or enrollment status.
                   </p>
                 </div>
               </div>
 
-              <!-- BUTTONS -->
               <div class="form-actions">
                 <button
                   type="button"
@@ -285,7 +292,6 @@
         </div>
       </div>
 
-      <!-- PROFILE -->
       <div class="col-xl-4 col-lg-5">
         <div class="card profile-card">
           <div class="profile-card-header">
@@ -311,7 +317,6 @@
           </div>
 
           <div class="profile-details">
-            <!-- RELATIONSHIP -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-people-fill"></i>
@@ -326,7 +331,6 @@
               </div>
             </div>
 
-            <!-- PHONE -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-telephone-fill"></i>
@@ -341,7 +345,6 @@
               </div>
             </div>
 
-            <!-- EMAIL -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-envelope-fill"></i>
@@ -356,7 +359,6 @@
               </div>
             </div>
 
-            <!-- NIC -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-credit-card-2-front-fill"></i>
@@ -371,7 +373,6 @@
               </div>
             </div>
 
-            <!-- ADDRESS -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-geo-alt-fill"></i>
@@ -386,7 +387,6 @@
               </div>
             </div>
 
-            <!-- WORKPLACE -->
             <div class="profile-detail">
               <div class="detail-icon">
                 <i class="bi bi-building-fill"></i>
@@ -420,11 +420,9 @@
       </div>
     </div>
 
-    <!-- REGISTERED PARENTS TABLE -->
     <div class="row mt-4">
       <div class="col-12">
         <div class="card parent-table-card" *ngIf="canView">
-          <!-- TABLE HEADER -->
           <div class="table-header">
             <div class="header-left">
               <div class="header-icon">
@@ -445,7 +443,6 @@
             </div>
           </div>
 
-          <!-- SEARCH -->
           <div class="search-area">
             <div class="search-box">
               <i class="bi bi-search"></i>
@@ -466,7 +463,6 @@
             </div>
           </div>
 
-          <!-- TABLE -->
           <div class="table-responsive">
             <table class="table parent-table align-middle mb-0">
               <thead>
@@ -494,14 +490,12 @@
               </thead>
 
               <tbody>
-                <!-- PARENT ROW -->
                 <tr
                   *ngFor="let parent of filteredParents"
                   class="parent-row"
                   [class.selected-row]="selectedParentId == parent.id"
                   (click)="SelectParentRow(parent)"
                 >
-                  <!-- PARENT -->
                   <td>
                     <div class="table-parent">
                       <div class="table-parent-photo">
@@ -520,22 +514,18 @@
                     </div>
                   </td>
 
-                  <!-- RELATIONSHIP -->
                   <td>
                     {{ parent.relationship || "-" }}
                   </td>
 
-                  <!-- PHONE -->
                   <td>
                     {{ parent.phone || "-" }}
                   </td>
 
-                  <!-- ALTERNATE PHONE -->
                   <td>
                     {{ parent.alternatePhone || "-" }}
                   </td>
 
-                  <!-- EMAIL -->
                   <td>
                     <div
                       class="table-note"
@@ -545,12 +535,10 @@
                     </div>
                   </td>
 
-                  <!-- NIC -->
                   <td>
                     {{ parent.nic || "-" }}
                   </td>
 
-                  <!-- ADDRESS -->
                   <td>
                     <div
                       class="table-note"
@@ -560,7 +548,6 @@
                     </div>
                   </td>
 
-                  <!-- WORKPLACE -->
                   <td>
                     <div
                       class="table-note"
@@ -570,7 +557,6 @@
                     </div>
                   </td>
 
-                  <!-- STATUS -->
                   <td>
                     <div class="status-toggle-wrapper">
                       <label class="status-switch">
@@ -608,10 +594,8 @@
                     </div>
                   </td>
 
-                  <!-- ACTIONS -->
                   <td>
                     <div class="table-actions">
-                      <!-- VIEW -->
                       <button
                         type="button"
                         class="action-btn view-btn"
@@ -623,7 +607,6 @@
                         <i class="bi bi-eye"></i>
                       </button>
 
-                      <!-- EDIT -->
                       <button
                         type="button"
                         class="action-btn edit-btn"
@@ -636,7 +619,6 @@
                         <i class="bi bi-pencil-square"></i>
                       </button>
 
-                      <!-- DELETE -->
                       <button
                         type="button"
                         class="action-btn delete-btn"
@@ -652,7 +634,6 @@
                   </td>
                 </tr>
 
-                <!-- EMPTY -->
                 <tr *ngIf="filteredParents.length === 0">
                   <td colspan="10" class="empty-table">
                     <div class="empty-state">

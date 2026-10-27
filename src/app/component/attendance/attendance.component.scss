@@ -693,3 +693,17 @@
 .absent-link:hover {
   text-decoration: underline;
 }
+
+.child-avatar-photo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  background-color: #f1f5f9;
+}

@@ -9,6 +9,19 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  normalizeSriLankanPhone,
+  isValidEmailAddress,
+  isValidPersonName,
+  scrollPageToTop,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-parent',
   standalone: false,
@@ -19,6 +32,7 @@ export class ParentComponent implements OnInit {
   parentObj: ParentRepresentation = {};
   parents: Array<any> = [];
   allStatus: Array<any> = [];
+  parentStatusOptions$: Observable<any[]> = of([]);
   statusValue: any;
   type = '';
   isEditParent = false;
@@ -27,6 +41,8 @@ export class ParentComponent implements OnInit {
   canCreate = false;
   canUpdate = false;
   canDelete = false;
+
+  readonly relationshipOptions = ['Mother', 'Father', 'Guardian', 'Other'];
 
   constructor(
     private parentService: ParentService,
@@ -63,6 +79,66 @@ export class ParentComponent implements OnInit {
       );
       return;
     }
+
+    const fullName = String(this.parentObj.fullName ?? '').trim();
+    const phone = String(this.parentObj.phone ?? '').trim();
+    const alternatePhone = String(this.parentObj.alternatePhone ?? '').trim();
+    const email = String(this.parentObj.email ?? '').trim();
+    const nic = String(this.parentObj.nic ?? '').trim();
+    const normalizedPhone = normalizeSriLankanPhone(phone);
+    const normalizedAlternatePhone = alternatePhone
+      ? normalizeSriLankanPhone(alternatePhone)
+      : '';
+    const nicPattern = /^(?:[0-9]{9}[vVxX]|[0-9]{12})$/;
+
+    if (!isValidPersonName(fullName, 150)) {
+      swal(
+        'Validation error',
+        'Enter a valid full name (2–150 characters, letters, spaces, initials, apostrophes or hyphens).',
+        'warning',
+      );
+      return;
+    }
+    if (!normalizedPhone) {
+      swal(
+        'Validation error',
+        'Enter a valid Sri Lankan phone number, for example 077 123 4567 or +94 77 123 4567.',
+        'warning',
+      );
+      return;
+    }
+    if (alternatePhone && !normalizedAlternatePhone) {
+      swal(
+        'Validation error',
+        'Enter a valid Sri Lankan alternate phone number or leave it blank.',
+        'warning',
+      );
+      return;
+    }
+    if (!isValidEmailAddress(email, 100)) {
+      swal(
+        'Validation error',
+        'Enter a valid email address of at most 100 characters, or leave it blank.',
+        'warning',
+      );
+      return;
+    }
+
+    if (nic && !nicPattern.test(nic)) {
+      swal(
+        'Validation error',
+        'NIC must be 9 digits followed by V/X or 12 digits.',
+        'warning',
+      );
+      return;
+    }
+
+    this.parentObj.fullName = fullName;
+    this.parentObj.phone = normalizedPhone!;
+    this.parentObj.alternatePhone = normalizedAlternatePhone || undefined;
+    this.parentObj.email = email || undefined;
+    this.parentObj.nic = nic || undefined;
+
     this.type = this.isEditParent ? 'Update' : 'Add';
 
     const statusId = this.getStatusId(this.parentObj.status);
@@ -146,6 +222,7 @@ export class ParentComponent implements OnInit {
         this.isEditParent = true;
 
         this.selectedParentId = record.id;
+        scrollPageToTop();
       },
       error: (error: any): void => {
         console.error('Get parent error:', error);
@@ -191,7 +268,12 @@ export class ParentComponent implements OnInit {
             console.error('Delete parent error:', error);
             swal(
               'Error!',
-              error?.error?.message || 'Unable to delete parent.',
+              error?.error?.message ||
+                (error?.status === 403
+                  ? 'The API denied deletion. Confirm PARENT_DELETE exists and is assigned to your user or privilege group, then sign in again.'
+                  : error?.status === 409 || error?.status === 500
+                    ? 'This parent may be linked to children or other records. Deactivate the parent rather than deleting linked history.'
+                    : 'Unable to delete parent. Check the Network tab and Spring Boot console.'),
               'error',
             );
           },
@@ -201,22 +283,36 @@ export class ParentComponent implements OnInit {
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (allData: any): void => {
-        this.allStatus = allData?.data?.dataList || [];
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
 
+    this.parentStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, ['Active', 'Inactive']),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]): void => {
+        this.allStatus = statuses;
         if (!this.isEditParent && !this.parentObj.status) {
-          const activeStatus = this.allStatus.find(
-            (status: any) => String(status.name).toLowerCase() === 'active',
+          const activeStatus = findStatusById(
+            statuses,
+            statuses.find(
+              (item: any) =>
+                normalizeLookupName(item?.name ?? item?.statusName) ===
+                'active',
+            )?.id,
           );
-
-          if (activeStatus) {
-            this.parentObj.status = activeStatus.id;
-          }
+          if (activeStatus) this.parentObj.status = activeStatus.id;
         }
       },
       error: (error: any): void => {
         console.error('Get statuses error:', error);
+        this.allStatus = [];
         swal('Error!', 'Unable to load statuses.', 'error');
       },
     });
@@ -229,15 +325,18 @@ export class ParentComponent implements OnInit {
 
   ClearForm(): void {
     this.parentObj = {};
-    this.statusValue = 'Select Value';
+    this.statusValue = 'Active';
     this.isEditParent = false;
 
     const activeStatus = this.allStatus.find(
-      (status: any) => String(status.name).toLowerCase() === 'active',
+      (status: any) =>
+        normalizeLookupName(status?.name ?? status?.statusName) === 'active',
     );
 
     if (activeStatus) {
       this.parentObj.status = activeStatus.id;
+      this.statusValue =
+        activeStatus.name ?? activeStatus.statusName ?? 'Active';
     }
     this.selectedParentId = null;
   }
@@ -274,6 +373,7 @@ export class ParentComponent implements OnInit {
     this.statusValue = this.getStatusName(parent.status) || 'Select Value';
 
     this.isEditParent = true;
+    scrollPageToTop();
   }
 
   isParentActive(parent: any): boolean {

@@ -1,5 +1,5 @@
-@import url('../node_modules/bootstrap/dist/css/bootstrap.css');
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap');
+@import url("../node_modules/bootstrap/dist/css/bootstrap.css");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap");
 
 :root {
   --ink: #0b1f33;
@@ -16,8 +16,8 @@
   --warn: #b54708;
   --shadow-soft: 0 18px 50px rgba(11, 31, 51, 0.12);
   --radius: 14px;
-  --font-ui: 'Sora', sans-serif;
-  --font-brand: 'Fraunces', Georgia, serif;
+  --font-ui: "Sora", sans-serif;
+  --font-brand: "Fraunces", Georgia, serif;
   --sidebar-width: 260px;
   --topbar-height: 64px;
 }
@@ -38,7 +38,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, .brand-font {
+h1,
+h2,
+h3,
+.brand-font {
   font-family: var(--font-brand);
   letter-spacing: -0.02em;
 }
@@ -60,7 +63,10 @@ a:hover {
   font-weight: 600;
   border-radius: 10px;
   padding: 0.65rem 1.25rem;
-  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .btn-primary:hover,
@@ -288,4 +294,748 @@ a:hover {
   font-family: var(--font-brand);
   font-size: 1.8rem !important;
   margin-bottom: 1rem;
+}
+
+/* Shared daycare module design system: Parents, Children, Rooms, Programs,
+   Enrollments, Attendance, Meals, Incidents and Privileges. */
+:root {
+  --module-card-radius: 18px;
+  --module-field-radius: 10px;
+  --module-border: #e3e8ef;
+  --module-heading: #122b45;
+  --module-muted: #64748b;
+  --module-accent: #0f766e;
+  --module-accent-soft: #eaf7f5;
+}
+
+.content-pane main,
+.content-pane .page-shell {
+  color: var(--module-heading);
+}
+
+.content-pane main .page-heading,
+.content-pane main .page-header,
+.content-pane .page-shell > .d-flex:first-child {
+  margin-bottom: 1.5rem;
+}
+
+.content-pane main .page-title,
+.content-pane main .page-header h1,
+.content-pane .page-shell .page-title {
+  color: var(--module-heading);
+  letter-spacing: -0.025em;
+}
+
+.content-pane main .page-subtitle,
+.content-pane main .page-description {
+  color: var(--module-muted);
+  line-height: 1.6;
+}
+
+.content-pane main .card,
+.content-pane main .panel,
+.content-pane main .roster-card,
+.content-pane main .filter-card,
+.content-pane main .table-section {
+  border: 1px solid var(--module-border);
+  border-radius: var(--module-card-radius);
+  box-shadow: 0 12px 35px rgba(19, 41, 66, 0.07);
+}
+
+.content-pane main .card-header,
+.content-pane main .registration-header,
+.content-pane main .table-header,
+.content-pane main .roster-header {
+  border-bottom: 1px solid var(--module-border);
+}
+
+.content-pane main .form-label,
+.content-pane .page-shell .form-label {
+  display: block;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 650;
+  margin-bottom: 0.45rem;
+}
+
+.content-pane main .form-control,
+.content-pane main .form-select,
+.content-pane .page-shell .form-control,
+.content-pane .page-shell .form-select,
+.content-pane main .ng-select .ng-select-container,
+.content-pane .page-shell .ng-select .ng-select-container {
+  min-height: 42px;
+  border: 1px solid #d7dee8;
+  border-radius: var(--module-field-radius);
+  background-color: #fff;
+  color: #182b42;
+  box-shadow: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.content-pane main textarea.form-control,
+.content-pane .page-shell textarea.form-control {
+  min-height: auto;
+}
+
+.content-pane main .form-control:focus,
+.content-pane main .form-select:focus,
+.content-pane .page-shell .form-control:focus,
+.content-pane .page-shell .form-select:focus,
+.content-pane main .ng-select.ng-select-focused .ng-select-container,
+.content-pane .page-shell .ng-select.ng-select-focused .ng-select-container {
+  border-color: var(--module-accent);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.content-pane main .ng-select .ng-select-container,
+.content-pane .page-shell .ng-select .ng-select-container {
+  padding-left: 0.45rem;
+}
+
+.content-pane main .ng-select .ng-value-container,
+.content-pane .page-shell .ng-select .ng-value-container {
+  padding-left: 0.4rem;
+}
+
+.content-pane main .ng-select.ng-select-disabled .ng-select-container,
+.content-pane .page-shell .ng-select.ng-select-disabled .ng-select-container {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.ng-dropdown-panel {
+  z-index: 2050 !important;
+  border: 1px solid var(--module-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+  background: #fff;
+  font-size: 14px;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.ng-select .ng-select-container {
+  font-size: 14px;
+}
+
+.attendance-classroom-select .ng-select-container {
+  min-height: 38px;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option.ng-option-marked,
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option.ng-option-selected {
+  background: var(--module-accent-soft);
+  color: var(--module-heading);
+}
+
+.content-pane main .table-responsive,
+.content-pane .page-shell .table-responsive,
+.content-pane main .roster-table-wrap {
+  border-radius: 0 0 var(--module-card-radius) var(--module-card-radius);
+}
+
+.content-pane main .table,
+.content-pane .page-shell .table {
+  margin-bottom: 0;
+}
+
+.content-pane main .table thead th,
+.content-pane .page-shell .table thead th {
+  background: #f7f9fc;
+  color: #53657a;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.055em;
+  padding: 0.9rem 0.85rem;
+  white-space: nowrap;
+}
+
+.content-pane main .table tbody td,
+.content-pane .page-shell .table tbody td {
+  color: #26384d;
+  border-color: #edf1f5;
+  padding: 0.8rem 0.85rem;
+  vertical-align: middle;
+}
+
+.content-pane main .table tbody tr:hover td,
+.content-pane .page-shell .table tbody tr:hover td {
+  background-color: #fbfdfd;
+}
+
+.content-pane main .form-actions .btn,
+.content-pane main .table-actions .btn,
+.content-pane main .action-btn,
+.content-pane .page-shell .btn {
+  border-radius: 10px;
+  font-weight: 650;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.content-pane main .form-actions .btn:hover,
+.content-pane main .table-actions .btn:hover,
+.content-pane .page-shell .btn:hover {
+  transform: translateY(-1px);
+}
+
+.content-pane main .required,
+.content-pane main .required-star,
+.content-pane main .required-label {
+  color: #c2413a;
+  font-weight: 750;
+}
+
+.content-pane main .error-text,
+.content-pane main .invalid-feedback,
+.content-pane .page-shell .error-text {
+  display: block;
+  margin-top: 0.35rem;
+  color: #b42318;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.content-pane main input.ng-invalid.ng-touched,
+.content-pane main textarea.ng-invalid.ng-touched,
+.content-pane main select.ng-invalid.ng-touched,
+.content-pane main ng-select.ng-invalid.ng-touched .ng-select-container {
+  border-color: #d92d20;
+}
+
+.content-pane main .status-editor {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 145px;
+}
+
+.content-pane main .status-select {
+  width: 100%;
+  min-width: 135px;
+  font-size: 0.78rem;
+}
+
+.content-pane main .status-save-btn {
+  white-space: nowrap;
+}
+
+.content-pane main .empty-state,
+.content-pane main .empty-table {
+  color: var(--module-muted);
+}
+
+@media (max-width: 767.98px) {
+  .content-pane main .card-body {
+    padding: 1rem !important;
+  }
+
+  .content-pane main .table thead th,
+  .content-pane main .table tbody td {
+    padding: 0.7rem;
+  }
+
+  .content-pane main .status-editor {
+    min-width: 125px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shared daycare-module design system
+   Keep form fields, ng-select controls, tables, cards and icon actions visually
+   consistent across Parents, Children, Classrooms, Programs, Enrollments,
+   Attendance, Meal Plans, Incidents and Privileges.
+   -------------------------------------------------------------------------- */
+:root {
+  --daycare-ink: #1f2d43;
+  --daycare-muted: #68778d;
+  --daycare-line: #dfe6ef;
+  --daycare-surface: #ffffff;
+  --daycare-surface-soft: #f6f8fb;
+  --daycare-accent: #287bce;
+  --daycare-accent-soft: #eaf3ff;
+  --daycare-danger: #c03945;
+  --daycare-radius: 14px;
+  --daycare-shadow: 0 6px 24px rgba(29, 46, 74, 0.07);
+}
+
+.parent-page,
+.child-page,
+.classroom-page,
+.program-page,
+.enrollment-page,
+.attendance-page,
+.meal-page,
+.incident-page,
+.page-shell {
+  color: var(--daycare-ink);
+}
+
+.parent-page .page-title,
+.child-page .page-title,
+.classroom-page .page-title,
+.program-page .page-title,
+.enrollment-page .page-title,
+.attendance-page .page-header h1,
+.meal-page .meal-heading h1,
+.incident-page .incident-title,
+.page-shell .page-title {
+  color: var(--daycare-ink);
+  font-family: var(--font-ui), sans-serif;
+  font-size: clamp(1.55rem, 2vw, 1.95rem);
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.parent-page .page-subtitle,
+.child-page .page-subtitle,
+.classroom-page .page-subtitle,
+.program-page .page-subtitle,
+.enrollment-page .page-subtitle,
+.attendance-page .page-description,
+.meal-page .meal-heading p,
+.incident-page .incident-subtitle,
+.page-shell .page-subtitle {
+  color: var(--daycare-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.parent-page .registration-card,
+.parent-page .profile-card,
+.parent-page .parent-table-card,
+.child-page .registration-card,
+.child-page .profile-card,
+.child-page .child-table-card,
+.classroom-page .registration-card,
+.classroom-page .profile-card,
+.classroom-page .classroom-table-card,
+.program-page .registration-card,
+.program-page .profile-card,
+.program-page .program-table-card,
+.enrollment-page .registration-card,
+.enrollment-page .profile-card,
+.enrollment-page .enrollment-table-card,
+.attendance-page .filter-card,
+.attendance-page .roster-card,
+.meal-page .meal-panel,
+.meal-page .meal-stat-card,
+.incident-page .incident-card,
+.incident-page .incident-summary-card,
+.page-shell .panel {
+  background: var(--daycare-surface);
+  border: 1px solid var(--daycare-line);
+  border-radius: var(--daycare-radius);
+  box-shadow: var(--daycare-shadow);
+}
+
+.parent-page .registration-header,
+.parent-page .table-header,
+.child-page .registration-header,
+.child-page .table-header,
+.classroom-page .registration-header,
+.classroom-page .table-header,
+.program-page .registration-header,
+.program-page .table-header,
+.enrollment-page .registration-header,
+.enrollment-page .table-header,
+.meal-page .panel-title-row,
+.meal-page .table-heading,
+.incident-page .incident-card-header {
+  background: var(--daycare-surface-soft);
+  border-bottom: 1px solid var(--daycare-line);
+}
+
+.parent-page .form-control,
+.parent-page .form-select,
+.child-page .form-control,
+.child-page .form-select,
+.classroom-page .form-control,
+.classroom-page .form-select,
+.program-page .form-control,
+.program-page .form-select,
+.enrollment-page .form-control,
+.enrollment-page .form-select,
+.attendance-page .form-control,
+.attendance-page .form-select,
+.meal-page .form-control,
+.meal-page .form-select,
+.incident-page .form-control,
+.incident-page .form-select,
+.page-shell .form-control,
+.page-shell .form-select {
+  min-height: 40px;
+  padding: 0.55rem 0.75rem;
+  color: var(--daycare-ink);
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  background-color: #fff;
+  border: 1px solid #d5deea;
+  border-radius: 9px;
+  box-shadow: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.parent-page .form-control:focus,
+.parent-page .form-select:focus,
+.child-page .form-control:focus,
+.child-page .form-select:focus,
+.classroom-page .form-control:focus,
+.classroom-page .form-select:focus,
+.program-page .form-control:focus,
+.program-page .form-select:focus,
+.enrollment-page .form-control:focus,
+.enrollment-page .form-select:focus,
+.attendance-page .form-control:focus,
+.attendance-page .form-select:focus,
+.meal-page .form-control:focus,
+.meal-page .form-select:focus,
+.incident-page .form-control:focus,
+.incident-page .form-select:focus,
+.page-shell .form-control:focus,
+.page-shell .form-select:focus {
+  border-color: #80b6ee;
+  box-shadow: 0 0 0 3px rgba(40, 123, 206, 0.12);
+  outline: 0;
+}
+
+.parent-page .form-label,
+.child-page .form-label,
+.classroom-page .form-label,
+.program-page .form-label,
+.enrollment-page .form-label,
+.attendance-page .form-label,
+.meal-page .form-label,
+.incident-page .form-label,
+.page-shell .form-label {
+  margin-bottom: 0.4rem;
+  color: #4f6076;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.parent-page .form-actions .btn,
+.child-page .form-actions .btn,
+.classroom-page .form-actions .btn,
+.program-page .form-actions .btn,
+.enrollment-page .form-actions .btn,
+.meal-page .form-actions .btn,
+.incident-page .form-actions .btn,
+.meal-page .meal-primary-btn,
+.attendance-page .btn {
+  min-height: 38px;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+/* One consistent ng-select size. Dropdown panel is appended to body and hence
+   has to be styled globally (component-scoped CSS cannot reach it). */
+.parent-page .ng-select,
+.child-page .ng-select,
+.classroom-page .ng-select,
+.program-page .ng-select,
+.enrollment-page .ng-select,
+.attendance-page .ng-select,
+.meal-page .ng-select,
+.incident-page .ng-select,
+.page-shell .ng-select {
+  width: 100%;
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.875rem;
+}
+
+.parent-page .ng-select .ng-select-container,
+.child-page .ng-select .ng-select-container,
+.classroom-page .ng-select .ng-select-container,
+.program-page .ng-select .ng-select-container,
+.enrollment-page .ng-select .ng-select-container,
+.attendance-page .ng-select .ng-select-container,
+.meal-page .ng-select .ng-select-container,
+.incident-page .ng-select .ng-select-container,
+.page-shell .ng-select .ng-select-container {
+  min-height: 40px;
+  color: var(--daycare-ink);
+  background: #fff;
+  border: 1px solid #d5deea;
+  border-radius: 9px;
+  box-shadow: none;
+  font-size: 0.875rem;
+}
+
+.parent-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.child-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.classroom-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.program-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.enrollment-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.attendance-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.meal-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.incident-page
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container,
+.page-shell
+  .ng-select.ng-select-focused:not(.ng-select-opened)
+  > .ng-select-container {
+  border-color: #80b6ee;
+  box-shadow: 0 0 0 3px rgba(40, 123, 206, 0.12);
+}
+
+.ng-dropdown-panel {
+  z-index: 2050 !important;
+  overflow: hidden;
+  color: var(--daycare-ink);
+  background: #fff;
+  border: 1px solid var(--daycare-line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(22, 39, 66, 0.16);
+  font-family: var(--font-ui), sans-serif;
+  font-size: 0.875rem;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ng-dropdown-panel .ng-option {
+  min-height: 36px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.875rem;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-marked {
+  color: #1c4f85;
+  background: #edf5ff;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-selected,
+.ng-dropdown-panel .ng-option.ng-option-selected.ng-option-marked {
+  color: #1d5b99;
+  background: #e3f0ff;
+}
+
+/* Normalize visual rhythm for all module tables, including meal plans/records
+   and incident history that originally used different table treatments. */
+.parent-page .parent-table,
+.child-page .child-table,
+.classroom-page .classroom-table,
+.program-page .program-table,
+.enrollment-page .enrollment-table,
+.attendance-page .roster-table,
+.meal-page .meal-table,
+.incident-page .incident-table,
+.page-shell .table {
+  margin-bottom: 0;
+  color: var(--daycare-ink);
+  font-size: 0.82rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.parent-page .parent-table thead th,
+.child-page .child-table thead th,
+.classroom-page .classroom-table thead th,
+.program-page .program-table thead th,
+.enrollment-page .enrollment-table thead th,
+.attendance-page .roster-table thead th,
+.meal-page .meal-table thead th,
+.incident-page .incident-table thead th,
+.page-shell .table thead th {
+  padding: 0.85rem 0.8rem;
+  color: #5d6c82;
+  background: #f5f8fc;
+  border-bottom: 1px solid #dfe6ef;
+  font-size: 0.71rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.parent-page .parent-table tbody td,
+.child-page .child-table tbody td,
+.classroom-page .classroom-table tbody td,
+.program-page .program-table tbody td,
+.enrollment-page .enrollment-table tbody td,
+.attendance-page .roster-table tbody td,
+.meal-page .meal-table tbody td,
+.incident-page .incident-table tbody td,
+.page-shell .table tbody td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #e9eef5;
+  vertical-align: middle;
+}
+
+.parent-page .parent-table tbody tr:last-child td,
+.child-page .child-table tbody tr:last-child td,
+.classroom-page .classroom-table tbody tr:last-child td,
+.program-page .program-table tbody tr:last-child td,
+.enrollment-page .enrollment-table tbody tr:last-child td,
+.attendance-page .roster-table tbody tr:last-child td,
+.meal-page .meal-table tbody tr:last-child td,
+.incident-page .incident-table tbody tr:last-child td,
+.page-shell .table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.parent-page .parent-table tbody tr:hover,
+.child-page .child-table tbody tr:hover,
+.classroom-page .classroom-table tbody tr:hover,
+.program-page .program-table tbody tr:hover,
+.enrollment-page .enrollment-table tbody tr:hover,
+.attendance-page .roster-table tbody tr:hover,
+.meal-page .meal-table tbody tr:hover,
+.incident-page .incident-table tbody tr:hover,
+.page-shell .table tbody tr:hover {
+  --bs-table-bg: #f7faff;
+}
+
+.selectable-row {
+  cursor: pointer;
+}
+
+.selectable-row:focus-within,
+.selectable-row:focus-visible {
+  outline: 2px solid rgba(40, 123, 206, 0.35);
+  outline-offset: -2px;
+}
+
+.parent-page .table-actions .action-btn,
+.child-page .table-actions .action-btn,
+.classroom-page .table-actions .action-btn,
+.program-page .table-actions .action-btn,
+.enrollment-page .table-actions .action-btn,
+.meal-page .actions-cell .btn,
+.incident-page .incident-table .btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid #dfe6ef;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.parent-page .table-actions .view-btn,
+.child-page .table-actions .view-btn,
+.classroom-page .table-actions .view-btn,
+.program-page .table-actions .view-btn,
+.enrollment-page .table-actions .view-btn,
+.meal-page .action-view,
+.incident-page .action-view {
+  color: #356caa;
+  background: #edf5ff;
+}
+
+.parent-page .table-actions .edit-btn,
+.child-page .table-actions .edit-btn,
+.classroom-page .table-actions .edit-btn,
+.program-page .table-actions .edit-btn,
+.enrollment-page .table-actions .edit-btn,
+.meal-page .action-edit,
+.incident-page .action-edit {
+  color: #287bce;
+  background: #fff;
+}
+
+.parent-page .table-actions .delete-btn,
+.child-page .table-actions .delete-btn,
+.classroom-page .table-actions .delete-btn,
+.program-page .table-actions .delete-btn,
+.enrollment-page .table-actions .delete-btn,
+.meal-page .action-delete,
+.incident-page .action-delete {
+  color: var(--daycare-danger);
+  background: #fff;
+}
+
+.parent-page .table-actions .action-btn:hover,
+.child-page .table-actions .action-btn:hover,
+.classroom-page .table-actions .action-btn:hover,
+.program-page .table-actions .action-btn:hover,
+.enrollment-page .table-actions .action-btn:hover,
+.meal-page .actions-cell .btn:hover,
+.incident-page .incident-table .btn:hover {
+  border-color: #b6c9df;
+  box-shadow: 0 3px 10px rgba(24, 46, 78, 0.09);
+  transform: translateY(-1px);
+}
+
+.error-text,
+.parent-page .error-text,
+.child-page .error-text,
+.classroom-page .error-text,
+.program-page .error-text,
+.enrollment-page .error-text,
+.meal-page .error-text,
+.incident-page .error-text {
+  display: block;
+  margin-top: 0.35rem;
+  color: #b42332;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 767.98px) {
+  .parent-page,
+  .child-page,
+  .classroom-page,
+  .program-page,
+  .enrollment-page,
+  .attendance-page,
+  .meal-page,
+  .incident-page {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .parent-page .registration-card,
+  .child-page .registration-card,
+  .classroom-page .registration-card,
+  .program-page .registration-card,
+  .enrollment-page .registration-card,
+  .attendance-page .filter-card,
+  .attendance-page .roster-card,
+  .meal-page .meal-panel,
+  .incident-page .incident-card {
+    border-radius: 12px;
+  }
 }

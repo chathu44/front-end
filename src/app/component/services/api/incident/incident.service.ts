@@ -7,29 +7,22 @@ import { IncidentRepresentation } from '../module/incident-representation';
   providedIn: 'root',
 })
 export class IncidentService {
-  private readonly baseUrl =
-    'http://localhost:8010/api/v1/incident';
+  private readonly baseUrl = 'http://localhost:8010/api/v1/incident';
 
-  private readonly childUrl =
-    'http://localhost:8010/api/v1/child';
+  private readonly childUrl = 'http://localhost:8010/api/v1/child';
 
-  private readonly classroomUrl =
-    'http://localhost:8010/api/v1/classroom';
+  private readonly classroomUrl = 'http://localhost:8010/api/v1/classroom';
 
-  private readonly staffUrl =
-    'http://localhost:8010/api/v1/staff';
+  private readonly staffUrl = 'http://localhost:8010/api/v1/staff';
 
   constructor(private http: HttpClient) {}
 
-  // Register a new incident or update an existing incident.
   SaveIncident(
     incident: IncidentRepresentation,
-    isEdit: boolean
+    isEdit: boolean,
   ): Observable<any> {
     const payload: any = { ...incident };
 
-    // datetime-local normally returns yyyy-MM-ddTHH:mm.
-    // Add seconds for LocalDateTime-compatible backends.
     if (payload.incidentDate) {
       if (
         typeof payload.incidentDate === 'string' &&
@@ -41,7 +34,6 @@ export class IncidentService {
       payload.incidentDate = null;
     }
 
-    // Send relationship IDs rather than full UI objects.
     payload.child = this.relationshipId(payload.child);
     payload.classroom = this.relationshipId(payload.classroom);
     payload.reportedBy = this.relationshipId(payload.reportedBy);
@@ -50,10 +42,7 @@ export class IncidentService {
     payload.parentNotified = payload.parentNotified === true;
 
     if (isEdit && payload.id != null) {
-      return this.http.put(
-        `${this.baseUrl}/${payload.id}`,
-        payload
-      );
+      return this.http.put(`${this.baseUrl}/${payload.id}`, payload);
     }
 
     delete payload.id;
@@ -90,20 +79,13 @@ export class IncidentService {
       return null;
     }
 
-    const id =
-      typeof value === 'object'
-        ? value.id
-        : value;
+    const id = typeof value === 'object' ? value.id : value;
 
     if (id == null || id === '') {
       return null;
     }
 
-    // Convert numeric dropdown IDs to numbers for the API.
-    if (
-      typeof id === 'string' &&
-      /^\d+$/.test(id)
-    ) {
+    if (typeof id === 'string' && /^\d+$/.test(id)) {
       return Number(id);
     }
 

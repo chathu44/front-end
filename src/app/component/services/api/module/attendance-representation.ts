@@ -7,6 +7,7 @@ export interface AttendanceRepresentation {
   checkedOutBy?: any;
   pickupPerson?: string;
   notes?: string;
+  
   child?: any;
   classroom?: any;
   status?: any;

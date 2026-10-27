@@ -17,8 +17,6 @@ export interface IncidentRepresentation {
   actionTaken?: string;
   parentNotified?: boolean | null;
 
-  // Request payloads may contain IDs.
-  // API responses may contain complete related objects.
   child?: IncidentRelationship;
   classroom?: IncidentRelationship;
   reportedBy?: IncidentRelationship;

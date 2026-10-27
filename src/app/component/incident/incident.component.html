@@ -1,34 +1,20 @@
 <main class="incident-page container-fluid py-4">
-
-  <!-- NO VIEW PERMISSION -->
-  <section
-    *ngIf="!canView"
-    class="alert alert-warning"
-    role="alert"
-  >
-    You do not have permission to view Health &amp;
-    Incident Management records.
+  <section *ngIf="!canView" class="alert alert-warning" role="alert">
+    You do not have permission to view Health &amp; Incident Management records.
   </section>
 
   <div *ngIf="canView">
-
-    <!-- PAGE HEADER -->
     <header
-      class="d-flex flex-wrap align-items-center
-             justify-content-between gap-3 mb-4"
+      class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4"
     >
       <div>
-        <div class="incident-eyebrow">
-          CHILD HEALTH &amp; SAFETY
-        </div>
+        <div class="incident-eyebrow">CHILD HEALTH &amp; SAFETY</div>
 
-        <h1 class="incident-title mb-1">
-          Health &amp; Incident Management
-        </h1>
+        <h1 class="incident-title mb-1">Health &amp; Incident Management</h1>
 
         <p class="incident-subtitle mb-0">
-          Record incidents, review child health information,
-          track actions taken, and monitor parent notifications.
+          Record incidents, review child health information, track actions
+          taken, and monitor parent notifications.
         </p>
       </div>
 
@@ -40,26 +26,20 @@
       </div>
     </header>
 
-    <!-- SUMMARY CARDS -->
     <div class="row g-3 mb-4">
-
       <div class="col-12 col-md-4">
         <div class="incident-summary-card">
           <div class="summary-icon summary-icon-blue">
             <i class="bi bi-clipboard2-pulse"></i>
           </div>
 
-          <div class="summary-caption">
-            Total incidents
-          </div>
+          <div class="summary-caption">Total incidents</div>
 
           <div class="summary-number">
             {{ incidents.length }}
           </div>
 
-          <div class="summary-footnote">
-            Saved incident history
-          </div>
+          <div class="summary-footnote">Saved incident history</div>
         </div>
       </div>
 
@@ -69,17 +49,13 @@
             <i class="bi bi-exclamation-circle"></i>
           </div>
 
-          <div class="summary-caption">
-            Open / follow-up
-          </div>
+          <div class="summary-caption">Open / follow-up</div>
 
           <div class="summary-number">
             {{ openIncidentCount }}
           </div>
 
-          <div class="summary-footnote">
-            Records requiring attention
-          </div>
+          <div class="summary-footnote">Records requiring attention</div>
         </div>
       </div>
 
@@ -89,68 +65,56 @@
             <i class="bi bi-chat-left-text"></i>
           </div>
 
-          <div class="summary-caption">
-            Parent notification pending
-          </div>
+          <div class="summary-caption">Parent notification pending</div>
 
           <div class="summary-number">
             {{ parentNotificationPendingCount }}
           </div>
 
-          <div class="summary-footnote">
-            Notification not marked complete
-          </div>
+          <div class="summary-footnote">Notification not marked complete</div>
         </div>
       </div>
-
     </div>
 
-    <!-- REGISTER / UPDATE FORM -->
     <section
       class="card incident-card mb-4"
-      *ngIf="canCreate || (isEditIncident && canUpdate)"
+      *ngIf="canCreate || (isEditIncident && canUpdate) || isReadOnlyIncident"
     >
-
       <div
-        class="card-header incident-card-header
-               d-flex flex-wrap align-items-center
-               justify-content-between gap-2"
+        class="card-header incident-card-header d-flex flex-wrap align-items-center justify-content-between gap-2"
       >
         <div>
           <h2 class="h5 mb-1">
             {{
-              isEditIncident
-                ? 'Update incident record'
-                : 'Register an incident'
+              isReadOnlyIncident
+                ? "View incident record"
+                : isEditIncident
+                  ? "Update incident record"
+                  : "Register an incident"
             }}
           </h2>
 
           <p class="small text-secondary mb-0">
-            Complete the incident details below.
-            Fields marked * are required.
+            Complete the incident details below. Fields marked * are required.
           </p>
         </div>
 
         <span class="incident-form-label">
-          {{ isEditIncident ? 'EDIT RECORD' : 'NEW RECORD' }}
+          {{
+            isReadOnlyIncident
+              ? "VIEW RECORD"
+              : isEditIncident
+                ? "EDIT RECORD"
+                : "NEW RECORD"
+          }}
         </span>
       </div>
 
       <div class="card-body p-4">
-
-        <form
-          #incidentForm="ngForm"
-          (ngSubmit)="SaveIncident()"
-        >
-
+        <form #incidentForm="ngForm" (ngSubmit)="SaveIncident()">
           <div class="row g-3">
-
-            <!-- DATE / TIME -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="incidentDate"
-              >
+              <label class="form-label" for="incidentDate">
                 Incident date and time *
               </label>
 
@@ -162,205 +126,167 @@
                 [(ngModel)]="incidentObj.incidentDate"
                 required
                 step="1"
+                [disabled]="isReadOnlyIncident"
               />
             </div>
 
-            <!-- INCIDENT TYPE -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="incidentType"
-              >
+              <label class="form-label" for="incidentType">
                 Incident type *
               </label>
 
-              <select
-                class="form-select"
+              <ng-select
+                class="standard-select"
                 id="incidentType"
                 name="incidentType"
+                [items]="incidentTypes"
                 [(ngModel)]="incidentObj.incidentType"
                 required
-              >
-                <option
-                  *ngFor="let incidentType of incidentTypes"
-                  [value]="incidentType"
-                >
-                  {{ incidentType }}
-                </option>
-              </select>
+                [searchable]="true"
+                [clearable]="false"
+                appendTo="body"
+                [readonly]="isReadOnlyIncident"
+                placeholder="Select incident type"
+                notFoundText="No matching incident type"
+              ></ng-select>
             </div>
 
-            <!-- CHILD -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="child"
-              >
-                Child *
-              </label>
+              <label class="form-label" for="child"> Child * </label>
 
-              <select
-                class="form-select"
+              <ng-select
                 id="child"
                 name="child"
+                [items]="(allChildList$ | async) ?? []"
+                bindLabel="dropdownLabel"
+                bindValue="id"
                 [(ngModel)]="selectedChildId"
                 required
+                [clearable]="false"
+                [searchable]="true"
+                appendTo="body"
+                placeholder="Select child"
+                [readonly]="isReadOnlyIncident"
               >
-                <option value="">
-                  Select child
-                </option>
-
-                <option
-                  *ngFor="let child of allChildList"
-                  [value]="child.id"
-                >
-                  {{ childLabel(child) }}
-                </option>
-              </select>
+                <ng-template ng-label-tmp let-item="item">
+                  {{ childLabel(item) }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                  {{ childLabel(item) }}
+                </ng-template>
+              </ng-select>
             </div>
 
-            <!-- CHILD HEALTH INFORMATION -->
-            <div
-              class="col-12"
-              *ngIf="selectedChild as child"
-            >
+            <div class="col-12" *ngIf="selectedChild as child">
               <div class="health-profile-panel">
-
                 <div class="health-profile-heading">
                   <i class="bi bi-heart-pulse"></i>
 
                   <div>
-                    <strong>
-                      Child health information
-                    </strong>
+                    <strong> Child health information </strong>
 
                     <small>
-                      Existing information from the child's profile.
-                      This section is read-only.
+                      Existing information from the child's profile. This
+                      section is read-only.
                     </small>
                   </div>
                 </div>
 
                 <div class="row g-3 mt-1">
-
                   <div class="col-12 col-md-6">
-                    <div class="health-detail-label">
-                      Known allergies
-                    </div>
+                    <div class="health-detail-label">Known allergies</div>
 
                     <div class="health-detail-value">
-                      {{ child.allergies || 'No allergies recorded' }}
+                      {{ child.allergies || "No allergies recorded" }}
                     </div>
                   </div>
 
                   <div class="col-12 col-md-6">
-                    <div class="health-detail-label">
-                      Medical notes
-                    </div>
+                    <div class="health-detail-label">Medical notes</div>
 
                     <div class="health-detail-value">
-                      {{ child.medicalNotes || 'No medical notes recorded' }}
+                      {{ child.medicalNotes || "No medical notes recorded" }}
                     </div>
                   </div>
-
                 </div>
-
               </div>
             </div>
 
-            <!-- CLASSROOM -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="classroom"
-              >
-                Classroom *
-              </label>
+              <label class="form-label" for="classroom"> Classroom * </label>
 
-              <select
-                class="form-select"
+              <ng-select
                 id="classroom"
                 name="classroom"
+                [items]="(allClassroomList$ | async) ?? []"
+                bindLabel="dropdownLabel"
+                bindValue="id"
                 [(ngModel)]="selectedClassroomId"
                 required
+                [clearable]="false"
+                [searchable]="true"
+                appendTo="body"
+                placeholder="Select classroom"
+                [readonly]="isReadOnlyIncident"
               >
-                <option value="">
-                  Select classroom
-                </option>
-
-                <option
-                  *ngFor="let classroom of allClassroomList"
-                  [value]="classroom.id"
-                >
-                  {{ classroomLabel(classroom) }}
-                </option>
-              </select>
+                <ng-template ng-label-tmp let-item="item">
+                  {{ classroomLabel(item) }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                  {{ classroomLabel(item) }}
+                </ng-template>
+              </ng-select>
             </div>
 
-            <!-- REPORTED BY -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="reportedBy"
-              >
+              <label class="form-label" for="reportedBy">
                 Reported by staff member *
               </label>
 
-              <select
-                class="form-select"
+              <ng-select
                 id="reportedBy"
                 name="reportedBy"
+                [items]="(allReportedByList$ | async) ?? []"
+                bindLabel="dropdownLabel"
+                bindValue="id"
                 [(ngModel)]="selectedReportedById"
                 required
+                [clearable]="false"
+                [searchable]="true"
+                appendTo="body"
+                placeholder="Select staff member"
+                [readonly]="isReadOnlyIncident"
               >
-                <option value="">
-                  Select staff member
-                </option>
-
-                <option
-                  *ngFor="let staff of allReportedByList"
-                  [value]="staff.id"
-                >
-                  {{ staffLabel(staff) }}
-                </option>
-              </select>
+                <ng-template ng-label-tmp let-item="item">
+                  {{ staffLabel(item) }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                  {{ staffLabel(item) }}
+                </ng-template>
+              </ng-select>
             </div>
 
-            <!-- STATUS -->
             <div class="col-12 col-md-6 col-xl-4">
-              <label
-                class="form-label"
-                for="status"
-              >
-                Incident status *
-              </label>
+              <label class="form-label" for="status"> Incident status * </label>
 
-              <select
-                class="form-select"
+              <ng-select
                 id="status"
                 name="status"
+                [items]="(incidentStatusOptions$ | async) ?? []"
+                bindLabel="name"
+                bindValue="id"
                 [(ngModel)]="selectedStatusId"
                 required
-              >
-                <option value="">
-                  Select status
-                </option>
-
-                <option
-                  *ngFor="let status of allStatus"
-                  [value]="status.id"
-                >
-                  {{ status.name }}
-                </option>
-              </select>
+                [clearable]="false"
+                [searchable]="true"
+                appendTo="body"
+                placeholder="Select incident status"
+                [readonly]="isReadOnlyIncident"
+              ></ng-select>
             </div>
 
-            <!-- DESCRIPTION -->
             <div class="col-12">
-              <label
-                class="form-label"
-                for="description"
-              >
+              <label class="form-label" for="description">
                 Description of what happened *
               </label>
 
@@ -371,17 +297,22 @@
                 rows="3"
                 [(ngModel)]="incidentObj.description"
                 required
-                maxlength="4000"
+                minlength="5"
+                maxlength="2000"
+                #description="ngModel"
                 placeholder="Describe the injury, illness, allergic reaction, or behaviour observed."
+                [disabled]="isReadOnlyIncident"
               ></textarea>
+              <small
+                class="error-text"
+                *ngIf="description.invalid && description.touched"
+              >
+                Enter at least 5 characters and no more than 2,000 characters.
+              </small>
             </div>
 
-            <!-- ACTION TAKEN -->
             <div class="col-12">
-              <label
-                class="form-label"
-                for="actionTaken"
-              >
+              <label class="form-label" for="actionTaken">
                 Action taken / follow-up notes
               </label>
 
@@ -391,53 +322,59 @@
                 name="actionTaken"
                 rows="3"
                 [(ngModel)]="incidentObj.actionTaken"
-                maxlength="4000"
+                maxlength="2000"
+                #actionTaken="ngModel"
                 placeholder="Record first aid, care provided, people contacted, or the follow-up plan."
+                [disabled]="isReadOnlyIncident"
               ></textarea>
+              <small
+                class="error-text"
+                *ngIf="actionTaken.invalid && actionTaken.touched"
+              >
+                Follow-up notes cannot exceed 2,000 characters.
+              </small>
             </div>
 
-            <!-- PARENT NOTIFIED -->
             <div class="col-12">
-              <label
-                class="incident-checkbox-row"
-                for="parentNotified"
-              >
+              <label class="incident-checkbox-row" for="parentNotified">
                 <input
                   class="form-check-input"
                   type="checkbox"
                   id="parentNotified"
                   name="parentNotified"
                   [(ngModel)]="incidentObj.parentNotified"
+                  [disabled]="isReadOnlyIncident"
                 />
 
                 <span>
-                  <strong>
-                    Parent or guardian has been notified
-                  </strong>
+                  <strong> Parent or guardian has been notified </strong>
 
                   <small>
-                    Tick this only after the parent or guardian
-                    has actually been contacted.
+                    Tick this only after the parent or guardian has actually
+                    been contacted.
                   </small>
                 </span>
               </label>
             </div>
 
-            <!-- FORM BUTTONS -->
-            <div
-              class="col-12 d-flex flex-wrap
-                     justify-content-end gap-2 pt-2"
-            >
+            <div class="col-12 d-flex flex-wrap justify-content-end gap-2 pt-2">
               <button
                 class="btn btn-outline-secondary"
                 type="button"
                 (click)="ResetForm()"
                 [disabled]="saving"
               >
-                {{ isEditIncident ? 'Cancel update' : 'Clear form' }}
+                {{
+                  isReadOnlyIncident
+                    ? "Close view"
+                    : isEditIncident
+                      ? "Cancel update"
+                      : "Clear form"
+                }}
               </button>
 
               <button
+                *ngIf="!isReadOnlyIncident && (canCreate || canUpdate)"
                 class="btn btn-primary incident-save-button"
                 type="submit"
                 [disabled]="
@@ -454,29 +391,24 @@
 
                 {{
                   saving
-                    ? 'Saving...'
-                    : (isEditIncident ? 'Update incident' : 'Save incident')
+                    ? "Saving..."
+                    : isEditIncident
+                      ? "Update incident"
+                      : "Save incident"
                 }}
               </button>
             </div>
-
           </div>
         </form>
       </div>
     </section>
 
-    <!-- INCIDENT HISTORY -->
     <section class="card incident-card">
-
       <div
-        class="card-header incident-card-header
-               d-flex flex-wrap align-items-center
-               justify-content-between gap-3"
+        class="card-header incident-card-header d-flex flex-wrap align-items-center justify-content-between gap-3"
       >
         <div>
-          <h2 class="h5 mb-1">
-            Incident history
-          </h2>
+          <h2 class="h5 mb-1">Incident history</h2>
 
           <p class="small text-secondary mb-0">
             Search and review previously recorded incidents.
@@ -484,10 +416,7 @@
         </div>
 
         <div class="incident-search-wrap">
-          <i
-            class="bi bi-search"
-            aria-hidden="true"
-          ></i>
+          <i class="bi bi-search" aria-hidden="true"></i>
 
           <input
             class="form-control"
@@ -501,12 +430,7 @@
       </div>
 
       <div class="card-body p-0">
-
-        <!-- LOADING -->
-        <div
-          *ngIf="loadingIncidents"
-          class="loading-state"
-        >
+        <div *ngIf="loadingIncidents" class="loading-state">
           <span
             class="spinner-border spinner-border-sm me-2"
             aria-hidden="true"
@@ -515,12 +439,8 @@
           Loading incident records...
         </div>
 
-        <div
-          *ngIf="!loadingIncidents"
-          class="table-responsive"
-        >
+        <div *ngIf="!loadingIncidents" class="table-responsive">
           <table class="table table-hover align-middle mb-0 incident-table">
-
             <thead>
               <tr>
                 <th>Incident code</th>
@@ -536,23 +456,22 @@
             </thead>
 
             <tbody>
-
-              <tr *ngFor="let incident of filteredIncidents">
-
+              <tr
+                *ngFor="let incident of filteredIncidents"
+                class="selectable-row"
+                (click)="GetIncidentById(incident.id)"
+              >
                 <td class="fw-semibold">
-                  {{
-                    incident.incidentCode ||
-                    ('INC-' + incident.id)
-                  }}
+                  {{ incident.incidentCode || "INC-" + incident.id }}
                 </td>
 
                 <td class="date-cell">
-                  {{ incident.incidentDate | date:'medium' }}
+                  {{ incident.incidentDate | date: "medium" }}
                 </td>
 
                 <td>
                   <span class="incident-type-badge">
-                    {{ incident.incidentType || 'Other' }}
+                    {{ incident.incidentType || "Other" }}
                   </span>
                 </td>
 
@@ -561,37 +480,49 @@
                 </td>
 
                 <td class="description-cell">
-                  {{ incident.description || 'Not recorded' }}
+                  {{ incident.description || "Not recorded" }}
                 </td>
 
                 <td class="description-cell">
-                  {{ incident.actionTaken || 'No action recorded' }}
+                  {{ incident.actionTaken || "No action recorded" }}
                 </td>
 
                 <td>
                   <span
                     class="notification-badge"
                     [class.notification-done]="incident.parentNotified === true"
-                    [class.notification-pending]="incident.parentNotified !== true"
+                    [class.notification-pending]="
+                      incident.parentNotified !== true
+                    "
                   >
                     {{
-                      incident.parentNotified === true
-                        ? 'Notified'
-                        : 'Pending'
+                      incident.parentNotified === true ? "Notified" : "Pending"
                     }}
                   </span>
                 </td>
 
                 <td>
                   <span class="status-badge">
-                    {{ statusName(incident.status) || 'Not set' }}
+                    {{ statusName(incident.status) || "Not set" }}
                   </span>
                 </td>
 
-                <td class="text-end text-nowrap">
-
+                <td
+                  class="text-end text-nowrap"
+                  (click)="$event.stopPropagation()"
+                >
                   <button
-                    class="btn btn-sm btn-outline-primary me-1"
+                    class="btn btn-sm btn-light action-view me-1"
+                    type="button"
+                    *ngIf="canView"
+                    (click)="GetIncidentById(incident.id, true)"
+                    title="View incident"
+                    aria-label="View incident"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-light action-edit me-1"
                     type="button"
                     *ngIf="canUpdate"
                     (click)="GetIncidentById(incident.id)"
@@ -618,44 +549,33 @@
                   >
                     View only
                   </span>
-
                 </td>
               </tr>
 
-              <!-- EMPTY STATE -->
-              <tr
-                *ngIf="
-                  filteredIncidents.length === 0 &&
-                  !loadingIncidents
-                "
-              >
+              <tr *ngIf="filteredIncidents.length === 0 && !loadingIncidents">
                 <td colspan="9" class="empty-state">
                   <i class="bi bi-clipboard2-pulse"></i>
 
-                  <strong>
-                    No incident records found
-                  </strong>
+                  <strong> No incident records found </strong>
 
                   <span>
                     {{
                       searchText
-                        ? 'Try a different search term.'
-                        : 'New incident records will appear here.'
+                        ? "Try a different search term."
+                        : "New incident records will appear here."
                     }}
                   </span>
                 </td>
               </tr>
-
             </tbody>
           </table>
         </div>
       </div>
 
       <div class="incident-table-footer">
-        Showing {{ filteredIncidents.length }}
-        of {{ incidents.length }} incident record(s)
+        Showing {{ filteredIncidents.length }} of
+        {{ incidents.length }} incident record(s)
       </div>
-
     </section>
   </div>
 </main>

@@ -4,7 +4,20 @@ import swal from 'sweetalert';
 import { StatusService } from '../services/api/status/status.service';
 import { IncidentRepresentation } from '../services/api/module/incident-representation';
 import { IncidentService } from '../services/api/incident/incident.service';
-import { PermissionHelperService } from '../services/permission-helper.service';
+import {
+  AuthIds,
+  PermissionHelperService,
+} from '../services/permission-helper.service';
+
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+  scrollPageToTop,
+} from '../services/lookup-utils';
 
 @Component({
   selector: 'app-incident',
@@ -18,9 +31,13 @@ export class IncidentComponent implements OnInit {
   incidents: any[] = [];
 
   allChildList: any[] = [];
+  allChildList$: Observable<any[]> = of([]);
   allClassroomList: any[] = [];
+  allClassroomList$: Observable<any[]> = of([]);
   allReportedByList: any[] = [];
+  allReportedByList$: Observable<any[]> = of([]);
   allStatus: any[] = [];
+  incidentStatusOptions$: Observable<any[]> = of([]);
 
   selectedChildId = '';
   selectedClassroomId = '';
@@ -30,6 +47,7 @@ export class IncidentComponent implements OnInit {
   searchText = '';
 
   isEditIncident = false;
+  isReadOnlyIncident = false;
   loadingIncidents = false;
   saving = false;
 
@@ -46,46 +64,21 @@ export class IncidentComponent implements OnInit {
     'Other',
   ];
 
-  /*
-   * These IDs must match system_authentications and the IDs
-   * returned by your existing get-auth-ids API.
-   *
-   * The current console output showed 100 and 101, but did
-   * not show 102 and 103. Update/delete therefore remain
-   * disabled until those permissions are actually returned.
-   */
-  private readonly permissionIds = {
-    view: 100,
-    create: 101,
-    update: 102,
-    delete: 103,
-  } as const;
-
   constructor(
     private incidentService: IncidentService,
     private statusService: StatusService,
-    private permissionHelper: PermissionHelperService
+    private permissionHelper: PermissionHelperService,
   ) {}
 
   ngOnInit(): void {
-    this.canView = this.permissionHelper.has(
-      this.permissionIds.view
-    );
+    this.canView = this.permissionHelper.has(AuthIds.INCIDENT_VIEW);
 
-    this.canCreate = this.permissionHelper.has(
-      this.permissionIds.create
-    );
+    this.canCreate = this.permissionHelper.has(AuthIds.INCIDENT_CREATE);
 
-    this.canUpdate = this.permissionHelper.has(
-      this.permissionIds.update
-    );
+    this.canUpdate = this.permissionHelper.has(AuthIds.INCIDENT_UPDATE);
 
-    this.canDelete = this.permissionHelper.has(
-      this.permissionIds.delete
-    );
+    this.canDelete = this.permissionHelper.has(AuthIds.INCIDENT_DELETE);
 
-    // Do not load protected incident details for users
-    // who do not have view permission.
     if (!this.canView) {
       return;
     }
@@ -97,12 +90,10 @@ export class IncidentComponent implements OnInit {
     this.GetAllIncidents();
   }
 
-  // Selected child's existing health profile.
   get selectedChild(): any | null {
     return (
       this.allChildList.find(
-        (child: any) =>
-          String(child.id) === String(this.selectedChildId)
+        (child: any) => String(child.id) === String(this.selectedChildId),
       ) ?? null
     );
   }
@@ -130,33 +121,32 @@ export class IncidentComponent implements OnInit {
       ];
 
       return searchableValues.some((value: any) =>
-        String(value ?? '').toLowerCase().includes(search)
+        String(value ?? '')
+          .toLowerCase()
+          .includes(search),
       );
     });
   }
 
   get openIncidentCount(): number {
     return this.incidents.filter((incident: any) => {
-      const status = this.statusName(
-        incident.status
-      ).toLowerCase();
+      const status = this.statusName(incident.status).toLowerCase();
 
-      return (
-        status === 'open' ||
-        status === 'follow-up required'
-      );
+      return status === 'open' || status === 'follow-up required';
     }).length;
   }
 
   get parentNotificationPendingCount(): number {
     return this.incidents.filter(
-      (incident: any) =>
-        incident.parentNotified !== true
+      (incident: any) => incident.parentNotified !== true,
     ).length;
   }
 
-  // CREATE / UPDATE
   SaveIncident(): void {
+    if (this.isReadOnlyIncident) {
+      return;
+    }
+
     if (this.saving) {
       return;
     }
@@ -165,7 +155,7 @@ export class IncidentComponent implements OnInit {
       swal(
         'Permission required',
         'You do not have permission to register incidents.',
-        'warning'
+        'warning',
       );
       return;
     }
@@ -174,15 +164,18 @@ export class IncidentComponent implements OnInit {
       swal(
         'Permission required',
         'You do not have permission to update incidents.',
-        'warning'
+        'warning',
       );
       return;
     }
 
+    const description = String(this.incidentObj.description ?? '').trim();
+    const actionTaken = String(this.incidentObj.actionTaken ?? '').trim();
+
     if (
       !this.incidentObj.incidentDate ||
       !this.incidentObj.incidentType ||
-      !this.incidentObj.description?.trim() ||
+      description.length < 5 ||
       !this.selectedChildId ||
       !this.selectedClassroomId ||
       !this.selectedReportedById ||
@@ -191,7 +184,32 @@ export class IncidentComponent implements OnInit {
       swal(
         'Missing information',
         'Complete all required fields before saving.',
-        'warning'
+        'warning',
+      );
+      return;
+    }
+    if (description.length > 2000 || actionTaken.length > 2000) {
+      swal(
+        'Validation error',
+        'Incident description and action taken notes must not exceed 2,000 characters.',
+        'warning',
+      );
+      return;
+    }
+    const incidentDateTime = new Date(String(this.incidentObj.incidentDate));
+    if (Number.isNaN(incidentDateTime.getTime())) {
+      swal(
+        'Validation error',
+        'Enter a valid incident date and time.',
+        'warning',
+      );
+      return;
+    }
+    if (incidentDateTime.getTime() > Date.now()) {
+      swal(
+        'Validation error',
+        'An incident date and time cannot be in the future.',
+        'warning',
       );
       return;
     }
@@ -201,14 +219,11 @@ export class IncidentComponent implements OnInit {
     const payload: IncidentRepresentation = {
       ...this.incidentObj,
 
-      description:
-        this.incidentObj.description.trim(),
+      description,
 
-      actionTaken:
-        this.incidentObj.actionTaken?.trim() ?? '',
+      actionTaken,
 
-      parentNotified:
-        this.incidentObj.parentNotified === true,
+      parentNotified: this.incidentObj.parentNotified === true,
 
       child: this.selectedChildId,
       classroom: this.selectedClassroomId,
@@ -217,9 +232,7 @@ export class IncidentComponent implements OnInit {
     };
 
     swal({
-      title: isEdit
-        ? 'Update incident?'
-        : 'Register incident?',
+      title: isEdit ? 'Update incident?' : 'Register incident?',
 
       text: isEdit
         ? 'Save the changes to this incident record?'
@@ -227,10 +240,7 @@ export class IncidentComponent implements OnInit {
 
       icon: 'warning',
 
-      buttons: [
-        'Cancel',
-        isEdit ? 'Update' : 'Save',
-      ],
+      buttons: ['Cancel', isEdit ? 'Update' : 'Save'],
 
       dangerMode: false,
     } as any).then((confirmed: boolean) => {
@@ -240,38 +250,31 @@ export class IncidentComponent implements OnInit {
 
       this.saving = true;
 
-      this.incidentService
-        .SaveIncident(payload, isEdit)
-        .subscribe({
-          next: () => {
-            this.saving = false;
+      this.incidentService.SaveIncident(payload, isEdit).subscribe({
+        next: () => {
+          this.saving = false;
 
-            this.ResetForm();
-            this.GetAllIncidents();
+          this.ResetForm();
+          this.GetAllIncidents();
 
-            swal(
-              'Saved',
-              isEdit
-                ? 'Incident updated successfully.'
-                : 'Incident registered successfully.',
-              'success'
-            );
-          },
+          swal(
+            'Saved',
+            isEdit
+              ? 'Incident updated successfully.'
+              : 'Incident registered successfully.',
+            'success',
+          );
+        },
 
-          error: (error: any) => {
-            this.saving = false;
+        error: (error: any) => {
+          this.saving = false;
 
-            swal(
-              'Save failed',
-              this.errorMessage(error),
-              'error'
-            );
-          },
-        });
+          swal('Save failed', this.errorMessage(error), 'error');
+        },
+      });
     });
   }
 
-  // READ ALL
   GetAllIncidents(): void {
     if (!this.canView) {
       return;
@@ -289,127 +292,87 @@ export class IncidentComponent implements OnInit {
         this.incidents = [];
         this.loadingIncidents = false;
 
-        swal(
-          'Unable to load incidents',
-          this.errorMessage(error),
-          'error'
-        );
+        swal('Unable to load incidents', this.errorMessage(error), 'error');
       },
     });
   }
 
-  // READ ONE / PREPARE UPDATE
-  GetIncidentById(id: string | number): void {
-    if (!this.canUpdate) {
-      swal(
-        'Permission required',
-        'You do not have permission to update incidents.',
-        'warning'
-      );
-      return;
-    }
+  GetIncidentById(id: string | number, forceReadOnly = false): void {
+    if (!this.canView) return;
 
     if (id == null) {
       return;
     }
 
-    this.incidentService
-      .GetIncidentById(id)
-      .subscribe({
-        next: (response: any) => {
-          const record =
-            this.extractList(response)[0] ??
-            response?.data?.data ??
-            response?.data ??
-            response;
+    this.incidentService.GetIncidentById(id).subscribe({
+      next: (response: any) => {
+        const record =
+          this.extractList(response)[0] ??
+          response?.data?.data ??
+          response?.data ??
+          response;
 
-          if (!record || record.id == null) {
-            swal(
-              'Not found',
-              'The selected incident record could not be found.',
-              'warning'
-            );
-            return;
-          }
-
-          this.incidentObj = {
-            id: record.id,
-            incidentCode: record.incidentCode ?? '',
-
-            incidentDate: String(
-              record.incidentDate ?? ''
-            ).slice(0, 16),
-
-            incidentType:
-              record.incidentType ?? 'Other',
-
-            description:
-              record.description ?? '',
-
-            actionTaken:
-              record.actionTaken ?? '',
-
-            parentNotified:
-              record.parentNotified === true,
-
-            child:
-              record.child?.id ??
-              record.child ??
-              null,
-
-            classroom:
-              record.classroom?.id ??
-              record.classroom ??
-              null,
-
-            reportedBy:
-              record.reportedBy?.id ??
-              record.reportedBy ??
-              null,
-
-            status:
-              record.status?.id ??
-              record.status ??
-              null,
-          };
-
-          this.selectedChildId =
-            this.toSelectValue(this.incidentObj.child);
-
-          this.selectedClassroomId =
-            this.toSelectValue(this.incidentObj.classroom);
-
-          this.selectedReportedById =
-            this.toSelectValue(this.incidentObj.reportedBy);
-
-          this.selectedStatusId =
-            this.toSelectValue(this.incidentObj.status);
-
-          this.isEditIncident = true;
-
-          window.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-          });
-        },
-
-        error: (error: any) => {
+        if (!record || record.id == null) {
           swal(
-            'Unable to open incident',
-            this.errorMessage(error),
-            'error'
+            'Not found',
+            'The selected incident record could not be found.',
+            'warning',
           );
-        },
-      });
+          return;
+        }
+
+        this.incidentObj = {
+          id: record.id,
+          incidentCode: record.incidentCode ?? '',
+
+          incidentDate: String(record.incidentDate ?? '').slice(0, 16),
+
+          incidentType: record.incidentType ?? 'Other',
+
+          description: record.description ?? '',
+
+          actionTaken: record.actionTaken ?? '',
+
+          parentNotified: record.parentNotified === true,
+
+          child: record.child?.id ?? record.child ?? null,
+
+          classroom: record.classroom?.id ?? record.classroom ?? null,
+
+          reportedBy: record.reportedBy?.id ?? record.reportedBy ?? null,
+
+          status: record.status?.id ?? record.status ?? null,
+        };
+
+        this.selectedChildId = this.toSelectValue(this.incidentObj.child);
+
+        this.selectedClassroomId = this.toSelectValue(
+          this.incidentObj.classroom,
+        );
+
+        this.selectedReportedById = this.toSelectValue(
+          this.incidentObj.reportedBy,
+        );
+
+        this.selectedStatusId = this.toSelectValue(this.incidentObj.status);
+
+        this.isEditIncident = true;
+        this.isReadOnlyIncident = forceReadOnly || !this.canUpdate;
+        scrollPageToTop();
+      },
+
+      error: (error: any) => {
+        swal('Unable to open incident', this.errorMessage(error), 'error');
+      },
+    });
   }
 
-  // DELETE
   DeleteById(id: string | number): void {
     if (!this.canDelete) {
       swal(
         'Permission required',
         'You do not have permission to delete incidents.',
-        'warning'
+        'warning',
       );
       return;
     }
@@ -429,101 +392,128 @@ export class IncidentComponent implements OnInit {
         return;
       }
 
-      this.incidentService
-        .DeleteIncidentById(id)
-        .subscribe({
-          next: () => {
-            if (
-              String(this.incidentObj.id) === String(id)
-            ) {
-              this.ResetForm();
-            }
+      this.incidentService.DeleteIncidentById(id).subscribe({
+        next: () => {
+          if (String(this.incidentObj.id) === String(id)) {
+            this.ResetForm();
+          }
 
-            this.GetAllIncidents();
+          this.GetAllIncidents();
 
-            swal(
-              'Deleted',
-              'Incident deleted successfully.',
-              'success'
-            );
-          },
+          swal('Deleted', 'Incident deleted successfully.', 'success');
+        },
 
-          error: (error: any) => {
-            swal(
-              'Delete failed',
-              this.errorMessage(error),
-              'error'
-            );
-          },
-        });
+        error: (error: any) => {
+          swal('Delete failed', this.errorMessage(error), 'error');
+        },
+      });
     });
   }
 
-  // CHILD DROPDOWN
   GetAllChildList(): void {
-    this.incidentService.GetAllChildList().subscribe({
-      next: (response: any) => {
-        this.allChildList = this.extractList(response);
-      },
-
-      error: () => {
-        this.allChildList = [];
-      },
+    this.allChildList$ = this.incidentService.GetAllChildList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((item: any) => ({
+          ...item,
+          dropdownLabel: this.childLabel(item),
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allChildList$.subscribe({
+      next: (items: any[]) => (this.allChildList = items),
+      error: () => (this.allChildList = []),
     });
   }
 
-  // CLASSROOM DROPDOWN
   GetAllClassroomList(): void {
-    this.incidentService.GetAllClassroomList().subscribe({
-      next: (response: any) => {
-        this.allClassroomList = this.extractList(response);
-      },
-
-      error: () => {
-        this.allClassroomList = [];
-      },
+    this.allClassroomList$ = this.incidentService.GetAllClassroomList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((item: any) => ({
+          ...item,
+          dropdownLabel: this.classroomLabel(item),
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allClassroomList$.subscribe({
+      next: (items: any[]) => (this.allClassroomList = items),
+      error: () => (this.allClassroomList = []),
     });
   }
 
-  // STAFF DROPDOWN
   GetAllReportedByList(): void {
-    this.incidentService.GetAllReportedByList().subscribe({
-      next: (response: any) => {
-        this.allReportedByList = this.extractList(response);
-      },
-
-      error: () => {
-        this.allReportedByList = [];
-      },
+    this.allReportedByList$ = this.incidentService.GetAllReportedByList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      map((items: any[]) =>
+        items.map((item: any) => ({
+          ...item,
+          dropdownLabel: this.staffLabel(item),
+        })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.allReportedByList$.subscribe({
+      next: (items: any[]) => (this.allReportedByList = items),
+      error: () => (this.allReportedByList = []),
     });
   }
 
-  // STATUS DROPDOWN
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (response: any) => {
-        this.allStatus = this.extractList(response);
-      },
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
 
-      error: () => {
-        this.allStatus = [];
+    this.incidentStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, [
+          'Open',
+          'Resolved',
+          'Follow-up Required',
+        ]),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]) => {
+        this.allStatus = statuses;
+        if (!this.isEditIncident && !this.selectedStatusId) {
+          const openStatus = statuses.find(
+            (status: any) =>
+              normalizeLookupName(status?.name ?? status?.statusName) ===
+              'open',
+          );
+          if (openStatus) {
+            this.selectedStatusId = openStatus.id;
+            this.incidentObj.status = openStatus.id;
+          }
+        }
       },
+      error: () => (this.allStatus = []),
     });
   }
 
-  // RESET / CANCEL
   ResetForm(): void {
     this.incidentObj = this.newIncident();
 
     this.selectedChildId = '';
     this.selectedClassroomId = '';
     this.selectedReportedById = '';
-    this.selectedStatusId = '';
+    const openStatus = this.allStatus.find(
+      (status: any) =>
+        normalizeLookupName(status?.name ?? status?.statusName) === 'open',
+    );
+    this.selectedStatusId = openStatus?.id ?? '';
+    this.incidentObj.status = openStatus?.id ?? null;
 
     this.isEditIncident = false;
+    this.isReadOnlyIncident = false;
   }
 
-  // LABEL HELPERS
   statusName(status: any): string {
     if (status && typeof status === 'object') {
       return String(status.name ?? '');
@@ -541,19 +531,12 @@ export class IncidentComponent implements OnInit {
       return `Child ${child}`;
     }
 
-    const name = [
-      child.firstName,
-      child.lastName,
-    ]
+    const name = [child.firstName, child.lastName]
       .filter(Boolean)
       .join(' ')
       .trim();
 
-    return (
-      name ||
-      child.childCode ||
-      `Child ${child.id ?? ''}`
-    );
+    return name || child.childCode || `Child ${child.id ?? ''}`;
   }
 
   classroomLabel(classroom: any): string {
@@ -584,22 +567,11 @@ export class IncidentComponent implements OnInit {
 
     const fullName =
       staff.fullName ||
-      [
-        staff.firstName,
-        staff.lastName,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+      [staff.firstName, staff.lastName].filter(Boolean).join(' ').trim();
 
-    return (
-      fullName ||
-      staff.staffCode ||
-      `Staff ${staff.id ?? ''}`
-    );
+    return fullName || staff.staffCode || `Staff ${staff.id ?? ''}`;
   }
 
-  // DEFAULT FORM VALUES
   private newIncident(): IncidentRepresentation {
     return {
       incidentDate: this.localDateTimeValue(),
@@ -618,27 +590,16 @@ export class IncidentComponent implements OnInit {
   private localDateTimeValue(): string {
     const now = new Date();
 
-    const localDate = new Date(
-      now.getTime() -
-      now.getTimezoneOffset() * 60000
-    );
+    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
 
     return localDate.toISOString().slice(0, 16);
   }
 
-  private toSelectValue(value: any): string {
-    if (value == null || value === '') {
-      return '';
-    }
-
-    return String(
-      typeof value === 'object'
-        ? value.id ?? ''
-        : value
-    );
+  private toSelectValue(value: any): any {
+    if (value == null || value === '') return '';
+    return typeof value === 'object' ? (value.id ?? '') : value;
   }
 
-  // ACCEPT COMMON API RESPONSE SHAPES
   private extractList(response: any): any[] {
     const candidates = [
       response?.data?.dataList,
@@ -654,11 +615,7 @@ export class IncidentComponent implements OnInit {
       }
     }
 
-    if (
-      response &&
-      typeof response === 'object' &&
-      response.id != null
-    ) {
+    if (response && typeof response === 'object' && response.id != null) {
       return [response];
     }
 
@@ -673,7 +630,6 @@ export class IncidentComponent implements OnInit {
     return [];
   }
 
-  // DISPLAY API ERROR DETAILS
   private errorMessage(error: any): string {
     if (typeof error?.error === 'string') {
       return error.error;

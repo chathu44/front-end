@@ -15,6 +15,15 @@ interface AttendanceRosterRow {
   attendance: AttendanceRepresentation | null;
 }
 
+import { Observable, of } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import {
+  filterStatusOptions,
+  findStatusById,
+  normalizeLookupName,
+  unwrapApiList,
+} from '../services/lookup-utils';
+
 @Component({
   selector: 'app-attendance',
   standalone: false,
@@ -25,6 +34,9 @@ export class AttendanceComponent implements OnInit {
   attendances: AttendanceRepresentation[] = [];
   enrollments: any[] = [];
   classrooms: any[] = [];
+  classrooms$: Observable<any[]> = of([]);
+  availableClassrooms$: Observable<any[]> = of([]);
+  attendanceStatusOptions$: Observable<any[]> = of([]);
   allStaff: any[] = [];
   allStatus: any[] = [];
 
@@ -97,7 +109,9 @@ export class AttendanceComponent implements OnInit {
   get availableClassrooms(): any[] {
     return this.classrooms.filter((room: any) => {
       const statusName = this.statusName(room.status).toLowerCase();
-      return !statusName || statusName !== 'inactive';
+      return (
+        !statusName || (statusName !== 'inactive' && statusName !== 'closed')
+      );
     });
   }
 
@@ -211,9 +225,40 @@ export class AttendanceComponent implements OnInit {
   GetAllClassroomList(): void {
     this.classroomsLoading = true;
     this.updateRosterLoading();
-    this.attendanceService.GetAllClassroomList().subscribe({
-      next: (response: any) => {
-        this.classrooms = response?.data?.dataList || [];
+
+    this.classrooms$ = this.attendanceService.GetAllClassroomList().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    this.availableClassrooms$ = this.classrooms$.pipe(
+      map((rooms: any[]) =>
+        rooms
+          .filter((room: any) => {
+            const status = normalizeLookupName(
+              room?.status?.name ?? room?.status?.statusName ?? room?.status,
+            );
+            return status !== 'closed' && status !== 'inactive';
+          })
+          .map((room: any) => ({
+            ...room,
+            displayLabel: [
+              room.roomName ||
+                room.classroomName ||
+                room.name ||
+                `Classroom #${room.id}`,
+              room.roomCode || room.classroomCode,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          })),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    this.classrooms$.subscribe({
+      next: (rooms: any[]) => {
+        this.classrooms = rooms;
         this.classroomsLoading = false;
         this.updateRosterLoading();
         this.trySelectStaffClassroom();
@@ -290,14 +335,32 @@ export class AttendanceComponent implements OnInit {
   }
 
   GetAllStatus(): void {
-    this.statusService.GetAllStatus().subscribe({
-      next: (response: any) => {
-        this.allStatus = response?.data?.dataList || [];
-      },
-      error: () => {
-        this.allStatus = [];
-      },
+    const statuses$ = this.statusService.GetAllStatus().pipe(
+      map((response: any) => unwrapApiList(response)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    this.attendanceStatusOptions$ = statuses$.pipe(
+      map((statuses: any[]) =>
+        filterStatusOptions(statuses, [
+          'Present',
+          'Absent',
+          'Late',
+          'Left Early',
+        ]),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    statuses$.subscribe({
+      next: (statuses: any[]) => (this.allStatus = statuses),
+      error: () => (this.allStatus = []),
     });
+  }
+
+  statusOptionId(status: any): string | number | null {
+    if (status && typeof status === 'object') return status.id ?? null;
+    return status == null || status === '' ? null : status;
   }
 
   onDateChange(): void {
@@ -340,11 +403,19 @@ export class AttendanceComponent implements OnInit {
       return;
     }
 
-    const presentStatusId =
-      this.findStatusId('Present') ?? this.findStatusId('Active');
-    if (presentStatusId === null) {
+    const checkInAt = this.localDateTime(new Date());
+    const scheduledStart = String(
+      row.enrollment?.program?.sessionStart ??
+        row.enrollment?.program?.session_start ??
+        '',
+    ).slice(0, 5);
+    const actualCheckInTime = checkInAt.slice(11, 16);
+    const isLate = !!scheduledStart && actualCheckInTime > scheduledStart;
+    const attendanceStatusName = isLate ? 'Late' : 'Present';
+    const arrivalStatusId = this.findStatusId(attendanceStatusName);
+    if (arrivalStatusId === null) {
       this.showMessage(
-        'Please add a Present status in Status Management before recording attendance.',
+        `Please add a ${attendanceStatusName} status in Status Management before recording this arrival.`,
         true,
       );
       return;
@@ -354,7 +425,7 @@ export class AttendanceComponent implements OnInit {
       ...(existing || {}),
       id: existing?.id,
       attendanceDate: this.selectedDate,
-      checkInTime: this.localDateTime(new Date()),
+      checkInTime: checkInAt,
       checkOutTime: null,
       checkedInBy: this.currentStaffProfile.id,
       checkedOutBy: null,
@@ -362,7 +433,7 @@ export class AttendanceComponent implements OnInit {
       notes: existing?.notes || '',
       child: childId,
       classroom: this.selectedClassroomId,
-      status: presentStatusId,
+      status: arrivalStatusId,
     };
 
     const type =
@@ -560,19 +631,33 @@ export class AttendanceComponent implements OnInit {
       return;
     }
 
-    const leftStatusId = this.findStatusId('Left');
+    const checkOutAt = this.localDateTime(new Date());
+    const scheduledEnd = String(
+      row.enrollment?.program?.sessionEnd ??
+        row.enrollment?.program?.session_end ??
+        '',
+    ).slice(0, 5);
+    const actualCheckOutTime = checkOutAt.slice(11, 16);
+    const isLeavingEarly = !!scheduledEnd && actualCheckOutTime < scheduledEnd;
+    const leftEarlyStatusId = isLeavingEarly
+      ? this.findStatusId('Left Early')
+      : null;
+
+    const checkoutStatusId =
+      leftEarlyStatusId ?? this.relationId(existing.status);
+
     const payload: AttendanceRepresentation = {
       ...existing,
       attendanceDate: this.selectedDate,
       checkInTime: existing.checkInTime,
-      checkOutTime: this.localDateTime(new Date()),
+      checkOutTime: checkOutAt,
       checkedInBy: this.relationId(existing.checkedInBy),
       checkedOutBy: this.currentStaffProfile.id,
       pickupPerson,
       notes: this.checkoutNotesDraft.trim(),
       child: row.child.id,
       classroom: this.selectedClassroomId,
-      status: leftStatusId ?? this.relationId(existing.status),
+      status: checkoutStatusId,
     };
 
     this.attendanceService.createAttendance(payload, 'Update').subscribe({
@@ -636,6 +721,10 @@ export class AttendanceComponent implements OnInit {
         true,
       );
       this.CancelNotes();
+      return;
+    }
+    if (this.notesDraft.length > 255) {
+      this.showMessage('Attendance notes cannot exceed 255 characters.', true);
       return;
     }
 
@@ -771,6 +860,16 @@ export class AttendanceComponent implements OnInit {
         'Enter the pickup person for a completed check-out.',
         true,
       );
+      return;
+    }
+    if (String(this.editAttendanceDraft.notes || '').length > 255) {
+      this.showMessage('Attendance notes cannot exceed 255 characters.', true);
+      return;
+    }
+    if (
+      String(this.editAttendanceDraft.pickupPerson || '').trim().length > 100
+    ) {
+      this.showMessage('Pickup person must not exceed 100 characters.', true);
       return;
     }
 
@@ -1337,5 +1436,21 @@ export class AttendanceComponent implements OnInit {
   private showMessage(message: string, isError = false): void {
     this.actionMessage = message;
     this.actionMessageIsError = isError;
+  }
+
+  getPhotoUrl(photoUrl: string | null | undefined): string {
+    if (!photoUrl) {
+      return '';
+    }
+
+    const value = photoUrl.trim();
+
+    if (/^(https?:\/\/|data:image\/)/i.test(value)) {
+      return value;
+    }
+
+    const normalizedPath = value.replace(/\\/g, '/').replace(/^\/+/, '');
+
+    return `http://localhost:8010/${normalizedPath}`;
   }
 }

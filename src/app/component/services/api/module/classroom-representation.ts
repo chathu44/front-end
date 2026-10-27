@@ -5,6 +5,6 @@ export interface ClassroomRepresentation {
   ageGroup?: string;
   capacity?: number | null;
   floor?: string;
-
+  
   status?: any;
 }

@@ -122,7 +122,6 @@
                 </div>
               </div>
 
-              <!-- CHILD SELECTION -->
               <div class="section-heading">
                 <div class="section-icon child-icon">
                   <i class="bi bi-people-fill"></i>
@@ -138,35 +137,39 @@
               </div>
 
               <div class="row g-3 mb-4">
-                <!-- CHILD -->
                 <div class="col-md-6">
                   <label for="enrollmentChild" class="form-label">
                     Child
                     <span class="required">*</span>
                   </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
                     id="enrollmentChild"
                     name="enrollmentChild"
+                    [items]="(allChildList$ | async) ?? []"
+                    bindLabel="dropdownLabel"
+                    bindValue="id"
                     [(ngModel)]="enrollmentObj.child"
                     (ngModelChange)="onChildSelection($event)"
                     required
+                    [clearable]="false"
+                    [searchable]="true"
+                    appendTo="body"
+                    placeholder="Select child"
                   >
-                    <option [ngValue]="null">Select Child</option>
-
-                    <option
-                      *ngFor="let child of allChildList"
-                      [ngValue]="child.id"
-                    >
-                      {{ child.firstName }}
-                      {{ child.lastName }}
-                      ({{ child.childCode || child.id }})
-                    </option>
-                  </select>
+                    <ng-template ng-label-tmp let-item="item">
+                      {{ item.firstName }} {{ item.lastName }} ({{
+                        item.childCode || item.id
+                      }})
+                    </ng-template>
+                    <ng-template ng-option-tmp let-item="item">
+                      {{ item.firstName }} {{ item.lastName }} ({{
+                        item.childCode || item.id
+                      }})
+                    </ng-template>
+                  </ng-select>
                 </div>
 
-                <!-- AUTOMATICALLY LINKED PARENT -->
                 <div class="col-md-6">
                   <label class="form-label"> Parent / Guardian </label>
 
@@ -205,22 +208,19 @@
                     <span class="required">*</span>
                   </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
                     id="enrollmentProgram"
                     name="enrollmentProgram"
+                    [items]="(allProgramList$ | async) ?? []"
+                    bindLabel="dropdownLabel"
+                    bindValue="id"
                     [(ngModel)]="enrollmentObj.program"
                     required
-                  >
-                    <option [ngValue]="null">Select Program</option>
-
-                    <option
-                      *ngFor="let program of allProgramList"
-                      [ngValue]="program.id"
-                    >
-                      {{ program.programName }}
-                    </option>
-                  </select>
+                    [clearable]="false"
+                    [searchable]="true"
+                    appendTo="body"
+                    placeholder="Select program"
+                  ></ng-select>
                 </div>
 
                 <div class="col-md-6">
@@ -229,25 +229,28 @@
                     <span class="required">*</span>
                   </label>
 
-                  <select
-                    class="form-select"
+                  <ng-select
                     id="enrollmentClassroom"
                     name="enrollmentClassroom"
+                    [items]="(allClassroomList$ | async) ?? []"
+                    bindLabel="dropdownLabel"
+                    bindValue="id"
                     [(ngModel)]="enrollmentObj.classroom"
                     required
+                    [clearable]="false"
+                    [searchable]="true"
+                    appendTo="body"
+                    placeholder="Select classroom"
                   >
-                    <option [ngValue]="null">Select Classroom</option>
-
-                    <option
-                      *ngFor="let classroom of allClassroomList"
-                      [ngValue]="classroom.id"
-                    >
-                      {{ classroom.roomName }}
-                      <ng-container *ngIf="classroom.roomCode">
-                        ({{ classroom.roomCode }})
-                      </ng-container>
-                    </option>
-                  </select>
+                    <ng-template ng-label-tmp let-item="item">
+                      {{ item.roomName }}
+                      {{ item.roomCode ? "(" + item.roomCode + ")" : "" }}
+                    </ng-template>
+                    <ng-template ng-option-tmp let-item="item">
+                      {{ item.roomName }}
+                      {{ item.roomCode ? "(" + item.roomCode + ")" : "" }}
+                    </ng-template>
+                  </ng-select>
                 </div>
               </div>
 
@@ -260,9 +263,10 @@
                   <strong>Enrollment Status</strong>
 
                   <p class="mb-0">
-                    New enrollments are set to
-                    <strong>Active</strong> automatically. You can change the
-                    status from the registered enrollments table.
+                    New enrollments start as
+                    <strong>Pending</strong>. After approval, update the status
+                    to Active, Completed or Withdrawn in the registered
+                    enrollments table.
                   </p>
                 </div>
               </div>
@@ -530,41 +534,34 @@
                   </td>
 
                   <td>
-                    <div class="status-toggle-wrapper">
-                      <label class="status-switch">
-                        <input
-                          type="checkbox"
-                          [checked]="isEnrollmentActive(enrollment)"
-                          [disabled]="!canUpdate"
-                          (change)="onStatusToggle(enrollment, $event)"
-                          (click)="$event.stopPropagation()"
-                        />
-
-                        <span class="status-slider"></span>
-                      </label>
-
-                      <span
-                        class="status-text"
-                        [class.active-text]="isEnrollmentActive(enrollment)"
-                        [class.inactive-text]="!isEnrollmentActive(enrollment)"
-                      >
-                        {{
-                          isEnrollmentActive(enrollment) ? "Active" : "Inactive"
-                        }}
-                      </span>
-
+                    <div
+                      class="status-editor"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <ng-select
+                        [items]="(enrollmentStatusOptions$ | async) ?? []"
+                        bindLabel="name"
+                        bindValue="id"
+                        [ngModel]="statusOptionId(enrollment.status)"
+                        (ngModelChange)="
+                          onEnrollmentStatusChange(enrollment, $event)
+                        "
+                        [name]="'enrollmentStatus-' + enrollment.id"
+                        [disabled]="!canUpdate"
+                        [clearable]="false"
+                        [searchable]="true"
+                        appendTo="body"
+                        placeholder="Select status"
+                        class="status-select"
+                      ></ng-select>
                       <button
                         *ngIf="canUpdate && enrollment.statusChanged"
                         type="button"
-                        class="status-save-btn"
-                        title="Save Status"
-                        (click)="
-                          saveEnrollmentStatus(enrollment);
-                          $event.stopPropagation()
-                        "
+                        class="btn btn-sm btn-primary status-save-btn"
+                        title="Save status"
+                        (click)="saveEnrollmentStatus(enrollment)"
                       >
-                        <i class="bi bi-check-lg"></i>
-                        Save
+                        <i class="bi bi-check-lg"></i> Save
                       </button>
                     </div>
                   </td>
