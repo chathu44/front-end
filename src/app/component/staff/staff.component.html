@@ -1,0 +1,618 @@
+<main class="staff-page container-fluid py-4" *ngIf="canView; else staffDenied">
+  <header class="staff-header mb-4">
+    <div>
+      <span class="staff-eyebrow">
+        <i class="bi bi-people-fill me-2"></i>
+        STAFF ADMINISTRATION
+      </span>
+
+      <h1>Staff Management</h1>
+
+      <p>Register daycare staff, assign classrooms and manage staff status.</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="refreshStaff()"
+      [disabled]="loading"
+    >
+      <i class="bi bi-arrow-clockwise me-1"></i>
+      {{ loading ? "Refreshing..." : "Refresh" }}
+    </button>
+  </header>
+
+  <div
+    *ngIf="message"
+    class="alert"
+    [ngClass]="messageIsError ? 'alert-danger' : 'alert-success'"
+    role="status"
+  >
+    <i
+      class="bi me-2"
+      [ngClass]="messageIsError ? 'bi-exclamation-circle' : 'bi-check-circle'"
+    ></i>
+
+    {{ message }}
+
+    <button
+      type="button"
+      class="btn-close float-end"
+      aria-label="Dismiss"
+      (click)="message = ''"
+    ></button>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="staff-summary-card">
+        <div class="summary-icon">
+          <i class="bi bi-people"></i>
+        </div>
+        <div>
+          <span>Total Staff</span>
+          <strong>{{ staffList.length }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="staff-summary-card">
+        <div class="summary-icon active-icon">
+          <i class="bi bi-person-check"></i>
+        </div>
+        <div>
+          <span>Active Staff</span>
+          <strong>{{ activeStaffCount }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="staff-summary-card">
+        <div class="summary-icon role-icon">
+          <i class="bi bi-person-workspace"></i>
+        </div>
+        <div>
+          <span>Classroom Assigned</span>
+          <strong>{{ assignedClassroomCount }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-8 col-lg-7">
+      <div class="card staff-card" id="staffFormCard">
+        <div class="card-header staff-card-header">
+          <div class="staff-heading-icon">
+            <i class="bi bi-person-badge"></i>
+          </div>
+
+          <div>
+            <h2>{{ pageTitle }}</h2>
+            <small> Enter staff information and classroom assignment. </small>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <form #staffForm="ngForm" (ngSubmit)="saveStaff()">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="staffCode" class="form-label">Staff Code</label>
+
+                <input
+                  id="staffCode"
+                  name="staffCode"
+                  type="text"
+                  class="form-control"
+                  maxlength="50"
+                  [(ngModel)]="staffObj.staffCode"
+                  [disabled]="mode === 'view'"
+                  placeholder="Auto-generated if blank"
+                />
+
+                <small class="field-hint">
+                  Each staff member must have a unique code.
+                </small>
+              </div>
+
+              <div class="col-md-6">
+                <label for="fullName" class="form-label">
+                  Full Name <span class="required">*</span>
+                </label>
+
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  class="form-control"
+                  required
+                  minlength="2"
+                  maxlength="150"
+                  [(ngModel)]="staffObj.fullName"
+                  [disabled]="mode === 'view'"
+                  #fullName="ngModel"
+                  placeholder="Enter full name"
+                />
+
+                <small
+                  class="field-error"
+                  *ngIf="fullName.invalid && fullName.touched"
+                >
+                  Please enter a valid full name.
+                </small>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="staffRole" class="form-label">
+                  Staff Role <span class="required">*</span>
+                </label>
+
+                <select
+                  id="staffRole"
+                  name="staffRole"
+                  class="form-select"
+                  required
+                  [(ngModel)]="staffObj.role"
+                  [disabled]="mode === 'view'"
+                  #staffRole="ngModel"
+                >
+                  <option value="" disabled>Select staff role</option>
+                  <option *ngFor="let role of roles" [value]="role">
+                    {{ role }}
+                  </option>
+                </select>
+
+                <small
+                  class="field-error"
+                  *ngIf="staffRole.invalid && staffRole.touched"
+                >
+                  Select a staff role.
+                </small>
+              </div>
+
+              <div class="col-md-6">
+                <label for="phone" class="form-label">Phone Number</label>
+
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  class="form-control"
+                  maxlength="20"
+                  [(ngModel)]="staffObj.phone"
+                  [disabled]="mode === 'view'"
+                  placeholder="Enter contact number"
+                />
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="nic" class="form-label">
+                  NIC / Identification Number
+                </label>
+
+                <input
+                  id="nic"
+                  name="nic"
+                  type="text"
+                  class="form-control"
+                  maxlength="20"
+                  [(ngModel)]="staffObj.nic"
+                  [disabled]="mode === 'view'"
+                  placeholder="Enter NIC"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="hireDate" class="form-label">Hire Date</label>
+
+                <input
+                  id="hireDate"
+                  name="hireDate"
+                  type="date"
+                  class="form-control"
+                  [max]="today"
+                  [(ngModel)]="staffObj.hireDate"
+                  [disabled]="mode === 'view'"
+                  #hireDate="ngModel"
+                />
+
+                <small
+                  class="field-error"
+                  *ngIf="hireDate.value && hireDate.value > today"
+                >
+                  Hire date cannot be in the future.
+                </small>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="userId" class="form-label">
+                  Linked System User ID
+                </label>
+
+                <input
+                  id="userId"
+                  name="userId"
+                  type="number"
+                  class="form-control"
+                  min="1"
+                  step="1"
+                  [(ngModel)]="staffObj.userId"
+                  [disabled]="mode === 'view'"
+                  placeholder="Optional user ID"
+                />
+
+                <small class="field-hint">
+                  Enter an existing app_user ID, or leave blank if not required.
+                </small>
+              </div>
+
+              <div class="col-md-6">
+                <label for="classroom" class="form-label">
+                  Assigned Classroom
+                </label>
+
+                <select
+                  id="classroom"
+                  name="classroom"
+                  class="form-select"
+                  [(ngModel)]="staffObj.classroom"
+                  [disabled]="mode === 'view'"
+                >
+                  <option [ngValue]="null">Not assigned</option>
+
+                  <option
+                    *ngFor="let classroom of classrooms"
+                    [ngValue]="classroom.id"
+                  >
+                    {{ classroom.displayLabel }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label for="staffStatus" class="form-label">
+                  Status <span class="required">*</span>
+                </label>
+
+                <select
+                  id="staffStatus"
+                  name="staffStatus"
+                  class="form-select"
+                  required
+                  [(ngModel)]="staffObj.status"
+                  [disabled]="mode === 'view'"
+                  #staffStatus="ngModel"
+                >
+                  <option [ngValue]="null" disabled>Select status</option>
+
+                  <option *ngFor="let status of statuses" [ngValue]="status.id">
+                    {{ status.name }}
+                  </option>
+                </select>
+
+                <small
+                  class="field-error"
+                  *ngIf="staffStatus.invalid && staffStatus.touched"
+                >
+                  Select staff status.
+                </small>
+
+                <small class="field-hint">
+                  Options come from Status Management.
+                </small>
+              </div>
+            </div>
+
+            <div class="staff-form-actions">
+              <button
+                type="button"
+                class="btn btn-light border"
+                (click)="newStaff(); staffForm.resetForm()"
+              >
+                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                Clear
+              </button>
+
+              <button
+                *ngIf="canSave"
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="staffForm.invalid || saving"
+              >
+                <i class="bi bi-save me-1"></i>
+
+                {{
+                  saving
+                    ? "Saving..."
+                    : mode === "add"
+                      ? "Register Staff"
+                      : "Update Staff"
+                }}
+              </button>
+
+              <button
+                *ngIf="mode === 'view' && canUpdate"
+                type="button"
+                class="btn btn-primary"
+                (click)="mode = 'edit'"
+              >
+                <i class="bi bi-pencil-square me-1"></i>
+                Edit
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-5">
+      <div class="card staff-profile-card">
+        <div class="staff-profile-card-header">
+          <span>STAFF PROFILE</span>
+          <i class="bi bi-person-badge"></i>
+        </div>
+
+        <div class="staff-profile-photo-area">
+          <div class="staff-profile-avatar">
+            {{ staffInitials(staffObj.fullName) }}
+          </div>
+        </div>
+
+        <div class="staff-profile-name-area">
+          <h4>{{ staffObj.fullName || "Staff Name" }}</h4>
+
+          <span class="staff-profile-code-badge">
+            {{ staffObj.staffCode || "New Registration" }}
+          </span>
+        </div>
+
+        <div class="staff-profile-details">
+          <div class="staff-profile-section-title">
+            <i class="bi bi-person-lines-fill"></i>
+            Personal Information
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-telephone"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>Phone Number</small>
+              <strong>{{ staffObj.phone || "Not provided" }}</strong>
+            </div>
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-card-text"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>NIC / Identification</small>
+              <strong>{{ staffObj.nic || "Not provided" }}</strong>
+            </div>
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-calendar-check"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>Hire Date</small>
+              <strong>{{ staffObj.hireDate || "Not provided" }}</strong>
+            </div>
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-building"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>Assigned Classroom</small>
+              <strong>
+                {{ classroomName(staffObj.classroom) || "Not assigned" }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-person-lock"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>Linked System User ID</small>
+              <strong>{{ staffObj.userId || "No linked account" }}</strong>
+            </div>
+          </div>
+
+          <div class="staff-profile-detail">
+            <div class="staff-detail-icon">
+              <i class="bi bi-shield-check"></i>
+            </div>
+
+            <div class="staff-detail-content">
+              <small>Staff Status</small>
+              <strong>
+                {{ statusName(staffObj.status) || "Not selected" }}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-profile-notice">
+          <div class="staff-profile-notice-icon">
+            <i class="bi bi-info-circle-fill"></i>
+          </div>
+
+          <div>
+            <strong>Staff Information</strong>
+            <p>
+              Keep staff contact details and classroom assignments up to date.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card staff-card">
+        <div class="staff-table-header">
+          <div>
+            <h2>Registered Staff</h2>
+            <small>
+              Search staff members and select a record to view its details.
+            </small>
+          </div>
+
+          <div class="staff-count">
+            {{ filteredStaff.length }} Staff Members
+          </div>
+        </div>
+
+        <div class="staff-search">
+          <i class="bi bi-search"></i>
+
+          <input
+            type="search"
+            class="form-control"
+            name="staffSearch"
+            [(ngModel)]="staffSearch"
+            placeholder="Search code, name, role, phone or classroom"
+          />
+        </div>
+
+        <div *ngIf="loading" class="staff-loading">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Loading staff records...
+        </div>
+
+        <div class="table-responsive" *ngIf="!loading">
+          <table class="table staff-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Staff Member</th>
+                <th>Role</th>
+                <th>Classroom</th>
+                <th>Hire Date</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                *ngFor="let staff of filteredStaff"
+                class="staff-selectable-row"
+                (click)="selectStaff(staff, 'view')"
+              >
+                <td>
+                  <div class="staff-person-cell">
+                    <span class="staff-avatar">
+                      <i class="bi bi-person-fill"></i>
+                    </span>
+
+                    <div>
+                      <strong>{{ staff.fullName || "Unnamed Staff" }}</strong>
+                      <small>{{ staff.staffCode || "No staff code" }}</small>
+                    </div>
+                  </div>
+                </td>
+
+                <td>{{ staff.role || "—" }}</td>
+
+                <td>
+                  {{
+                    classroomName(staff.classroom ?? staff.classroomId) ||
+                      "Not assigned"
+                  }}
+                </td>
+
+                <td>{{ staff.hireDate || "—" }}</td>
+
+                <td>
+                  <span
+                    class="status-badge"
+                    [ngClass]="
+                      statusClass(statusName(staff.status ?? staff.statusId))
+                    "
+                  >
+                    {{
+                      statusName(staff.status ?? staff.statusId) || "Unknown"
+                    }}
+                  </span>
+                </td>
+
+                <td class="text-end">
+                  <div class="staff-actions">
+                    <button
+                      type="button"
+                      class="action-btn view-btn"
+                      title="View Staff"
+                      aria-label="View Staff"
+                      (click)="
+                        selectStaff(staff, 'view'); $event.stopPropagation()
+                      "
+                    >
+                      <i class="bi bi-eye"></i>
+                    </button>
+
+                    <button
+                      *ngIf="canUpdate"
+                      type="button"
+                      class="action-btn edit-btn"
+                      title="Edit Staff"
+                      aria-label="Edit Staff"
+                      (click)="
+                        selectStaff(staff, 'edit'); $event.stopPropagation()
+                      "
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="filteredStaff.length === 0">
+                <td colspan="6" class="staff-empty">
+                  <i class="bi bi-people"></i>
+                  <strong>No staff found</strong>
+                  <span> Register a staff member or change your search. </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="staff-table-footer">
+          Showing {{ filteredStaff.length }} of {{ staffList.length }} staff
+          members
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<ng-template #staffDenied>
+  <main class="container py-5">
+    <div class="alert alert-warning">
+      <i class="bi bi-shield-lock me-2"></i>
+      You do not have permission to view Staff Management.
+    </div>
+  </main>
+</ng-template>
