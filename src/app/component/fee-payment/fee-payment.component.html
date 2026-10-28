@@ -1,0 +1,791 @@
+<main class="fee-page container-fluid py-4" *ngIf="canView; else feeDenied">
+  <header class="fee-header mb-4">
+    <div>
+      <span class="fee-eyebrow">
+        <i class="bi bi-wallet2 me-2"></i>FINANCE MANAGEMENT
+      </span>
+      <h1>Fee &amp; Payment Management</h1>
+      <p>
+        Manage monthly invoices, record payments and monitor outstanding
+        balances.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      (click)="refreshAll()"
+    >
+      <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+    </button>
+  </header>
+
+  <div
+    *ngIf="message"
+    class="alert"
+    [ngClass]="messageIsError ? 'alert-danger' : 'alert-success'"
+    role="status"
+  >
+    <i
+      class="bi me-2"
+      [ngClass]="messageIsError ? 'bi-exclamation-circle' : 'bi-check-circle'"
+    ></i>
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close float-end"
+      aria-label="Dismiss"
+      (click)="message = ''"
+    ></button>
+  </div>
+
+  <div class="fee-tabs mb-4">
+    <button
+      type="button"
+      [class.active]="activeTab === 'invoices'"
+      (click)="activeTab = 'invoices'"
+    >
+      <i class="bi bi-receipt me-2"></i>Fee Invoices
+      <span class="tab-count">{{ invoices.length }}</span>
+    </button>
+    <button
+      type="button"
+      [class.active]="activeTab === 'payments'"
+      (click)="activeTab = 'payments'"
+    >
+      <i class="bi bi-cash-coin me-2"></i>Fee Payments
+      <span class="tab-count">{{ payments.length }}</span>
+    </button>
+  </div>
+
+  <section *ngIf="activeTab === 'invoices'">
+    <div class="row g-4">
+      <div class="col-xl-4 col-lg-5">
+        <div class="card fee-card" id="feeInvoiceForm">
+          <div class="card-header fee-card-header">
+            <div class="fee-heading-icon"><i class="bi bi-receipt"></i></div>
+            <div>
+              <h2>
+                {{
+                  invoiceMode === "add"
+                    ? "Create Invoice"
+                    : invoiceMode === "edit"
+                      ? "Edit Invoice"
+                      : "Invoice Details"
+                }}
+              </h2>
+              <small>Record the monthly fee for a child's enrollment.</small>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <form #invoiceForm="ngForm" (ngSubmit)="saveInvoice()">
+              <div class="mb-3">
+                <label for="invoiceCode" class="form-label">Invoice Code</label>
+                <input
+                  id="invoiceCode"
+                  name="invoiceCode"
+                  type="text"
+                  class="form-control"
+                  maxlength="50"
+                  [(ngModel)]="invoiceObj.invoiceCode"
+                  [disabled]="invoiceMode === 'view'"
+                  placeholder="Auto-generated if left blank"
+                />
+                <small class="field-hint"
+                  >Must be unique. You may leave it blank to generate a
+                  code.</small
+                >
+              </div>
+
+              <div class="mb-3">
+                <label for="billingMonth" class="form-label">
+                  Billing Month <span class="required">*</span>
+                </label>
+                <input
+                  id="billingMonth"
+                  name="billingMonth"
+                  type="month"
+                  class="form-control"
+                  required
+                  [(ngModel)]="invoiceObj.billingMonth"
+                  [disabled]="invoiceMode === 'view'"
+                  #billingMonth="ngModel"
+                />
+                <small
+                  class="field-error"
+                  *ngIf="billingMonth.invalid && billingMonth.touched"
+                >
+                  Select a billing month.
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <label for="invoiceChild" class="form-label">
+                  Child <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="invoiceChild"
+                  name="invoiceChild"
+                  [items]="(children$ | async) ?? []"
+                  bindLabel="displayLabel"
+                  bindValue="id"
+                  [(ngModel)]="invoiceObj.child"
+                  (ngModelChange)="onInvoiceChildChange($event)"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [disabled]="invoiceMode === 'view'"
+                  placeholder="Search child by name or code"
+                  required
+                >
+                </ng-select>
+              </div>
+
+              <div class="mb-3">
+                <label for="invoiceEnrollment" class="form-label">
+                  Enrollment <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="invoiceEnrollment"
+                  name="invoiceEnrollment"
+                  [items]="(enrollmentsForChild$ | async) ?? []"
+                  bindLabel="displayLabel"
+                  bindValue="id"
+                  [(ngModel)]="invoiceObj.enrollment"
+                  (ngModelChange)="onInvoiceEnrollmentChange($event)"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [disabled]="invoiceMode === 'view' || !invoiceObj.child"
+                  placeholder="Select the child's enrollment"
+                  required
+                >
+                </ng-select>
+                <small class="field-hint"
+                  >Only enrollments belonging to the selected child are
+                  listed.</small
+                >
+              </div>
+
+              <div class="mb-3">
+                <label for="invoiceParent" class="form-label">
+                  Parent / Payer <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="invoiceParent"
+                  name="invoiceParent"
+                  [items]="(parents$ | async) ?? []"
+                  bindLabel="displayLabel"
+                  bindValue="id"
+                  [(ngModel)]="invoiceObj.parent"
+                  [searchable]="true"
+                  [clearable]="false"
+                  [disabled]="invoiceMode === 'view' || !!invoiceObj.child"
+                  placeholder="Primary registered parent"
+                  required
+                >
+                </ng-select>
+                <small class="field-hint"
+                  >Automatically taken from the selected child's primary
+                  parent.</small
+                >
+              </div>
+
+              <div class="mb-3">
+                <label for="invoiceAmount" class="form-label">
+                  Amount Due (LKR) <span class="required">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">LKR</span>
+                  <input
+                    id="invoiceAmount"
+                    name="invoiceAmount"
+                    type="number"
+                    class="form-control"
+                    required
+                    min="0.01"
+                    [max]="maxAmount"
+                    step="0.01"
+                    [(ngModel)]="invoiceObj.amount"
+                    [disabled]="invoiceMode === 'view'"
+                    #invoiceAmount="ngModel"
+                    placeholder="0.00"
+                  />
+                </div>
+                <small
+                  class="field-error"
+                  *ngIf="invoiceAmount.touched && invoiceAmount.invalid"
+                >
+                  Enter a positive amount with no more than two decimal places.
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <label for="dueDate" class="form-label">
+                  Due Date <span class="required">*</span>
+                </label>
+                <input
+                  id="dueDate"
+                  name="dueDate"
+                  type="date"
+                  class="form-control"
+                  required
+                  [min]="
+                    invoiceObj.billingMonth
+                      ? invoiceObj.billingMonth + '-01'
+                      : null
+                  "
+                  [(ngModel)]="invoiceObj.dueDate"
+                  [disabled]="invoiceMode === 'view'"
+                  #dueDate="ngModel"
+                />
+                <small
+                  class="field-error"
+                  *ngIf="dueDate.touched && dueDate.invalid"
+                >
+                  Select the invoice due date.
+                </small>
+              </div>
+
+              <div class="fee-status-preview mb-3">
+                <span class="preview-label">Calculated Invoice Status</span>
+                <span
+                  class="status-badge"
+                  [ngClass]="statusClass(invoiceStatusLabel(invoiceObj))"
+                >
+                  {{ invoiceStatusLabel(invoiceObj) }}
+                </span>
+                <small
+                  >Status is calculated using payments and the due date.</small
+                >
+              </div>
+
+              <div class="fee-form-actions">
+                <button
+                  type="button"
+                  class="btn btn-light border"
+                  (click)="newInvoice(); invoiceForm.resetForm()"
+                >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+                </button>
+
+                <button
+                  *ngIf="canSaveInvoice"
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="invoiceForm.invalid || saving"
+                >
+                  <i class="bi bi-save me-1"></i>
+                  {{
+                    saving
+                      ? "Saving..."
+                      : invoiceMode === "add"
+                        ? "Create Invoice"
+                        : "Update Invoice"
+                  }}
+                </button>
+
+                <button
+                  *ngIf="invoiceMode === 'view' && canUpdate"
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="invoiceMode = 'edit'"
+                >
+                  <i class="bi bi-pencil-square me-1"></i> Edit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-8 col-lg-7">
+        <div class="card fee-card">
+          <div class="fee-table-header">
+            <div>
+              <h2>Fee Invoices</h2>
+              <small>Click a row or use View to inspect an invoice.</small>
+            </div>
+            <button
+              *ngIf="canCreate"
+              type="button"
+              class="btn btn-primary"
+              (click)="newInvoice()"
+            >
+              <i class="bi bi-plus-lg me-1"></i> New Invoice
+            </button>
+          </div>
+
+          <div class="fee-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="search"
+              class="form-control"
+              name="invoiceSearch"
+              [(ngModel)]="invoiceSearch"
+              placeholder="Search invoice code, child, month or status"
+            />
+          </div>
+
+          <div *ngIf="loadingInvoices" class="fee-loading">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Loading invoices...
+          </div>
+
+          <div class="table-responsive" *ngIf="!loadingInvoices">
+            <table class="table fee-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Child</th>
+                  <th>Billing Month</th>
+                  <th>Amount</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let invoice of filteredInvoices"
+                  (click)="selectInvoice(invoice, 'view')"
+                  class="fee-selectable-row"
+                >
+                  <td>
+                    <strong>{{
+                      invoice.invoiceCode || "INV-" + invoice.id
+                    }}</strong>
+                    <small class="table-subtext"
+                      >Due: {{ invoice.dueDate || "—" }}</small
+                    >
+                  </td>
+                  <td>{{ childLabel(invoice.child) }}</td>
+                  <td>{{ invoice.billingMonth }}</td>
+                  <td>{{ formatLkr(invoice.amount) }}</td>
+                  <td>{{ formatLkr(outstandingBalance(invoice.id)) }}</td>
+                  <td>
+                    <span
+                      class="status-badge"
+                      [ngClass]="statusClass(invoiceStatusLabel(invoice))"
+                    >
+                      {{ invoiceStatusLabel(invoice) }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="fee-actions">
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="View Invoice"
+                        aria-label="View Invoice"
+                        (click)="
+                          selectInvoice(invoice, 'view');
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <button
+                        *ngIf="canUpdate"
+                        type="button"
+                        class="action-btn edit-btn"
+                        title="Edit Invoice"
+                        aria-label="Edit Invoice"
+                        (click)="
+                          selectInvoice(invoice, 'edit');
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="Print Invoice"
+                        aria-label="Print Invoice"
+                        (click)="
+                          printFeeInvoice(invoice); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-printer"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn edit-btn"
+                        title="Download Invoice PDF"
+                        aria-label="Download Invoice PDF"
+                        (click)="
+                          downloadFeeInvoicePdf(invoice);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-file-earmark-pdf"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="filteredInvoices.length === 0">
+                  <td colspan="7" class="fee-empty">
+                    <i class="bi bi-receipt"></i>
+                    <strong>No invoices found</strong>
+                    <span>Create an invoice or change your search.</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section *ngIf="activeTab === 'payments'">
+    <div class="row g-4">
+      <div class="col-xl-4 col-lg-5">
+        <div class="card fee-card" id="feePaymentForm">
+          <div class="card-header fee-card-header">
+            <div class="fee-heading-icon payment-icon">
+              <i class="bi bi-cash-coin"></i>
+            </div>
+            <div>
+              <h2>
+                {{
+                  paymentMode === "add"
+                    ? "Record Payment"
+                    : paymentMode === "edit"
+                      ? "Correct Payment"
+                      : "Payment Details"
+                }}
+              </h2>
+              <small>Record a payment against an existing invoice.</small>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <form #paymentForm="ngForm" (ngSubmit)="savePayment()">
+              <div class="mb-3">
+                <label for="paymentInvoice" class="form-label">
+                  Invoice <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="paymentInvoice"
+                  name="paymentInvoice"
+                  [items]="(invoiceOptions$ | async) ?? []"
+                  bindLabel="displayLabel"
+                  bindValue="id"
+                  [(ngModel)]="paymentObj.invoice"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [disabled]="paymentMode === 'view'"
+                  placeholder="Search invoice, child or balance"
+                  required
+                >
+                </ng-select>
+                <small class="field-hint">
+                  Choose an invoice with a remaining balance.
+                </small>
+              </div>
+
+              <div class="balance-preview mb-3" *ngIf="paymentObj.invoice">
+                <span>Outstanding Balance</span>
+                <strong>{{
+                  formatLkr(
+                    outstandingBalance(paymentObj.invoice, paymentObj.id)
+                  )
+                }}</strong>
+              </div>
+
+              <div class="mb-3">
+                <label for="paymentDate" class="form-label">
+                  Payment Date <span class="required">*</span>
+                </label>
+                <input
+                  id="paymentDate"
+                  name="paymentDate"
+                  type="datetime-local"
+                  class="form-control"
+                  required
+                  [max]="maxPaymentDate"
+                  [(ngModel)]="paymentObj.paymentDate"
+                  [disabled]="paymentMode === 'view'"
+                  #paymentDate="ngModel"
+                />
+                <small
+                  class="field-error"
+                  *ngIf="paymentDate.touched && paymentDate.invalid"
+                >
+                  Select the payment date and time.
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <label for="paymentAmount" class="form-label">
+                  Amount Received (LKR) <span class="required">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">LKR</span>
+                  <input
+                    id="paymentAmount"
+                    name="paymentAmount"
+                    type="number"
+                    class="form-control"
+                    min="0.01"
+                    [max]="
+                      paymentObj.invoice
+                        ? outstandingBalance(paymentObj.invoice, paymentObj.id)
+                        : maxAmount
+                    "
+                    step="0.01"
+                    required
+                    [(ngModel)]="paymentObj.amount"
+                    [disabled]="paymentMode === 'view'"
+                    #paymentAmount="ngModel"
+                  />
+                </div>
+                <small
+                  class="field-error"
+                  *ngIf="paymentAmount.touched && paymentAmount.invalid"
+                >
+                  Enter a valid positive payment amount.
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <label for="paymentMethod" class="form-label">
+                  Payment Method <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  [items]="(paymentMethods$ | async) ?? []"
+                  bindLabel="name"
+                  bindValue="value"
+                  [(ngModel)]="paymentObj.paymentMethod"
+                  [searchable]="true"
+                  [clearable]="false"
+                  [disabled]="paymentMode === 'view'"
+                  placeholder="Choose payment method"
+                  required
+                >
+                </ng-select>
+              </div>
+
+              <div class="mb-3">
+                <label for="referenceNo" class="form-label">
+                  Receipt / Transaction Reference
+                  <span class="optional-label"
+                    >Required for card or bank transfer</span
+                  >
+                </label>
+                <input
+                  id="referenceNo"
+                  name="referenceNo"
+                  type="text"
+                  class="form-control"
+                  maxlength="50"
+                  [(ngModel)]="paymentObj.referenceNo"
+                  [disabled]="paymentMode === 'view'"
+                  placeholder="Enter receipt or transaction reference"
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="receivedBy" class="form-label">
+                  Received By <span class="required">*</span>
+                </label>
+                <ng-select
+                  id="receivedBy"
+                  name="receivedBy"
+                  [items]="(staff$ | async) ?? []"
+                  bindLabel="displayLabel"
+                  bindValue="id"
+                  [(ngModel)]="paymentObj.receivedBy"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [disabled]="paymentMode === 'view'"
+                  placeholder="Search staff member"
+                  required
+                >
+                </ng-select>
+              </div>
+
+              <div class="fee-form-actions">
+                <button
+                  type="button"
+                  class="btn btn-light border"
+                  (click)="newPayment(); paymentForm.resetForm()"
+                >
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+                </button>
+
+                <button
+                  *ngIf="canSavePayment"
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="paymentForm.invalid || saving"
+                >
+                  <i class="bi bi-save me-1"></i>
+                  {{
+                    saving
+                      ? "Saving..."
+                      : paymentMode === "add"
+                        ? "Record Payment"
+                        : "Update Payment"
+                  }}
+                </button>
+
+                <button
+                  *ngIf="paymentMode === 'view' && canUpdate"
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="paymentMode = 'edit'"
+                >
+                  <i class="bi bi-pencil-square me-1"></i> Correct Payment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-8 col-lg-7">
+        <div class="card fee-card">
+          <div class="fee-table-header">
+            <div>
+              <h2>Payment History</h2>
+              <small
+                >Review payment receipts and the invoices they belong to.</small
+              >
+            </div>
+          </div>
+
+          <div class="fee-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="search"
+              class="form-control"
+              name="paymentSearch"
+              [(ngModel)]="paymentSearch"
+              placeholder="Search invoice, method, reference or staff"
+            />
+          </div>
+
+          <div *ngIf="loadingPayments" class="fee-loading">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Loading payments...
+          </div>
+
+          <div class="table-responsive" *ngIf="!loadingPayments">
+            <table class="table fee-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Payment Date</th>
+                  <th>Invoice</th>
+                  <th>Method</th>
+                  <th>Reference</th>
+                  <th>Received</th>
+                  <th>Received By</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let payment of filteredPayments"
+                  (click)="selectPayment(payment, 'view')"
+                  class="fee-selectable-row"
+                >
+                  <td>{{ payment.paymentDate | date: "medium" }}</td>
+                  <td>{{ invoiceLabelById(payment.invoice) }}</td>
+                  <td>{{ payment.paymentMethod }}</td>
+                  <td>{{ payment.referenceNo || "—" }}</td>
+                  <td>
+                    <strong>{{ formatLkr(payment.amount) }}</strong>
+                  </td>
+                  <td>
+                    {{
+                      payment.receivedBy?.fullName ||
+                        payment.receivedBy?.name ||
+                        payment.receivedBy ||
+                        "—"
+                    }}
+                  </td>
+                  <td class="text-end">
+                    <div class="fee-actions">
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="View Payment"
+                        (click)="
+                          selectPayment(payment, 'view');
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button
+                        *ngIf="canUpdate"
+                        type="button"
+                        class="action-btn edit-btn"
+                        title="Correct Payment"
+                        (click)="
+                          selectPayment(payment, 'edit');
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn view-btn"
+                        title="Print Payment Receipt"
+                        aria-label="Print Payment Receipt"
+                        (click)="
+                          printPaymentReceipt(payment); $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-printer"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="action-btn edit-btn"
+                        title="Download Receipt PDF"
+                        aria-label="Download Receipt PDF"
+                        (click)="
+                          downloadPaymentReceiptPdf(payment);
+                          $event.stopPropagation()
+                        "
+                      >
+                        <i class="bi bi-file-earmark-pdf"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="filteredPayments.length === 0">
+                  <td colspan="7" class="fee-empty">
+                    <i class="bi bi-cash-coin"></i>
+                    <strong>No payments found</strong>
+                    <span>Record a payment or change your search.</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<ng-template #feeDenied>
+  <main class="container py-5">
+    <div class="alert alert-warning">
+      <i class="bi bi-shield-lock me-2"></i>
+      You do not have permission to view Fee &amp; Payment Management.
+    </div>
+  </main>
+</ng-template>
