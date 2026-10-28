@@ -1,29 +1,773 @@
-<div class="page-shell">
-  <h1 class="page-title">Dashboard</h1>
-  <p class="page-subtitle">Overview of institute activity and academic operations.</p>
+<main
+  class="dashboard-page container-fluid py-4"
+  *ngIf="canView === true; else dashboardGate"
+>
+  <header class="dashboard-header mb-4">
+    <div>
+      <span class="dashboard-eyebrow">
+        <i class="bi bi-grid-1x2-fill me-2"></i>
+        DAYCARE OVERVIEW
+      </span>
 
-  <div class="row g-3 mb-3">
-    <div class="col-md-4" *ngFor="let card of summaryCards">
-      <div class="stat-tile panel p-3 h-100">
-        <div class="stat-label">{{ card.label }}</div>
-        <div class="stat-value">{{ card.value }}</div>
-        <div class="stat-note">{{ card.note }}</div>
-      </div>
+      <h1>Dashboard</h1>
+
+      <p>
+        Monitor attendance, classroom occupancy, fees, incidents, and
+        communicate with parents and staff.
+      </p>
+
+      <small class="dashboard-date">
+        <i class="bi bi-calendar3 me-1"></i>
+        {{ today | date: "fullDate" }}
+      </small>
     </div>
+  </header>
+
+  <div
+    *ngIf="message"
+    class="alert"
+    [ngClass]="messageIsError ? 'alert-danger' : 'alert-success'"
+    role="status"
+  >
+    <i
+      class="bi me-2"
+      [ngClass]="messageIsError ? 'bi-exclamation-circle' : 'bi-check-circle'"
+    ></i>
+
+    {{ message }}
+
+    <button
+      type="button"
+      class="btn-close float-end"
+      aria-label="Dismiss"
+      (click)="message = ''"
+    ></button>
   </div>
 
-  <div class="row g-3">
-    <div class="col-lg-7">
-      <div class="panel p-3 h-100">
-        <h3 class="h5 brand-font mb-3">Enrollment trend</h3>
-        <canvas id="myChart1" width="400" height="200"></canvas>
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <article class="metric-card">
+        <div class="metric-icon attendance-icon">
+          <i class="bi bi-person-check-fill"></i>
+        </div>
+
+        <div class="metric-content">
+          <span>Children Checked In</span>
+          <strong>{{ checkedInCount }}</strong>
+          <small>Currently on record for today</small>
+        </div>
+      </article>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <article class="metric-card">
+        <div class="metric-icon classroom-icon">
+          <i class="bi bi-building"></i>
+        </div>
+
+        <div class="metric-content">
+          <span>Rooms Near Capacity</span>
+          <strong>{{ nearCapacityClassrooms.length }}</strong>
+          <small>At least 80% occupied</small>
+        </div>
+      </article>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <article class="metric-card">
+        <div class="metric-icon finance-icon">
+          <i class="bi bi-receipt-cutoff"></i>
+        </div>
+
+        <div class="metric-content">
+          <span>Unpaid / Partial Invoices</span>
+          <strong>{{ unpaidInvoices.length }}</strong>
+          <small>Invoices with a balance remaining</small>
+        </div>
+      </article>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+      <article class="metric-card">
+        <div class="metric-icon incident-icon">
+          <i class="bi bi-heart-pulse-fill"></i>
+        </div>
+
+        <div class="metric-content">
+          <span>Open Incidents</span>
+          <strong>{{ openIncidents.length }}</strong>
+          <small>Incidents not marked resolved or closed</small>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-lg-6">
+      <article class="financial-summary-card">
+        <div>
+          <span>Total Outstanding Fees</span>
+          <strong>{{ formatLkr(totalOutstandingBalance) }}</strong>
+          <small>Outstanding balances across invoices</small>
+        </div>
+
+        <i class="bi bi-cash-stack"></i>
+      </article>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <article class="financial-summary-card overdue-summary">
+        <div>
+          <span>Overdue Fees</span>
+          <strong>{{ formatLkr(totalOverdueBalance) }}</strong>
+          <small>Unpaid balances on invoices past their due date</small>
+        </div>
+
+        <i class="bi bi-calendar-x"></i>
+      </article>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-12 col-xl-7">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon attendance-panel-icon">
+            <i class="bi bi-bar-chart-line"></i>
+          </div>
+
+          <div>
+            <h2>Attendance Overview</h2>
+            <p>Daily attendance records over the last seven days.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-chart-body">
+          <div class="dashboard-chart-container">
+            <canvas #attendanceChartCanvas></canvas>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="col-lg-5">
-      <div class="panel p-3 h-100">
-        <h3 class="h5 brand-font mb-3">Assessment overview</h3>
-        <canvas id="myChart2" width="400" height="200"></canvas>
+
+    <div class="col-12 col-xl-5">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon finance-panel-icon">
+            <i class="bi bi-pie-chart"></i>
+          </div>
+
+          <div>
+            <h2>Fee Collection Overview</h2>
+            <p>Payments collected and balances outstanding.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-chart-body">
+          <div class="dashboard-chart-container">
+            <canvas #feeChartCanvas></canvas>
+          </div>
+        </div>
       </div>
     </div>
+  </section>
+
+  <section class="dashboard-panel mb-4">
+    <div class="panel-header">
+      <div class="panel-title-icon classroom-panel-icon">
+        <i class="bi bi-buildings"></i>
+      </div>
+
+      <div>
+        <h2>Classroom Occupancy</h2>
+        <p>Today's recorded attendance compared with room capacity.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="dashboard-loading">
+      <span class="spinner-border spinner-border-sm me-2"></span>
+      Loading classroom information...
+    </div>
+
+    <div
+      *ngIf="!loading && classroomSummaries.length === 0"
+      class="dashboard-empty"
+    >
+      <i class="bi bi-building"></i>
+      <strong>No classrooms available</strong>
+      <span>Register classrooms to see occupancy information.</span>
+    </div>
+
+    <div
+      class="classroom-grid"
+      *ngIf="!loading && classroomSummaries.length > 0"
+    >
+      <article
+        class="classroom-card"
+        *ngFor="let room of classroomSummaries"
+        [class.room-warning]="room.nearCapacity"
+        [class.room-full]="room.full"
+      >
+        <div class="classroom-card-top">
+          <div>
+            <strong>{{ room.name }}</strong>
+            <small>
+              {{
+                room.capacity > 0
+                  ? "Capacity: " + room.capacity
+                  : "Capacity not configured"
+              }}
+            </small>
+          </div>
+
+          <span
+            class="room-status"
+            [class.room-status-warning]="room.nearCapacity"
+            [class.room-status-full]="room.full"
+          >
+            {{
+              room.full
+                ? "Full"
+                : room.nearCapacity
+                  ? "Near Capacity"
+                  : "Available"
+            }}
+          </span>
+        </div>
+
+        <div class="occupancy-count">
+          <strong>{{ room.occupied }}</strong>
+          <span>
+            {{
+              room.capacity > 0
+                ? "of " + room.capacity + " children"
+                : "children checked in"
+            }}
+          </span>
+        </div>
+
+        <div
+          class="occupancy-track"
+          *ngIf="room.capacity > 0"
+          role="progressbar"
+          [attr.aria-valuenow]="room.percentage"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div class="occupancy-fill" [style.width.%]="room.percentage"></div>
+        </div>
+
+        <small class="occupancy-caption" *ngIf="room.capacity > 0">
+          {{ room.percentage }}% occupied
+          <span>·</span>
+          {{ room.remaining }} spaces remaining
+        </small>
+      </article>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-12 col-xl-6">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon attendance-panel-icon">
+            <i class="bi bi-person-check"></i>
+          </div>
+
+          <div>
+            <h2>Children Currently Checked In</h2>
+            <p>Children with a recorded check-in and no check-out today.</p>
+          </div>
+
+          <span class="panel-count">
+            {{ checkedInCount }}
+          </span>
+        </div>
+
+        <div
+          *ngIf="!loading && checkedInAttendance.length === 0"
+          class="dashboard-empty"
+        >
+          <i class="bi bi-person-check"></i>
+          <strong>No children currently checked in</strong>
+          <span>Attendance records will appear here when available.</span>
+        </div>
+
+        <div
+          class="table-responsive"
+          *ngIf="!loading && checkedInAttendance.length > 0"
+        >
+          <table class="table dashboard-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Child</th>
+                <th>Classroom</th>
+                <th>Check-in</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let attendance of checkedInAttendance">
+                <td>
+                  <strong>
+                    {{
+                      childName(
+                        attendance.child ??
+                          attendance.childId ??
+                          attendance.child_id
+                      )
+                    }}
+                  </strong>
+                </td>
+
+                <td>
+                  {{
+                    classroomName(
+                      attendance.classroom ??
+                        attendance.classroomId ??
+                        attendance.classroom_id
+                    )
+                  }}
+                </td>
+
+                <td>
+                  {{
+                    attendance.checkInTime ??
+                      attendance.check_in_time ??
+                      attendance.checkIn ??
+                      attendance.check_in | date: "shortTime"
+                  }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon finance-panel-icon">
+            <i class="bi bi-wallet2"></i>
+          </div>
+
+          <div>
+            <h2>Fee Alerts</h2>
+            <p>Invoices with outstanding balances.</p>
+          </div>
+
+          <span class="panel-count warning-count">
+            {{ unpaidInvoices.length }}
+          </span>
+        </div>
+
+        <div
+          *ngIf="!loading && unpaidInvoices.length === 0"
+          class="dashboard-empty"
+        >
+          <i class="bi bi-check-circle"></i>
+          <strong>All invoices are paid</strong>
+          <span>No outstanding invoice balances were found.</span>
+        </div>
+
+        <div
+          class="table-responsive"
+          *ngIf="!loading && unpaidInvoices.length > 0"
+        >
+          <table class="table dashboard-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Invoice</th>
+                <th>Child</th>
+                <th>Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let invoice of unpaidInvoices | slice: 0 : 6">
+                <td>
+                  <strong>{{ invoiceCode(invoice) }}</strong>
+                  <small class="table-subtext">
+                    Due:
+                    {{ invoice.dueDate ?? invoice.due_date ?? "—" }}
+                  </small>
+                </td>
+
+                <td>
+                  {{
+                    childName(
+                      invoice.child ?? invoice.childId ?? invoice.child_id
+                    )
+                  }}
+                </td>
+
+                <td>
+                  <strong>
+                    {{ formatLkr(outstandingBalance(invoice)) }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span
+                    class="alert-status"
+                    [class.overdue-status]="
+                      (invoice.dueDate ?? invoice.due_date ?? '') < today
+                    "
+                  >
+                    {{
+                      (invoice.dueDate ?? invoice.due_date ?? "") < today
+                        ? "Overdue"
+                        : "Outstanding"
+                    }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-panel mb-4">
+    <div class="panel-header">
+      <div class="panel-title-icon incident-panel-icon">
+        <i class="bi bi-heart-pulse"></i>
+      </div>
+
+      <div>
+        <h2>Open Health &amp; Incident Records</h2>
+        <p>Review incident reports that have not been resolved or closed.</p>
+      </div>
+
+      <span class="panel-count danger-count">
+        {{ openIncidents.length }}
+      </span>
+    </div>
+
+    <div *ngIf="!loading && openIncidents.length === 0" class="dashboard-empty">
+      <i class="bi bi-shield-check"></i>
+      <strong>No open incidents</strong>
+      <span>All currently loaded incident records are resolved or closed.</span>
+    </div>
+
+    <div class="table-responsive" *ngIf="!loading && openIncidents.length > 0">
+      <table class="table dashboard-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Incident</th>
+            <th>Child</th>
+            <th>Date</th>
+            <th>Reported Issue</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let incident of openIncidents | slice: 0 : 8">
+            <td>
+              <strong>
+                {{
+                  incident.incidentCode ??
+                    incident.incident_code ??
+                    "INC-" + incident.id
+                }}
+              </strong>
+            </td>
+
+            <td>{{ incidentChildName(incident) }}</td>
+
+            <td>{{ incidentDate(incident) | date: "short" }}</td>
+
+            <td>
+              {{
+                incident.description ||
+                  incident.incidentDescription ||
+                  incident.incident_description ||
+                  incidentType(incident)
+              }}
+            </td>
+
+            <td>
+              <span class="alert-status overdue-status">
+                {{ incidentStatus(incident) }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="row g-4 mb-4">
+    <div class="col-12 col-xl-5">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon notification-panel-icon">
+            <i class="bi bi-send"></i>
+          </div>
+
+          <div>
+            <h2>Send Notification</h2>
+            <p>Create a notification for a parent or staff account.</p>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <form #notificationForm="ngForm" (ngSubmit)="sendNotification()">
+            <div class="mb-3">
+              <label for="recipientType" class="form-label">
+                Recipient Type <span class="required">*</span>
+              </label>
+
+              <select
+                id="recipientType"
+                name="recipientType"
+                class="form-select"
+                required
+                [(ngModel)]="notificationObj.recipientType"
+                (ngModelChange)="onRecipientTypeChange()"
+              >
+                <option value="Parent">Parent / Guardian</option>
+                <option value="Staff">Staff</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="recipientId" class="form-label">
+                Recipient <span class="required">*</span>
+              </label>
+
+              <select
+                id="recipientId"
+                name="recipientId"
+                class="form-select"
+                required
+                [(ngModel)]="notificationObj.recipientId"
+                #recipientId="ngModel"
+              >
+                <option [ngValue]="null" disabled>Select recipient</option>
+
+                <option
+                  *ngFor="let recipient of recipientOptions"
+                  [ngValue]="recipient.id"
+                >
+                  {{ recipient.label }}
+                </option>
+              </select>
+
+              <small
+                class="field-hint"
+                *ngIf="notificationObj.recipientType === 'Staff'"
+              >
+                Only staff linked to a system user account are listed.
+              </small>
+
+              <small
+                class="field-error"
+                *ngIf="recipientId.invalid && recipientId.touched"
+              >
+                Select a recipient.
+              </small>
+
+              <small class="field-hint" *ngIf="recipientOptions.length === 0">
+                No recipients are available for this type.
+              </small>
+            </div>
+
+            <div class="mb-3">
+              <label for="notificationType" class="form-label">
+                Notification Type <span class="required">*</span>
+              </label>
+
+              <select
+                id="notificationType"
+                name="notificationType"
+                class="form-select"
+                required
+                [(ngModel)]="notificationObj.type"
+              >
+                <option *ngFor="let type of notificationTypes" [value]="type">
+                  {{ type }}
+                </option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="notificationMessage" class="form-label">
+                Message <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="notificationMessage"
+                name="notificationMessage"
+                class="form-control notification-textarea"
+                rows="5"
+                maxlength="255"
+                required
+                [(ngModel)]="notificationObj.message"
+                #notificationMessage="ngModel"
+                placeholder="Enter the notification message..."
+              ></textarea>
+
+              <div class="message-counter">
+                {{ notificationObj.message.length }} / 255 characters
+              </div>
+
+              <small
+                class="field-error"
+                *ngIf="
+                  notificationMessage.invalid && notificationMessage.touched
+                "
+              >
+                Enter a notification message.
+              </small>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary send-notification-btn"
+              [disabled]="notificationForm.invalid || savingNotification"
+            >
+              <i class="bi bi-send me-2"></i>
+
+              {{
+                savingNotification
+                  ? "Saving Notification..."
+                  : "Send Notification"
+              }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-7">
+      <div class="dashboard-panel h-100">
+        <div class="panel-header">
+          <div class="panel-title-icon notification-panel-icon">
+            <i class="bi bi-bell"></i>
+          </div>
+
+          <div>
+            <h2>Notification History</h2>
+            <p>Review recently created parent and staff notifications.</p>
+          </div>
+
+          <span class="panel-count">
+            {{ unreadNotificationsCount }}
+            unread
+          </span>
+        </div>
+
+        <div
+          *ngIf="!loading && notifications.length === 0"
+          class="dashboard-empty"
+        >
+          <i class="bi bi-bell-slash"></i>
+          <strong>No notifications found</strong>
+          <span>New notifications will appear here after being saved.</span>
+        </div>
+
+        <div
+          class="notification-list"
+          *ngIf="!loading && notifications.length > 0"
+        >
+          <article
+            class="notification-item"
+            *ngFor="let notification of notifications"
+            [class.notification-unread]="!isRead(notification)"
+          >
+            <div class="notification-icon">
+              <i
+                class="bi"
+                [ngClass]="
+                  notification.type === 'Incident Alert'
+                    ? 'bi-heart-pulse'
+                    : notification.type === 'Fee Reminder'
+                      ? 'bi-receipt'
+                      : notification.type === 'Pickup Late'
+                        ? 'bi-clock-history'
+                        : 'bi-bell'
+                "
+              ></i>
+            </div>
+
+            <div class="notification-copy">
+              <div class="notification-heading">
+                <strong>{{ notification.type || "Notification" }}</strong>
+
+                <span
+                  class="notification-state"
+                  [class.notification-read]="isRead(notification)"
+                >
+                  {{ isRead(notification) ? "Read" : "Unread" }}
+                </span>
+              </div>
+
+              <p>{{ notification.message }}</p>
+
+              <small>
+                <i class="bi bi-person me-1"></i>
+                {{ notificationRecipientLabel(notification) }}
+              </small>
+
+              <small>
+                <i class="bi bi-clock me-1"></i>
+                {{
+                  notification.sentDate ?? $any(notification).sent_date
+                    | date: "medium"
+                }}
+              </small>
+            </div>
+
+            <button
+              *ngIf="!isRead(notification)"
+              type="button"
+              class="mark-read-btn"
+              title="Mark as read"
+              aria-label="Mark as read"
+              (click)="markAsRead(notification)"
+            >
+              <i class="bi bi-check2"></i>
+            </button>
+          </article>
+        </div>
+
+        <div class="notification-footer" *ngIf="notifications.length > 0">
+          {{ notifications.length }} notification record(s)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="loading" class="dashboard-refresh-note">
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    Dashboard data is being refreshed. Sections without data may still be
+    loading.
   </div>
-</div>
+</main>
+
+<ng-template #dashboardGate>
+  <main class="container py-5">
+    <div
+      class="alert alert-info"
+      *ngIf="canView === null; else dashboardDenied"
+    >
+      <span class="spinner-border spinner-border-sm me-2"></span>
+      Checking dashboard permissions...
+    </div>
+  </main>
+</ng-template>
+
+<ng-template #dashboardDenied>
+  <main class="container py-5">
+    <div class="alert alert-warning">
+      <i class="bi bi-shield-lock me-2"></i>
+      You do not have permission to view the Notification &amp; Dashboard
+      module.
+    </div>
+  </main>
+</ng-template>
