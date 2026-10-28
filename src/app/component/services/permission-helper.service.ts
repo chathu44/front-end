@@ -4,6 +4,8 @@ import { UserAuthService } from './api/user/user-auth.service';
 /** Must match auth_id values in system_authentications (see schema.sql). */
 export const AuthIds = {
   // Generic buttons (optional shared IDs)
+  MENU_DASHBOARD: 5,
+  
   BUTTON_SAVE: 7,
   BUTTON_DELETE: 8,
 
