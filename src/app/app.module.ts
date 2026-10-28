@@ -28,6 +28,7 @@ import { EnrollmentComponent } from './component/enrollment/enrollment.component
 import { AttendanceComponent } from './component/attendance/attendance.component';
 import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
 import { IncidentComponent } from './component/incident/incident.component';
+import { FeePaymentComponent } from './component/fee-payment/fee-payment.component';
 
 @NgModule({
   declarations: [
@@ -50,6 +51,7 @@ import { IncidentComponent } from './component/incident/incident.component';
     AttendanceComponent,
     MealPlanComponent,
     IncidentComponent,
+    FeePaymentComponent,
   ],
   imports: [
     BrowserModule,

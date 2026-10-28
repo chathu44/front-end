@@ -64,6 +64,12 @@ export const AuthIds = {
   INCIDENT_CREATE: 101,
   INCIDENT_UPDATE: 102,
   INCIDENT_DELETE: 103,
+
+  FEE_VIEW: 110,
+  FEE_CREATE: 111,
+  FEE_UPDATE: 112,
+  FEE_DELETE: 113,
+  
 } as const;
 
 @Injectable({ providedIn: 'root' })
