@@ -20,6 +20,7 @@ import { AttendanceComponent } from './component/attendance/attendance.component
 import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
 import { IncidentComponent } from './component/incident/incident.component';
 import { FeePaymentComponent } from './component/fee-payment/fee-payment.component';
+import { StaffComponent } from './component/staff/staff.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -45,6 +46,7 @@ const routes: Routes = [
   { path: 'meal-record', redirectTo: 'meal-plan', pathMatch: 'full' },
   { path: 'incident', component: IncidentComponent, canActivate: [AuthGuard] },
   { path: 'fee-payment', component: FeePaymentComponent, canActivate: [AuthGuard] },
+  { path: 'staff', component: StaffComponent, canActivate: [AuthGuard] },
   
   { path: '**', redirectTo: 'login' }
 ];
