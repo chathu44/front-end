@@ -23,8 +23,16 @@ export class StudentService {
         
   }
 
-  GetAllStudents():Observable<any>{
-    return this.http.get(this.baseUrl);
+  GetAllStudents(page?: number, size?: number):Observable<any>{
+    if (page === undefined || size === undefined) {
+      return this.http.get(this.baseUrl);
+    }
+    return this.http.get(this.baseUrl, {
+      params: {
+        page: page.toString(),
+        size: size.toString()
+      }
+    });
   }
 
   GetStudentsById(ID:any):Observable<any>{

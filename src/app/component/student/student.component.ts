@@ -28,6 +28,12 @@ export class StudentComponent {
   canUpdate = false;
   canDelete = false;
 
+  page = 0;
+  pageSize = 5;
+  totalPages = 0;
+  totalElements = 0;
+  pageSizeOptions = [5, 10, 20];
+
   constructor(
     private studentService: StudentService,
     private statusService: StatusService,
@@ -58,6 +64,7 @@ export class StudentComponent {
             .createStudent(this.studentObj, this.type)
             .subscribe({
               next: (result): void => {
+                this.page = 0;
                 this.GetAllStudents();
               },
             });
@@ -87,9 +94,38 @@ export class StudentComponent {
   }
 
   GetAllStudents() {
-    this.studentService.GetAllStudents().subscribe((allData) => {
-      this.students = allData?.data?.dataList || [];
+    this.studentService.GetAllStudents(this.page, this.pageSize).subscribe((allData) => {
+      const list = allData?.data?.dataList || [];
+      const totalPages = allData?.data?.totalPages || 0;
+      if (list.length === 0 && this.page > 0 && this.page >= totalPages) {
+        this.page = Math.max(totalPages - 1, 0);
+        this.GetAllStudents();
+        return;
+      }
+      this.students = list;
+      this.page = allData?.data?.page ?? this.page;
+      this.totalPages = totalPages;
+      this.totalElements = allData?.data?.totalElements || 0;
     });
+  }
+
+  goToPage(nextPage: number): void {
+    if (nextPage < 0 || nextPage >= this.totalPages || nextPage === this.page) {
+      return;
+    }
+    this.page = nextPage;
+    this.GetAllStudents();
+  }
+
+  changePageSize(event: Event): void {
+    const value = Number((event.target as HTMLSelectElement).value);
+    this.pageSize = value;
+    this.page = 0;
+    this.GetAllStudents();
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, index) => index);
   }
 
   DeleteById(ID: any) {
