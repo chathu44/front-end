@@ -211,7 +211,7 @@ export class TableColumnFilterPipe implements PipeTransform {
     if (timeKeys.some((term) => normalized.includes(term)) || /(^|\.)time($|\|)/.test(normalized)) return 'time';
     if (normalized.includes('date') || normalized.includes('hiredate') || normalized.includes('billingmonth')) return 'date';
     const normalizedKey = key.toLowerCase();
-    const numberKeys = ['amount', 'balance', 'fee', 'price', 'capacity', 'studentage', 'monthlyfee', 'received'];
+    const numberKeys = ['amount', 'balance', 'fee', 'price', 'capacity', 'studentage', 'monthlyfee', 'received', 'uniquechildren', 'averagedaily', 'utilization'];
     if (numberKeys.some((term) => normalizedKey === term || normalizedKey.endsWith(term))) return 'number';
 
     const categoryKeys = [

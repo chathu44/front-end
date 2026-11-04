@@ -1,0 +1,59 @@
+<div class="table-pagination" *ngIf="totalItems > 0">
+  <div class="pagination-meta">
+    <label class="rows-label">
+      Rows
+      <select
+        class="form-select form-select-sm page-size-select"
+        [value]="pageSize"
+        (change)="changePageSize($event)"
+        aria-label="Rows per page"
+      >
+        <option *ngFor="let option of pageSizeOptions" [value]="option">
+          {{ option }}
+        </option>
+      </select>
+    </label>
+    <span class="page-summary">
+      Page {{ page + 1 }} of {{ totalPages }} ({{ totalItems }} records)
+    </span>
+  </div>
+
+  <nav aria-label="Table pagination">
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item" [class.disabled]="page === 0">
+        <button
+          class="page-link"
+          type="button"
+          (click)="goToPage(page - 1)"
+          [disabled]="page === 0"
+        >
+          Previous
+        </button>
+      </li>
+      <li
+        class="page-item"
+        *ngFor="let pageNo of pageNumbers"
+        [class.active]="pageNo === page"
+      >
+        <button
+          class="page-link"
+          type="button"
+          (click)="goToPage(pageNo)"
+          [attr.aria-current]="pageNo === page ? 'page' : null"
+        >
+          {{ pageNo + 1 }}
+        </button>
+      </li>
+      <li class="page-item" [class.disabled]="page >= totalPages - 1">
+        <button
+          class="page-link"
+          type="button"
+          (click)="goToPage(page + 1)"
+          [disabled]="page >= totalPages - 1"
+        >
+          Next
+        </button>
+      </li>
+    </ul>
+  </nav>
+</div>

@@ -100,6 +100,7 @@
         </div>
 
         <app-table-filter-toolbar
+          #privilegeTableToolbar1
           [items]="groups$ | async"
           [fields]="{
             groupId: 'id',
@@ -115,6 +116,7 @@
           [sortKey]="'$sort_privilege_1'"
           [directionKey]="'$sort_privilege_1_direction'"
           heading="Filter and sort"
+          [resetKey]="tableFilters"
         ></app-table-filter-toolbar>
         <div class="table-responsive">
           <table class="table privilege-table align-middle mb-0">
@@ -165,6 +167,9 @@
                         }
                       : '$sort_privilege_1'
                       : '$sort_privilege_1_direction'
+                    | tablePaginate
+                      : privilegeTablePagination1.page
+                      : privilegeTablePagination1.pageSize
                 "
                 [class.selected-group-row]="selectedGroupId === g.id"
                 (click)="selectedGroupId = g.id!; onGroupChange()"
@@ -230,6 +235,11 @@
               </tr>
             </tbody>
           </table>
+          <app-table-pagination
+            #privilegeTablePagination1
+            [totalItems]="privilegeTableToolbar1.filteredCount"
+            [resetKey]="tableFilters"
+          ></app-table-pagination>
         </div>
       </div>
     </div>

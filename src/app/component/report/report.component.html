@@ -1,0 +1,727 @@
+<main class="reports-page container-fluid px-3 px-lg-4 py-3">
+  <section class="report-heading">
+    <div class="heading-copy">
+      <div class="eyebrow">BRIGHTCARE MANAGEMENT</div>
+      <h1>Reports &amp; Analytics</h1>
+      <p>
+        Review attendance, fee collection and classroom occupancy from one
+        place.
+      </p>
+      <small class="updated-label" *ngIf="lastUpdated">
+        <i class="bi bi-clock-history"></i>
+        Last updated {{ lastUpdated | date: "medium" }}
+      </small>
+    </div>
+
+    <div class="heading-actions">
+      <button
+        type="button"
+        class="btn btn-light refresh-btn"
+        (click)="loadReports()"
+        [disabled]="loading"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin-icon]="loading"></i>
+        Refresh
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        (click)="exportCsv()"
+        [disabled]="loading"
+      >
+        <i class="bi bi-filetype-csv"></i> Export CSV
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="exportPdf()"
+        [disabled]="loading"
+      >
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+      </button>
+    </div>
+  </section>
+
+  <section class="period-card">
+    <div class="period-title">
+      <div class="period-icon"><i class="bi bi-calendar3"></i></div>
+      <div>
+        <h2>Report period</h2>
+        <p>Choose the dates you want to include in the reports.</p>
+      </div>
+    </div>
+
+    <div class="period-controls">
+      <div class="date-field">
+        <label for="reportFromDate">From</label>
+        <input
+          id="reportFromDate"
+          type="date"
+          class="form-control"
+          [(ngModel)]="fromDate"
+          (change)="applyDateRange()"
+        />
+      </div>
+      <div class="date-field">
+        <label for="reportToDate">To</label>
+        <input
+          id="reportToDate"
+          type="date"
+          class="form-control"
+          [(ngModel)]="toDate"
+          (change)="applyDateRange()"
+        />
+      </div>
+      <div class="quick-periods" aria-label="Quick date ranges">
+        <button
+          type="button"
+          class="period-chip"
+          (click)="setPreset('this-month')"
+        >
+          This month
+        </button>
+        <button
+          type="button"
+          class="period-chip"
+          (click)="setPreset('last-month')"
+        >
+          Last month
+        </button>
+        <button
+          type="button"
+          class="period-chip"
+          (click)="setPreset('last-30-days')"
+        >
+          Last 30 days
+        </button>
+        <button
+          type="button"
+          class="period-chip"
+          (click)="setPreset('this-year')"
+        >
+          This year
+        </button>
+      </div>
+    </div>
+    <div class="validation-message" *ngIf="validationMessage">
+      <i class="bi bi-exclamation-circle"></i> {{ validationMessage }}
+    </div>
+  </section>
+
+  <div class="alert alert-warning report-warning" *ngIf="loadWarning">
+    <i class="bi bi-exclamation-triangle me-2"></i>{{ loadWarning }}
+  </div>
+
+  <div class="loading-panel" *ngIf="loading">
+    <div
+      class="spinner-border spinner-border-sm text-primary"
+      role="status"
+    ></div>
+    <span>Loading report data...</span>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <section class="metric-grid">
+      <article class="metric-card attendance-metric">
+        <div class="metric-topline">
+          <span>Attendance records</span>
+          <span class="metric-icon"><i class="bi bi-calendar2-check"></i></span>
+        </div>
+        <strong>{{ formatNumber(totalAttendanceRecords) }}</strong>
+        <small
+          >{{ formatNumber(uniqueChildrenAttended) }} unique children
+          attended</small
+        >
+      </article>
+
+      <article class="metric-card collection-metric">
+        <div class="metric-topline">
+          <span>Fees collected</span>
+          <span class="metric-icon"><i class="bi bi-cash-stack"></i></span>
+        </div>
+        <strong>{{ formatLkr(totalCollected) }}</strong>
+        <small>Payments received in the selected period</small>
+      </article>
+
+      <article class="metric-card outstanding-metric">
+        <div class="metric-topline">
+          <span>Outstanding fees</span>
+          <span class="metric-icon"><i class="bi bi-wallet2"></i></span>
+        </div>
+        <strong>{{ formatLkr(totalOutstanding) }}</strong>
+        <small>{{ formatLkr(totalOverdue) }} overdue across all invoices</small>
+      </article>
+
+      <article class="metric-card incident-metric">
+        <div class="metric-topline">
+          <span>Open incidents</span>
+          <span class="metric-icon"
+            ><i class="bi bi-clipboard2-pulse"></i
+          ></span>
+        </div>
+        <strong>{{ formatNumber(openIncidentCount) }}</strong>
+        <small>Unresolved incidents in the selected period</small>
+      </article>
+    </section>
+
+    <nav class="report-tabs" aria-label="Report categories">
+      <button
+        type="button"
+        [class.active]="activeReport === 'overview'"
+        (click)="selectReport('overview')"
+      >
+        <i class="bi bi-grid-1x2"></i> Overview
+      </button>
+      <button
+        type="button"
+        [class.active]="activeReport === 'attendance'"
+        (click)="selectReport('attendance')"
+      >
+        <i class="bi bi-calendar2-check"></i> Attendance
+      </button>
+      <button
+        type="button"
+        [class.active]="activeReport === 'finance'"
+        (click)="selectReport('finance')"
+      >
+        <i class="bi bi-cash-coin"></i> Fee Collection
+      </button>
+      <button
+        type="button"
+        [class.active]="activeReport === 'occupancy'"
+        (click)="selectReport('occupancy')"
+      >
+        <i class="bi bi-building"></i> Classroom Occupancy
+      </button>
+    </nav>
+
+    <section class="overview-section" *ngIf="activeReport === 'overview'">
+      <div class="section-heading">
+        <div>
+          <h2>Management overview</h2>
+          <p>
+            Trends and room utilisation for
+            {{ fromDate | date: "mediumDate" }} to
+            {{ toDate | date: "mediumDate" }}.
+          </p>
+        </div>
+        <span class="period-badge"
+          ><i class="bi bi-calendar-range"></i> Selected period</span
+        >
+      </div>
+
+      <div class="chart-grid">
+        <article class="chart-card">
+          <div class="chart-card-heading">
+            <div>
+              <h3>Attendance trend</h3>
+              <p>Daily attendance records grouped by month</p>
+            </div>
+            <span class="chart-icon blue"><i class="bi bi-graph-up"></i></span>
+          </div>
+          <div class="chart-area"><canvas #attendanceTrendCanvas></canvas></div>
+          <div
+            class="chart-empty"
+            *ngIf="monthlyAttendance.values.length === 0"
+          >
+            No attendance records for this period.
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-card-heading">
+            <div>
+              <h3>Fee collection</h3>
+              <p>Payments received, grouped by month</p>
+            </div>
+            <span class="chart-icon green"
+              ><i class="bi bi-currency-exchange"></i
+            ></span>
+          </div>
+          <div class="chart-area"><canvas #feeTrendCanvas></canvas></div>
+          <div class="chart-empty" *ngIf="monthlyFees.values.length === 0">
+            No fee payments for this period.
+          </div>
+        </article>
+
+        <article class="chart-card chart-card-wide">
+          <div class="chart-card-heading">
+            <div>
+              <h3>Classroom utilisation</h3>
+              <p>Average daily attendance compared with room capacity</p>
+            </div>
+            <span class="chart-icon amber"
+              ><i class="bi bi-building-check"></i
+            ></span>
+          </div>
+          <div class="chart-area occupancy-chart-area">
+            <canvas #occupancyCanvas></canvas>
+          </div>
+          <p class="chart-note">
+            Utilisation is calculated as average daily attendance during the
+            selected period divided by classroom capacity.
+          </p>
+        </article>
+      </div>
+
+      <div class="overview-footer">
+        <div>
+          <span>Average classroom utilisation</span>
+          <strong>{{ formatPercent(averageOccupancy) }}</strong>
+        </div>
+        <div>
+          <span>Attendance entries</span>
+          <strong>{{ formatNumber(totalAttendanceRecords) }}</strong>
+        </div>
+        <div>
+          <span>Collected in period</span>
+          <strong>{{ formatLkr(totalCollected) }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="activeReport === 'attendance'">
+      <div class="section-heading">
+        <div>
+          <h2>Attendance summary</h2>
+          <p>
+            Attendance records and arrival and departure details within the
+            selected period.
+          </p>
+        </div>
+        <span class="record-count">{{ attendanceRows.length }} records</span>
+      </div>
+
+      <div
+        class="status-summary-strip"
+        *ngIf="attendanceStatusSummary.labels.length"
+      >
+        <div
+          class="status-summary-item"
+          *ngFor="let label of attendanceStatusSummary.labels; let i = index"
+        >
+          <strong>{{ attendanceStatusSummary.values[i] }}</strong>
+          <span>{{ label }}</span>
+        </div>
+      </div>
+
+      <app-table-filter-toolbar
+        #reportTableToolbar1
+        [items]="attendanceRows"
+        [fields]="attendanceFilterFields"
+        [labels]="attendanceFilterLabels"
+        [filters]="attendanceTableFilters"
+        [textFields]="attendanceTextFields"
+        [optionValues]="attendanceFilterOptions"
+        [sortKey]="'$attendanceReportSort'"
+        [directionKey]="'$attendanceReportSortDirection'"
+        (filtersChange)="attendanceTableFilters = $event"
+        [resetKey]="attendanceTableFilters"
+      ></app-table-filter-toolbar>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="table report-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th
+                  appTableSort="date"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Date
+                </th>
+                <th
+                  appTableSort="child"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Child
+                </th>
+                <th
+                  appTableSort="classroom"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Classroom
+                </th>
+                <th
+                  appTableSort="checkIn"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Check-in
+                </th>
+                <th
+                  appTableSort="checkOut"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Check-out
+                </th>
+                <th
+                  appTableSort="status"
+                  [sortFilters]="attendanceTableFilters"
+                  [sortFieldKey]="'$attendanceReportSort'"
+                  [sortDirectionKey]="'$attendanceReportSortDirection'"
+                  (sortFiltersChange)="attendanceTableFilters = $event"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="
+                  let row of attendanceRows
+                    | tableColumnFilter
+                      : attendanceTableFilters
+                      : attendanceFilterFields
+                      : '$attendanceReportSort'
+                      : '$attendanceReportSortDirection'
+                    | tablePaginate
+                      : reportTablePagination1.page
+                      : reportTablePagination1.pageSize
+                "
+              >
+                <td>{{ row.date | date: "mediumDate" }}</td>
+                <td class="primary-cell">{{ row.child }}</td>
+                <td>{{ row.classroom }}</td>
+                <td>{{ row.checkIn }}</td>
+                <td>{{ row.checkOut }}</td>
+                <td>
+                  <span class="status-pill">{{ row.status }}</span>
+                </td>
+              </tr>
+              <tr *ngIf="attendanceRows.length === 0">
+                <td colspan="6" class="empty-cell">
+                  No attendance records found for the selected period.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <app-table-pagination
+            #reportTablePagination1
+            [totalItems]="reportTableToolbar1.filteredCount"
+            [resetKey]="attendanceTableFilters"
+          ></app-table-pagination>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="activeReport === 'finance'">
+      <div class="section-heading">
+        <div>
+          <h2>Fee collection report</h2>
+          <p>
+            Payments received during the selected period. Outstanding balances
+            include all invoices.
+          </p>
+        </div>
+        <span class="record-count">{{ paymentRows.length }} payments</span>
+      </div>
+
+      <div class="finance-highlight-grid">
+        <div class="finance-highlight collected">
+          <span>Collected in period</span
+          ><strong>{{ formatLkr(totalCollected) }}</strong>
+        </div>
+        <div class="finance-highlight balance">
+          <span>Outstanding balance</span
+          ><strong>{{ formatLkr(totalOutstanding) }}</strong>
+        </div>
+        <div class="finance-highlight overdue">
+          <span>Overdue balance</span
+          ><strong>{{ formatLkr(totalOverdue) }}</strong>
+        </div>
+      </div>
+
+      <app-table-filter-toolbar
+        #reportTableToolbar2
+        [items]="paymentRows"
+        [fields]="financeFilterFields"
+        [labels]="financeFilterLabels"
+        [filters]="financeTableFilters"
+        [textFields]="financeTextFields"
+        [optionItems]="financeFilterOptionItems"
+        [optionPaths]="financeFilterOptionPaths"
+        [sortKey]="'$financeReportSort'"
+        [directionKey]="'$financeReportSortDirection'"
+        (filtersChange)="financeTableFilters = $event"
+        [resetKey]="financeTableFilters"
+      ></app-table-filter-toolbar>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="table report-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th
+                  appTableSort="date"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Payment date
+                </th>
+                <th
+                  appTableSort="invoice"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Invoice
+                </th>
+                <th
+                  appTableSort="child"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Child
+                </th>
+                <th
+                  appTableSort="amount"
+                  class="text-end"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Amount (LKR)
+                </th>
+                <th
+                  appTableSort="method"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Payment method
+                </th>
+                <th
+                  appTableSort="receivedBy"
+                  [sortFilters]="financeTableFilters"
+                  [sortFieldKey]="'$financeReportSort'"
+                  [sortDirectionKey]="'$financeReportSortDirection'"
+                  (sortFiltersChange)="financeTableFilters = $event"
+                >
+                  Received by
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="
+                  let row of paymentRows
+                    | tableColumnFilter
+                      : financeTableFilters
+                      : financeFilterFields
+                      : '$financeReportSort'
+                      : '$financeReportSortDirection'
+                    | tablePaginate
+                      : reportTablePagination2.page
+                      : reportTablePagination2.pageSize
+                "
+              >
+                <td>{{ row.date }}</td>
+                <td class="primary-cell">{{ row.invoice }}</td>
+                <td>{{ row.child }}</td>
+                <td class="text-end amount-cell">
+                  {{ row.amount | number: "1.2-2" }}
+                </td>
+                <td>{{ row.method }}</td>
+                <td>{{ row.receivedBy }}</td>
+              </tr>
+              <tr *ngIf="paymentRows.length === 0">
+                <td colspan="6" class="empty-cell">
+                  No payments found for the selected period.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <app-table-pagination
+            #reportTablePagination2
+            [totalItems]="reportTableToolbar2.filteredCount"
+            [resetKey]="financeTableFilters"
+          ></app-table-pagination>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="activeReport === 'occupancy'">
+      <div class="section-heading">
+        <div>
+          <h2>Classroom occupancy report</h2>
+          <p>
+            Average daily attendance on recorded attendance days compared with
+            classroom capacity.
+          </p>
+        </div>
+        <span class="record-count">{{ occupancyRows.length }} classrooms</span>
+      </div>
+
+      <div class="occupancy-note">
+        <i class="bi bi-info-circle"></i>
+        Average daily attendance is calculated using distinct children recorded
+        per classroom, averaged over days with attendance records in the
+        selected period. This is a period average, not a live headcount.
+      </div>
+
+      <app-table-filter-toolbar
+        #reportTableToolbar3
+        [items]="occupancyRows"
+        [fields]="occupancyFilterFields"
+        [labels]="occupancyFilterLabels"
+        [filters]="occupancyTableFilters"
+        [textFields]="occupancyTextFields"
+        [optionValues]="occupancyFilterOptions"
+        [sortKey]="'$occupancyReportSort'"
+        [directionKey]="'$occupancyReportSortDirection'"
+        (filtersChange)="occupancyTableFilters = $event"
+        [resetKey]="occupancyTableFilters"
+      ></app-table-filter-toolbar>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="table report-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th
+                  appTableSort="room"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Classroom
+                </th>
+                <th
+                  appTableSort="floor"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Floor
+                </th>
+                <th
+                  appTableSort="ageGroup"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Age group
+                </th>
+                <th
+                  appTableSort="capacity"
+                  class="text-end"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Capacity
+                </th>
+                <th
+                  appTableSort="uniqueChildren"
+                  class="text-end"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Unique children
+                </th>
+                <th
+                  appTableSort="averageDaily"
+                  class="text-end"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Avg. daily attendance
+                </th>
+                <th
+                  appTableSort="utilization"
+                  [sortFilters]="occupancyTableFilters"
+                  [sortFieldKey]="'$occupancyReportSort'"
+                  [sortDirectionKey]="'$occupancyReportSortDirection'"
+                  (sortFiltersChange)="occupancyTableFilters = $event"
+                >
+                  Utilisation
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="
+                  let row of occupancyRows
+                    | tableColumnFilter
+                      : occupancyTableFilters
+                      : occupancyFilterFields
+                      : '$occupancyReportSort'
+                      : '$occupancyReportSortDirection'
+                    | tablePaginate
+                      : reportTablePagination3.page
+                      : reportTablePagination3.pageSize
+                "
+              >
+                <td>
+                  <div class="primary-cell">{{ row.room }}</div>
+                  <small class="secondary-cell">{{ row.code }}</small>
+                </td>
+                <td>{{ row.floor }}</td>
+                <td>{{ row.ageGroup }}</td>
+                <td class="text-end">{{ row.capacity }}</td>
+                <td class="text-end">{{ row.uniqueChildren }}</td>
+                <td class="text-end">
+                  {{ row.averageDaily | number: "1.1-1" }}
+                </td>
+                <td class="utilization-cell">
+                  <div class="utilization-label">
+                    <strong>{{ formatPercent(row.utilization) }}</strong>
+                  </div>
+                  <div class="progress utilization-progress">
+                    <div
+                      class="progress-bar"
+                      [style.width.%]="
+                        row.utilization > 100 ? 100 : row.utilization
+                      "
+                      [class.over-capacity]="row.utilization > 100"
+                    ></div>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="occupancyRows.length === 0">
+                <td colspan="7" class="empty-cell">
+                  No classroom data is available.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <app-table-pagination
+            #reportTablePagination3
+            [totalItems]="reportTableToolbar3.filteredCount"
+            [resetKey]="occupancyTableFilters"
+          ></app-table-pagination>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</main>

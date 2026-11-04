@@ -294,32 +294,93 @@
         </div>
 
         <app-table-filter-toolbar
-  [items]="checkedInAttendance"
-  [fields]="{ attendanceChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|childId|child_id', attendanceClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroom|classroomId|classroom_id', attendanceCheckIn: 'checkInTime|check_in_time|checkinTime|checkIn|check_in|attendance.checkInTime|createdDate' }"
-  [labels]="{ attendanceChild: 'Child', attendanceClassroom: 'Classroom', attendanceCheckIn: 'Check-in' }"
-  [optionItems]="{ attendanceChild: dashboardChildFilterOptions, attendanceClassroom: dashboardClassroomFilterOptions }"
-  [optionPaths]="{ attendanceChild: '@childLabel', attendanceClassroom: '@classroomLabel' }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_dashboard_1'"
-  [directionKey]="'$sort_dashboard_1_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div
+          #dashboardTableToolbar1
+          [items]="checkedInAttendance"
+          [fields]="{
+            attendanceChild:
+              'child.firstName|child.lastName|child.fullName|child.childCode|child.id|childId|child_id',
+            attendanceClassroom:
+              'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroom|classroomId|classroom_id',
+            attendanceCheckIn:
+              'checkInTime|check_in_time|checkinTime|checkIn|check_in|attendance.checkInTime|createdDate',
+          }"
+          [labels]="{
+            attendanceChild: 'Child',
+            attendanceClassroom: 'Classroom',
+            attendanceCheckIn: 'Check-in',
+          }"
+          [optionItems]="{
+            attendanceChild: dashboardChildFilterOptions,
+            attendanceClassroom: dashboardClassroomFilterOptions,
+          }"
+          [optionPaths]="{
+            attendanceChild: '@childLabel',
+            attendanceClassroom: '@classroomLabel',
+          }"
+          [(filters)]="tableFilters"
+          [sortKey]="'$sort_dashboard_1'"
+          [directionKey]="'$sort_dashboard_1_direction'"
+          heading="Filter and sort"
+          [resetKey]="tableFilters"
+        ></app-table-filter-toolbar>
+        <div
           class="table-responsive"
           *ngIf="!loading && checkedInAttendance.length > 0"
         >
           <table class="table dashboard-table align-middle mb-0">
             <thead>
               <tr>
-                <th appTableSort="attendanceChild" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_1'" [sortDirectionKey]="'$sort_dashboard_1_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
-                <th appTableSort="attendanceClassroom" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_1'" [sortDirectionKey]="'$sort_dashboard_1_direction'" (sortFiltersChange)="tableFilters = $event">Classroom</th>
-                <th appTableSort="attendanceCheckIn" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_1'" [sortDirectionKey]="'$sort_dashboard_1_direction'" (sortFiltersChange)="tableFilters = $event">Check-in</th>
+                <th
+                  appTableSort="attendanceChild"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_1'"
+                  [sortDirectionKey]="'$sort_dashboard_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Child
+                </th>
+                <th
+                  appTableSort="attendanceClassroom"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_1'"
+                  [sortDirectionKey]="'$sort_dashboard_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Classroom
+                </th>
+                <th
+                  appTableSort="attendanceCheckIn"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_1'"
+                  [sortDirectionKey]="'$sort_dashboard_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Check-in
+                </th>
               </tr>
-          
             </thead>
 
             <tbody>
-              <tr *ngFor="let attendance of (checkedInAttendance | tableColumnFilter: tableFilters : { attendanceChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|childId|child_id', attendanceClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroom|classroomId|classroom_id', attendanceCheckIn: 'checkInTime|check_in_time|checkinTime|checkIn|check_in|attendance.checkInTime|createdDate' } : '$sort_dashboard_1' : '$sort_dashboard_1_direction')">
+              <tr
+                *ngFor="
+                  let attendance of checkedInAttendance
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          attendanceChild:
+                            'child.firstName|child.lastName|child.fullName|child.childCode|child.id|childId|child_id',
+                          attendanceClassroom:
+                            'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroom|classroomId|classroom_id',
+                          attendanceCheckIn:
+                            'checkInTime|check_in_time|checkinTime|checkIn|check_in|attendance.checkInTime|createdDate',
+                        }
+                      : '$sort_dashboard_1'
+                      : '$sort_dashboard_1_direction'
+                    | tablePaginate
+                      : dashboardTablePagination1.page
+                      : dashboardTablePagination1.pageSize
+                "
+              >
                 <td>
                   <strong>
                     {{
@@ -353,6 +414,11 @@
               </tr>
             </tbody>
           </table>
+          <app-table-pagination
+            #dashboardTablePagination1
+            [totalItems]="dashboardTableToolbar1.filteredCount"
+            [resetKey]="tableFilters"
+          ></app-table-pagination>
         </div>
       </div>
     </div>
@@ -370,7 +436,24 @@
           </div>
 
           <span class="panel-count warning-count">
-            {{ (tableUnpaidInvoices | tableColumnFilter: tableFilters : { invoiceCode: 'invoiceCode|id', invoiceChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', invoiceBalance: '_tableBalance|balance|outstandingBalance|remainingBalance|amount', invoiceStatus: '_tableStatus|status.name|status.statusName|status' } : '$sort_dashboard_2' : '$sort_dashboard_2_direction').length }}
+            {{
+              (
+                tableUnpaidInvoices
+                | tableColumnFilter
+                  : tableFilters
+                  : {
+                      invoiceCode: "invoiceCode|id",
+                      invoiceChild:
+                        "child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id",
+                      invoiceBalance:
+                        "_tableBalance|balance|outstandingBalance|remainingBalance|amount",
+                      invoiceStatus:
+                        "_tableStatus|status.name|status.statusName|status",
+                    }
+                  : "$sort_dashboard_2"
+                  : "$sort_dashboard_2_direction"
+              ).length
+            }}
           </span>
         </div>
 
@@ -384,34 +467,99 @@
         </div>
 
         <app-table-filter-toolbar
-  [items]="tableUnpaidInvoices"
-  [fields]="{ invoiceCode: 'invoiceCode|id', invoiceChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', invoiceBalance: '_tableBalance|balance|outstandingBalance|remainingBalance|amount', invoiceStatus: '_tableStatus|status.name|status.statusName|status' }"
-  [labels]="{ invoiceCode: 'Invoice', invoiceChild: 'Child', invoiceBalance: 'Balance', invoiceStatus: 'Status' }"
-  [optionItems]="{ invoiceChild: dashboardChildFilterOptions }"
-  [optionPaths]="{ invoiceChild: '@childLabel' }"
-  [optionValues]="{ invoiceStatus: ['Outstanding', 'Overdue'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_dashboard_2'"
-  [directionKey]="'$sort_dashboard_2_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div
+          #dashboardTableToolbar2
+          [items]="tableUnpaidInvoices"
+          [fields]="{
+            invoiceCode: 'invoiceCode|id',
+            invoiceChild:
+              'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id',
+            invoiceBalance:
+              '_tableBalance|balance|outstandingBalance|remainingBalance|amount',
+            invoiceStatus: '_tableStatus|status.name|status.statusName|status',
+          }"
+          [labels]="{
+            invoiceCode: 'Invoice',
+            invoiceChild: 'Child',
+            invoiceBalance: 'Balance',
+            invoiceStatus: 'Status',
+          }"
+          [optionItems]="{ invoiceChild: dashboardChildFilterOptions }"
+          [optionPaths]="{ invoiceChild: '@childLabel' }"
+          [optionValues]="{ invoiceStatus: ['Outstanding', 'Overdue'] }"
+          [(filters)]="tableFilters"
+          [sortKey]="'$sort_dashboard_2'"
+          [directionKey]="'$sort_dashboard_2_direction'"
+          heading="Filter and sort"
+          [resetKey]="tableFilters"
+        ></app-table-filter-toolbar>
+        <div
           class="table-responsive"
           *ngIf="!loading && unpaidInvoices.length > 0"
         >
           <table class="table dashboard-table align-middle mb-0">
             <thead>
               <tr>
-                <th appTableSort="invoiceCode" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_2'" [sortDirectionKey]="'$sort_dashboard_2_direction'" (sortFiltersChange)="tableFilters = $event">Invoice</th>
-                <th appTableSort="invoiceChild" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_2'" [sortDirectionKey]="'$sort_dashboard_2_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
-                <th appTableSort="invoiceBalance" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_2'" [sortDirectionKey]="'$sort_dashboard_2_direction'" (sortFiltersChange)="tableFilters = $event">Balance</th>
-                <th appTableSort="invoiceStatus" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_2'" [sortDirectionKey]="'$sort_dashboard_2_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
+                <th
+                  appTableSort="invoiceCode"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_2'"
+                  [sortDirectionKey]="'$sort_dashboard_2_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Invoice
+                </th>
+                <th
+                  appTableSort="invoiceChild"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_2'"
+                  [sortDirectionKey]="'$sort_dashboard_2_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Child
+                </th>
+                <th
+                  appTableSort="invoiceBalance"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_2'"
+                  [sortDirectionKey]="'$sort_dashboard_2_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Balance
+                </th>
+                <th
+                  appTableSort="invoiceStatus"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_dashboard_2'"
+                  [sortDirectionKey]="'$sort_dashboard_2_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Status
+                </th>
               </tr>
-          
             </thead>
 
             <tbody>
-              <tr *ngFor="let invoice of (tableUnpaidInvoices | tableColumnFilter: tableFilters : { invoiceCode: 'invoiceCode|id', invoiceChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', invoiceBalance: '_tableBalance|balance|outstandingBalance|remainingBalance|amount', invoiceStatus: '_tableStatus|status.name|status.statusName|status' } : '$sort_dashboard_2' : '$sort_dashboard_2_direction' | slice: 0 : 6)">
+              <tr
+                *ngFor="
+                  let invoice of tableUnpaidInvoices
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          invoiceCode: 'invoiceCode|id',
+                          invoiceChild:
+                            'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id',
+                          invoiceBalance:
+                            '_tableBalance|balance|outstandingBalance|remainingBalance|amount',
+                          invoiceStatus:
+                            '_tableStatus|status.name|status.statusName|status',
+                        }
+                      : '$sort_dashboard_2'
+                      : '$sort_dashboard_2_direction'
+                    | tablePaginate
+                      : dashboardTablePagination2.page
+                      : dashboardTablePagination2.pageSize
+                "
+              >
                 <td>
                   <strong>{{ invoiceCode(invoice) }}</strong>
                   <small class="table-subtext">
@@ -451,6 +599,11 @@
               </tr>
             </tbody>
           </table>
+          <app-table-pagination
+            #dashboardTablePagination2
+            [totalItems]="dashboardTableToolbar2.filteredCount"
+            [resetKey]="tableFilters"
+          ></app-table-pagination>
         </div>
       </div>
     </div>
@@ -468,7 +621,25 @@
       </div>
 
       <span class="panel-count danger-count">
-        {{ (openIncidents | tableColumnFilter: tableFilters : { dashboardIncident: 'incidentCode|id', dashboardIncidentChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', dashboardIncidentDate: 'incidentDate|incident_date', dashboardIncidentIssue: 'description|incidentDescription|incident_description|incidentType', dashboardIncidentStatus: 'status.name|status.statusName|status' } : '$sort_dashboard_3' : '$sort_dashboard_3_direction').length }}
+        {{
+          (
+            openIncidents
+            | tableColumnFilter
+              : tableFilters
+              : {
+                  dashboardIncident: "incidentCode|id",
+                  dashboardIncidentChild:
+                    "child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id",
+                  dashboardIncidentDate: "incidentDate|incident_date",
+                  dashboardIncidentIssue:
+                    "description|incidentDescription|incident_description|incidentType",
+                  dashboardIncidentStatus:
+                    "status.name|status.statusName|status",
+                }
+              : "$sort_dashboard_3"
+              : "$sort_dashboard_3_direction"
+          ).length
+        }}
       </span>
     </div>
 
@@ -479,32 +650,110 @@
     </div>
 
     <app-table-filter-toolbar
-  [items]="openIncidents"
-  [fields]="{ dashboardIncident: 'incidentCode|id', dashboardIncidentChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', dashboardIncidentDate: 'incidentDate|incident_date', dashboardIncidentIssue: 'description|incidentDescription|incident_description|incidentType', dashboardIncidentStatus: 'status.name|status.statusName|status' }"
-  [labels]="{ dashboardIncident: 'Incident', dashboardIncidentChild: 'Child', dashboardIncidentDate: 'Date', dashboardIncidentIssue: 'Reported Issue', dashboardIncidentStatus: 'Status' }"
-  [optionItems]="{ dashboardIncidentChild: dashboardChildFilterOptions }"
-  [optionPaths]="{ dashboardIncidentChild: '@childLabel' }"
-  [optionValues]="{ dashboardIncidentStatus: ['Open', 'Resolved', 'Follow-up Required'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_dashboard_3'"
-  [directionKey]="'$sort_dashboard_3_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div class="table-responsive" *ngIf="!loading && openIncidents.length > 0">
+      #dashboardTableToolbar3
+      [items]="openIncidents"
+      [fields]="{
+        dashboardIncident: 'incidentCode|id',
+        dashboardIncidentChild:
+          'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id',
+        dashboardIncidentDate: 'incidentDate|incident_date',
+        dashboardIncidentIssue:
+          'description|incidentDescription|incident_description|incidentType',
+        dashboardIncidentStatus: 'status.name|status.statusName|status',
+      }"
+      [labels]="{
+        dashboardIncident: 'Incident',
+        dashboardIncidentChild: 'Child',
+        dashboardIncidentDate: 'Date',
+        dashboardIncidentIssue: 'Reported Issue',
+        dashboardIncidentStatus: 'Status',
+      }"
+      [optionItems]="{ dashboardIncidentChild: dashboardChildFilterOptions }"
+      [optionPaths]="{ dashboardIncidentChild: '@childLabel' }"
+      [optionValues]="{
+        dashboardIncidentStatus: ['Open', 'Resolved', 'Follow-up Required'],
+      }"
+      [(filters)]="tableFilters"
+      [sortKey]="'$sort_dashboard_3'"
+      [directionKey]="'$sort_dashboard_3_direction'"
+      heading="Filter and sort"
+      [resetKey]="tableFilters"
+    ></app-table-filter-toolbar>
+    <div class="table-responsive" *ngIf="!loading && openIncidents.length > 0">
       <table class="table dashboard-table align-middle mb-0">
         <thead>
           <tr>
-            <th appTableSort="dashboardIncident" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_3'" [sortDirectionKey]="'$sort_dashboard_3_direction'" (sortFiltersChange)="tableFilters = $event">Incident</th>
-            <th appTableSort="dashboardIncidentChild" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_3'" [sortDirectionKey]="'$sort_dashboard_3_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
-            <th appTableSort="dashboardIncidentDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_3'" [sortDirectionKey]="'$sort_dashboard_3_direction'" (sortFiltersChange)="tableFilters = $event">Date</th>
-            <th appTableSort="dashboardIncidentIssue" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_3'" [sortDirectionKey]="'$sort_dashboard_3_direction'" (sortFiltersChange)="tableFilters = $event">Reported Issue</th>
-            <th appTableSort="dashboardIncidentStatus" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_dashboard_3'" [sortDirectionKey]="'$sort_dashboard_3_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
+            <th
+              appTableSort="dashboardIncident"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_dashboard_3'"
+              [sortDirectionKey]="'$sort_dashboard_3_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Incident
+            </th>
+            <th
+              appTableSort="dashboardIncidentChild"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_dashboard_3'"
+              [sortDirectionKey]="'$sort_dashboard_3_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Child
+            </th>
+            <th
+              appTableSort="dashboardIncidentDate"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_dashboard_3'"
+              [sortDirectionKey]="'$sort_dashboard_3_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Date
+            </th>
+            <th
+              appTableSort="dashboardIncidentIssue"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_dashboard_3'"
+              [sortDirectionKey]="'$sort_dashboard_3_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Reported Issue
+            </th>
+            <th
+              appTableSort="dashboardIncidentStatus"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_dashboard_3'"
+              [sortDirectionKey]="'$sort_dashboard_3_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Status
+            </th>
           </tr>
-          
         </thead>
 
         <tbody>
-          <tr *ngFor="let incident of (openIncidents | tableColumnFilter: tableFilters : { dashboardIncident: 'incidentCode|id', dashboardIncidentChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', dashboardIncidentDate: 'incidentDate|incident_date', dashboardIncidentIssue: 'description|incidentDescription|incident_description|incidentType', dashboardIncidentStatus: 'status.name|status.statusName|status' } : '$sort_dashboard_3' : '$sort_dashboard_3_direction' | slice: 0 : 8)">
+          <tr
+            *ngFor="
+              let incident of openIncidents
+                | tableColumnFilter
+                  : tableFilters
+                  : {
+                      dashboardIncident: 'incidentCode|id',
+                      dashboardIncidentChild:
+                        'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id',
+                      dashboardIncidentDate: 'incidentDate|incident_date',
+                      dashboardIncidentIssue:
+                        'description|incidentDescription|incident_description|incidentType',
+                      dashboardIncidentStatus:
+                        'status.name|status.statusName|status',
+                    }
+                  : '$sort_dashboard_3'
+                  : '$sort_dashboard_3_direction'
+                | tablePaginate
+                  : dashboardTablePagination3.page
+                  : dashboardTablePagination3.pageSize
+            "
+          >
             <td>
               <strong>
                 {{
@@ -536,6 +785,11 @@
           </tr>
         </tbody>
       </table>
+      <app-table-pagination
+        #dashboardTablePagination3
+        [totalItems]="dashboardTableToolbar3.filteredCount"
+        [resetKey]="tableFilters"
+      ></app-table-pagination>
     </div>
   </section>
 
