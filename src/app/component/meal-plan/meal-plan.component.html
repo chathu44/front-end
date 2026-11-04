@@ -19,7 +19,24 @@
           ><i class="bi bi-calendar-week"></i
         ></span>
         <div>
-          <span>Meal plans</span><strong>{{ (filteredMealPlans | tableColumnFilter: tableFilters : { planId: 'id', planDate: 'mealDate', planMeal: 'mealType', menu: 'menuItems', planClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id' } : '$sort_meal_plan_1' : '$sort_meal_plan_1_direction').length }}</strong>
+          <span>Meal plans</span
+          ><strong>{{
+            (
+              filteredMealPlans
+              | tableColumnFilter
+                : tableFilters
+                : {
+                    planId: "id",
+                    planDate: "mealDate",
+                    planMeal: "mealType",
+                    menu: "menuItems",
+                    planClassroom:
+                      "classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id",
+                  }
+                : "$sort_meal_plan_1"
+                : "$sort_meal_plan_1_direction"
+            ).length
+          }}</strong>
         </div>
       </div>
     </div>
@@ -29,7 +46,25 @@
           ><i class="bi bi-clipboard2-check"></i
         ></span>
         <div>
-          <span>Meal records</span><strong>{{ (filteredMealRecords | tableColumnFilter: tableFilters : { recordId: 'id', recordDate: 'mealDate', recordChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', recordMeal: 'mealType|mealPlan.mealType', ateMeal: 'ateMeal', recordNotes: 'notes' } : '$sort_meal_plan_2' : '$sort_meal_plan_2_direction').length }}</strong>
+          <span>Meal records</span
+          ><strong>{{
+            (
+              filteredMealRecords
+              | tableColumnFilter
+                : tableFilters
+                : {
+                    recordId: "id",
+                    recordDate: "mealDate",
+                    recordChild:
+                      "child.firstName|child.lastName|child.fullName|child.childCode|child.id",
+                    recordMeal: "mealType|mealPlan.mealType",
+                    ateMeal: "ateMeal",
+                    recordNotes: "notes",
+                  }
+                : "$sort_meal_plan_2"
+                : "$sort_meal_plan_2_direction"
+            ).length
+          }}</strong>
         </div>
       </div>
     </div>
@@ -55,7 +90,23 @@
       (click)="setTab('plans')"
     >
       <i class="bi bi-calendar2-week me-2"></i>Meal Plans
-      <span>{{ (filteredMealPlans | tableColumnFilter: tableFilters : { planId: 'id', planDate: 'mealDate', planMeal: 'mealType', menu: 'menuItems', planClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id' } : '$sort_meal_plan_1' : '$sort_meal_plan_1_direction').length }}</span>
+      <span>{{
+        (
+          filteredMealPlans
+          | tableColumnFilter
+            : tableFilters
+            : {
+                planId: "id",
+                planDate: "mealDate",
+                planMeal: "mealType",
+                menu: "menuItems",
+                planClassroom:
+                  "classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id",
+              }
+            : "$sort_meal_plan_1"
+            : "$sort_meal_plan_1_direction"
+        ).length
+      }}</span>
     </button>
     <button
       type="button"
@@ -65,7 +116,24 @@
       (click)="setTab('records')"
     >
       <i class="bi bi-journal-check me-2"></i>Meal Records
-      <span>{{ (filteredMealRecords | tableColumnFilter: tableFilters : { recordId: 'id', recordDate: 'mealDate', recordChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', recordMeal: 'mealType|mealPlan.mealType', ateMeal: 'ateMeal', recordNotes: 'notes' } : '$sort_meal_plan_2' : '$sort_meal_plan_2_direction').length }}</span>
+      <span>{{
+        (
+          filteredMealRecords
+          | tableColumnFilter
+            : tableFilters
+            : {
+                recordId: "id",
+                recordDate: "mealDate",
+                recordChild:
+                  "child.firstName|child.lastName|child.fullName|child.childCode|child.id",
+                recordMeal: "mealType|mealPlan.mealType",
+                ateMeal: "ateMeal",
+                recordNotes: "notes",
+              }
+            : "$sort_meal_plan_2"
+            : "$sort_meal_plan_2_direction"
+        ).length
+      }}</span>
     </button>
   </div>
 
@@ -232,32 +300,85 @@
           <h2>Meal plan list</h2>
           <p>Review existing menus and make changes.</p>
         </div>
-        
       </div>
       <app-table-filter-toolbar
-  [items]="filteredMealPlans"
-  [fields]="{ planId: 'id', planDate: 'mealDate', planMeal: 'mealType', menu: 'menuItems', planClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id' }"
-  [labels]="{ planId: 'ID', planDate: 'Date', planMeal: 'Meal', menu: 'Menu', planClassroom: 'Classroom' }"
-  [optionItems]="{ planClassroom: allClassroomFilterOptions }"
-  [optionPaths]="{ planClassroom: '@classroomLabel' }"
-  [optionValues]="{ planMeal: mealTypeOptions }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_meal_plan_1'"
-  [directionKey]="'$sort_meal_plan_1_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div class="table-responsive">
+        #mealplanTableToolbar1
+        [items]="filteredMealPlans"
+        [fields]="{
+          planId: 'id',
+          planDate: 'mealDate',
+          planMeal: 'mealType',
+          menu: 'menuItems',
+          planClassroom:
+            'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id',
+        }"
+        [labels]="{
+          planId: 'ID',
+          planDate: 'Date',
+          planMeal: 'Meal',
+          menu: 'Menu',
+          planClassroom: 'Classroom',
+        }"
+        [optionItems]="{ planClassroom: allClassroomFilterOptions }"
+        [optionPaths]="{ planClassroom: '@classroomLabel' }"
+        [optionValues]="{ planMeal: mealTypeOptions }"
+        [(filters)]="tableFilters"
+        [sortKey]="'$sort_meal_plan_1'"
+        [directionKey]="'$sort_meal_plan_1_direction'"
+        heading="Filter and sort"
+        [resetKey]="tableFilters"
+      ></app-table-filter-toolbar>
+      <div class="table-responsive">
         <table class="table align-middle meal-table">
           <thead>
             <tr>
-              <th appTableSort="planId" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_1'" [sortDirectionKey]="'$sort_meal_plan_1_direction'" (sortFiltersChange)="tableFilters = $event">ID</th>
-              <th appTableSort="planDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_1'" [sortDirectionKey]="'$sort_meal_plan_1_direction'" (sortFiltersChange)="tableFilters = $event">Date</th>
-              <th appTableSort="planMeal" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_1'" [sortDirectionKey]="'$sort_meal_plan_1_direction'" (sortFiltersChange)="tableFilters = $event">Meal</th>
-              <th appTableSort="menu" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_1'" [sortDirectionKey]="'$sort_meal_plan_1_direction'" (sortFiltersChange)="tableFilters = $event">Menu</th>
-              <th appTableSort="planClassroom" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_1'" [sortDirectionKey]="'$sort_meal_plan_1_direction'" (sortFiltersChange)="tableFilters = $event">Classroom</th>
+              <th
+                appTableSort="planId"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_1'"
+                [sortDirectionKey]="'$sort_meal_plan_1_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                ID
+              </th>
+              <th
+                appTableSort="planDate"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_1'"
+                [sortDirectionKey]="'$sort_meal_plan_1_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Date
+              </th>
+              <th
+                appTableSort="planMeal"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_1'"
+                [sortDirectionKey]="'$sort_meal_plan_1_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Meal
+              </th>
+              <th
+                appTableSort="menu"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_1'"
+                [sortDirectionKey]="'$sort_meal_plan_1_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Menu
+              </th>
+              <th
+                appTableSort="planClassroom"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_1'"
+                [sortDirectionKey]="'$sort_meal_plan_1_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Classroom
+              </th>
               <th class="text-end">Actions</th>
             </tr>
-          
           </thead>
           <tbody>
             <tr *ngIf="loadingPlans">
@@ -267,7 +388,24 @@
               </td>
             </tr>
             <tr
-              *ngFor="let plan of (filteredMealPlans | tableColumnFilter: tableFilters : { planId: 'id', planDate: 'mealDate', planMeal: 'mealType', menu: 'menuItems', planClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id' } : '$sort_meal_plan_1' : '$sort_meal_plan_1_direction')"
+              *ngFor="
+                let plan of filteredMealPlans
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        planId: 'id',
+                        planDate: 'mealDate',
+                        planMeal: 'mealType',
+                        menu: 'menuItems',
+                        planClassroom:
+                          'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id',
+                      }
+                    : '$sort_meal_plan_1'
+                    : '$sort_meal_plan_1_direction'
+                  | tablePaginate
+                    : mealplanTablePagination1.page
+                    : mealplanTablePagination1.pageSize
+              "
               class="selectable-row"
               (click)="editMealPlan(plan)"
             >
@@ -318,7 +456,26 @@
                 </button>
               </td>
             </tr>
-            <tr *ngIf="!loadingPlans && (filteredMealPlans | tableColumnFilter: tableFilters : { planId: 'id', planDate: 'mealDate', planMeal: 'mealType', menu: 'menuItems', planClassroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id' } : '$sort_meal_plan_1' : '$sort_meal_plan_1_direction').length === 0">
+            <tr
+              *ngIf="
+                !loadingPlans &&
+                (
+                  filteredMealPlans
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        planId: 'id',
+                        planDate: 'mealDate',
+                        planMeal: 'mealType',
+                        menu: 'menuItems',
+                        planClassroom:
+                          'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id',
+                      }
+                    : '$sort_meal_plan_1'
+                    : '$sort_meal_plan_1_direction'
+                ).length === 0
+              "
+            >
               <td colspan="6" class="table-message">
                 {{
                   searchText
@@ -329,6 +486,11 @@
             </tr>
           </tbody>
         </table>
+        <app-table-pagination
+          #mealplanTablePagination1
+          [totalItems]="mealplanTableToolbar1.filteredCount"
+          [resetKey]="tableFilters"
+        ></app-table-pagination>
       </div>
     </div>
   </section>
@@ -546,33 +708,96 @@
           <h2>Meal record list</h2>
           <p>Review each child's meal record.</p>
         </div>
-        
       </div>
       <app-table-filter-toolbar
-  [items]="filteredMealRecords"
-  [fields]="{ recordId: 'id', recordDate: 'mealDate', recordChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', recordMeal: 'mealType|mealPlan.mealType', ateMeal: 'ateMeal', recordNotes: 'notes' }"
-  [labels]="{ recordId: 'ID', recordDate: 'Date', recordChild: 'Child', recordMeal: 'Meal', ateMeal: 'Ate meal?', recordNotes: 'Notes' }"
-  [optionItems]="{ recordChild: allChildFilterOptions }"
-  [optionPaths]="{ recordChild: '@childLabel' }"
-  [optionValues]="{ recordMeal: mealTypeOptions, ateMeal: ['Yes', 'No'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_meal_plan_2'"
-  [directionKey]="'$sort_meal_plan_2_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div class="table-responsive">
+        #mealplanTableToolbar2
+        [items]="filteredMealRecords"
+        [fields]="{
+          recordId: 'id',
+          recordDate: 'mealDate',
+          recordChild:
+            'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+          recordMeal: 'mealType|mealPlan.mealType',
+          ateMeal: 'ateMeal',
+          recordNotes: 'notes',
+        }"
+        [labels]="{
+          recordId: 'ID',
+          recordDate: 'Date',
+          recordChild: 'Child',
+          recordMeal: 'Meal',
+          ateMeal: 'Ate meal?',
+          recordNotes: 'Notes',
+        }"
+        [optionItems]="{ recordChild: allChildFilterOptions }"
+        [optionPaths]="{ recordChild: '@childLabel' }"
+        [optionValues]="{ recordMeal: mealTypeOptions, ateMeal: ['Yes', 'No'] }"
+        [(filters)]="tableFilters"
+        [sortKey]="'$sort_meal_plan_2'"
+        [directionKey]="'$sort_meal_plan_2_direction'"
+        heading="Filter and sort"
+        [resetKey]="tableFilters"
+      ></app-table-filter-toolbar>
+      <div class="table-responsive">
         <table class="table align-middle meal-table">
           <thead>
             <tr>
-              <th appTableSort="recordId" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">ID</th>
-              <th appTableSort="recordDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">Date</th>
-              <th appTableSort="recordChild" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
-              <th appTableSort="recordMeal" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">Meal</th>
-              <th appTableSort="ateMeal" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">Ate meal?</th>
-              <th appTableSort="recordNotes" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_meal_plan_2'" [sortDirectionKey]="'$sort_meal_plan_2_direction'" (sortFiltersChange)="tableFilters = $event">Notes</th>
+              <th
+                appTableSort="recordId"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                ID
+              </th>
+              <th
+                appTableSort="recordDate"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Date
+              </th>
+              <th
+                appTableSort="recordChild"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Child
+              </th>
+              <th
+                appTableSort="recordMeal"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Meal
+              </th>
+              <th
+                appTableSort="ateMeal"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Ate meal?
+              </th>
+              <th
+                appTableSort="recordNotes"
+                [sortFilters]="tableFilters"
+                [sortFieldKey]="'$sort_meal_plan_2'"
+                [sortDirectionKey]="'$sort_meal_plan_2_direction'"
+                (sortFiltersChange)="tableFilters = $event"
+              >
+                Notes
+              </th>
               <th class="text-end">Actions</th>
             </tr>
-          
           </thead>
           <tbody>
             <tr *ngIf="loadingRecords">
@@ -582,7 +807,25 @@
               </td>
             </tr>
             <tr
-              *ngFor="let record of (filteredMealRecords | tableColumnFilter: tableFilters : { recordId: 'id', recordDate: 'mealDate', recordChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', recordMeal: 'mealType|mealPlan.mealType', ateMeal: 'ateMeal', recordNotes: 'notes' } : '$sort_meal_plan_2' : '$sort_meal_plan_2_direction')"
+              *ngFor="
+                let record of filteredMealRecords
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        recordId: 'id',
+                        recordDate: 'mealDate',
+                        recordChild:
+                          'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                        recordMeal: 'mealType|mealPlan.mealType',
+                        ateMeal: 'ateMeal',
+                        recordNotes: 'notes',
+                      }
+                    : '$sort_meal_plan_2'
+                    : '$sort_meal_plan_2_direction'
+                  | tablePaginate
+                    : mealplanTablePagination2.page
+                    : mealplanTablePagination2.pageSize
+              "
               class="selectable-row"
               (click)="editMealRecord(record)"
             >
@@ -655,7 +898,27 @@
                 </button>
               </td>
             </tr>
-            <tr *ngIf="!loadingRecords && (filteredMealRecords | tableColumnFilter: tableFilters : { recordId: 'id', recordDate: 'mealDate', recordChild: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', recordMeal: 'mealType|mealPlan.mealType', ateMeal: 'ateMeal', recordNotes: 'notes' } : '$sort_meal_plan_2' : '$sort_meal_plan_2_direction').length === 0">
+            <tr
+              *ngIf="
+                !loadingRecords &&
+                (
+                  filteredMealRecords
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        recordId: 'id',
+                        recordDate: 'mealDate',
+                        recordChild:
+                          'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                        recordMeal: 'mealType|mealPlan.mealType',
+                        ateMeal: 'ateMeal',
+                        recordNotes: 'notes',
+                      }
+                    : '$sort_meal_plan_2'
+                    : '$sort_meal_plan_2_direction'
+                ).length === 0
+              "
+            >
               <td colspan="7" class="table-message">
                 {{
                   searchText
@@ -666,6 +929,11 @@
             </tr>
           </tbody>
         </table>
+        <app-table-pagination
+          #mealplanTablePagination2
+          [totalItems]="mealplanTableToolbar2.filteredCount"
+          [resetKey]="tableFilters"
+        ></app-table-pagination>
       </div>
     </div>
   </section>

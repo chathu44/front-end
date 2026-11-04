@@ -567,6 +567,7 @@
           </div>
 
           <app-table-filter-toolbar
+            #childTableToolbar1
             [items]="filteredChildren"
             [fields]="{
               child: 'firstName|lastName|fullName|childCode|id',
@@ -592,12 +593,13 @@
             [optionItems]="{ parent: allParentFilterOptions }"
             [optionPaths]="{ parent: '@parentLabel' }"
             [optionValues]="{
-              status: ['Active', 'Withdrawn', 'Graduated'],
+              status: ['Active', 'Inactive', 'Withdrawn', 'Graduated'],
             }"
             [(filters)]="tableFilters"
             [sortKey]="'$sort_child_1'"
             [directionKey]="'$sort_child_1_direction'"
             heading="Filter and sort"
+            [resetKey]="tableFilters"
           ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table child-table align-middle mb-0">
@@ -706,6 +708,9 @@
                           }
                         : '$sort_child_1'
                         : '$sort_child_1_direction'
+                      | tablePaginate
+                        : childTablePagination1.page
+                        : childTablePagination1.pageSize
                   "
                   class="child-row"
                   [class.selected-row]="selectedChildId == child.id"
@@ -880,6 +885,11 @@
                 </tr>
               </tbody>
             </table>
+            <app-table-pagination
+              #childTablePagination1
+              [totalItems]="childTableToolbar1.filteredCount"
+              [resetKey]="tableFilters"
+            ></app-table-pagination>
           </div>
         </div>
       </div>

@@ -338,6 +338,7 @@
           </div>
 
           <app-table-filter-toolbar
+            #classroomTableToolbar1
             [items]="filteredClassrooms"
             [fields]="{
               classroom: 'roomName|classroomName|roomCode|classroomCode|id',
@@ -359,6 +360,7 @@
             [sortKey]="'$sort_classroom_1'"
             [directionKey]="'$sort_classroom_1_direction'"
             heading="Filter and sort"
+            [resetKey]="tableFilters"
           ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table classroom-table align-middle mb-0">
@@ -434,6 +436,9 @@
                           }
                         : '$sort_classroom_1'
                         : '$sort_classroom_1_direction'
+                      | tablePaginate
+                        : classroomTablePagination1.page
+                        : classroomTablePagination1.pageSize
                   "
                   class="classroom-row"
                   [class.selected-row]="selectedClassroomId == classroom.id"
@@ -577,6 +582,11 @@
                 </tr>
               </tbody>
             </table>
+            <app-table-pagination
+              #classroomTablePagination1
+              [totalItems]="classroomTableToolbar1.filteredCount"
+              [resetKey]="tableFilters"
+            ></app-table-pagination>
           </div>
         </div>
       </div>

@@ -15,9 +15,6 @@ import { ClassComponent } from './component/class/class.component';
 import { ForbiddenComponent } from './component/forbidden/forbidden.component';
 import { AuthGuard } from './component/auth/auth.guard';
 import { AuthInterceptor } from './component/auth/auth.interceptor';
-import { TableColumnFilterPipe } from './shared/pipes/table-column-filter.pipe';
-import { TableFilterToolbarComponent } from './shared/components/table-filter-toolbar/table-filter-toolbar.component';
-import { TableSortHeaderDirective } from './shared/directives/table-sort-header.directive';
 import { InstituteLoginComponent } from './component/institute-login/institute-login.component';
 import { RegisterComponent } from './component/register/register.component';
 import { PrivilegeComponent } from './component/privilege/privilege.component';
@@ -33,6 +30,12 @@ import { MealPlanComponent } from './component/meal-plan/meal-plan.component';
 import { IncidentComponent } from './component/incident/incident.component';
 import { FeePaymentComponent } from './component/fee-payment/fee-payment.component';
 import { StaffComponent } from './component/staff/staff.component';
+import { ReportComponent } from './component/report/report.component';
+import { TableColumnFilterPipe } from './shared/pipes/table-column-filter.pipe';
+import { TablePaginatePipe } from './shared/pipes/table-paginate.pipe';
+import { TableFilterToolbarComponent } from './shared/components/table-filter-toolbar/table-filter-toolbar.component';
+import { TablePaginationComponent } from './shared/components/table-pagination/table-pagination.component';
+import { TableSortHeaderDirective } from './shared/directives/table-sort-header.directive';
 
 @NgModule({
   declarations: [
@@ -57,8 +60,11 @@ import { StaffComponent } from './component/staff/staff.component';
     IncidentComponent,
     FeePaymentComponent,
     StaffComponent,
+    ReportComponent,
     TableColumnFilterPipe,
+    TablePaginatePipe,
     TableFilterToolbarComponent,
+    TablePaginationComponent,
     TableSortHeaderDirective,
   ],
   imports: [

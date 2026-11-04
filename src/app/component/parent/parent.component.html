@@ -493,6 +493,7 @@
           </div>
 
           <app-table-filter-toolbar
+            #parentTableToolbar1
             [items]="filteredParents"
             [fields]="{
               parent: 'fullName|parentName|parentCode|id',
@@ -521,6 +522,7 @@
             [sortKey]="'$sort_parent_1'"
             [directionKey]="'$sort_parent_1_direction'"
             heading="Filter and sort"
+            [resetKey]="tableFilters"
           ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table parent-table align-middle mb-0">
@@ -631,6 +633,9 @@
                           }
                         : '$sort_parent_1'
                         : '$sort_parent_1_direction'
+                      | tablePaginate
+                        : parentTablePagination1.page
+                        : parentTablePagination1.pageSize
                   "
                   class="parent-row"
                   [class.selected-row]="selectedParentId == parent.id"
@@ -807,6 +812,11 @@
                 </tr>
               </tbody>
             </table>
+            <app-table-pagination
+              #parentTablePagination1
+              [totalItems]="parentTableToolbar1.filteredCount"
+              [resetKey]="tableFilters"
+            ></app-table-pagination>
           </div>
         </div>
       </div>

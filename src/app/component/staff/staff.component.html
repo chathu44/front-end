@@ -446,11 +446,26 @@
           </div>
 
           <div class="staff-count">
-            {{ (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length }} Staff Members
+            {{
+              (
+                filteredStaff
+                | tableColumnFilter
+                  : tableFilters
+                  : {
+                      staff: "fullName|staffCode|id",
+                      role: "role",
+                      classroom:
+                        "classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId",
+                      hireDate: "hireDate",
+                      status: "status.name|status.statusName|status",
+                    }
+                  : "$sort_staff_1"
+                  : "$sort_staff_1_direction"
+              ).length
+            }}
+            Staff Members
           </div>
         </div>
-
-        
 
         <div *ngIf="loading" class="staff-loading">
           <span class="spinner-border spinner-border-sm me-2"></span>
@@ -458,34 +473,105 @@
         </div>
 
         <app-table-filter-toolbar
-  [items]="filteredStaff"
-  [fields]="{ staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' }"
-  [labels]="{ staff: 'Staff Member', role: 'Role', classroom: 'Classroom', hireDate: 'Hire Date', status: 'Status' }"
-  [optionItems]="{ classroom: classroomFilterOptions }"
-  [optionPaths]="{ classroom: '@classroomLabel' }"
-  [optionValues]="{ role: roles, status: ['Active', 'Inactive'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_staff_1'"
-  [directionKey]="'$sort_staff_1_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div class="table-responsive" *ngIf="!loading">
+          #staffTableToolbar1
+          [items]="filteredStaff"
+          [fields]="{
+            staff: 'fullName|staffCode|id',
+            role: 'role',
+            classroom:
+              'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId',
+            hireDate: 'hireDate',
+            status: 'status.name|status.statusName|status',
+          }"
+          [labels]="{
+            staff: 'Staff Member',
+            role: 'Role',
+            classroom: 'Classroom',
+            hireDate: 'Hire Date',
+            status: 'Status',
+          }"
+          [optionItems]="{ classroom: classroomFilterOptions }"
+          [optionPaths]="{ classroom: '@classroomLabel' }"
+          [optionValues]="{ role: roles, status: ['Active', 'Inactive'] }"
+          [(filters)]="tableFilters"
+          [sortKey]="'$sort_staff_1'"
+          [directionKey]="'$sort_staff_1_direction'"
+          heading="Filter and sort"
+          [resetKey]="tableFilters"
+        ></app-table-filter-toolbar>
+        <div class="table-responsive" *ngIf="!loading">
           <table class="table staff-table align-middle mb-0">
             <thead>
               <tr>
-                <th appTableSort="staff" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Staff Member</th>
-                <th appTableSort="role" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Role</th>
-                <th appTableSort="classroom" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Classroom</th>
-                <th appTableSort="hireDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Hire Date</th>
-                <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
+                <th
+                  appTableSort="staff"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_staff_1'"
+                  [sortDirectionKey]="'$sort_staff_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Staff Member
+                </th>
+                <th
+                  appTableSort="role"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_staff_1'"
+                  [sortDirectionKey]="'$sort_staff_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Role
+                </th>
+                <th
+                  appTableSort="classroom"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_staff_1'"
+                  [sortDirectionKey]="'$sort_staff_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Classroom
+                </th>
+                <th
+                  appTableSort="hireDate"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_staff_1'"
+                  [sortDirectionKey]="'$sort_staff_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Hire Date
+                </th>
+                <th
+                  appTableSort="status"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_staff_1'"
+                  [sortDirectionKey]="'$sort_staff_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Status
+                </th>
                 <th class="text-end">Actions</th>
               </tr>
-          
             </thead>
 
             <tbody>
               <tr
-                *ngFor="let staff of (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction')"
+                *ngFor="
+                  let staff of filteredStaff
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          staff: 'fullName|staffCode|id',
+                          role: 'role',
+                          classroom:
+                            'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId',
+                          hireDate: 'hireDate',
+                          status: 'status.name|status.statusName|status',
+                        }
+                      : '$sort_staff_1'
+                      : '$sort_staff_1_direction'
+                    | tablePaginate
+                      : staffTablePagination1.page
+                      : staffTablePagination1.pageSize
+                "
                 class="staff-selectable-row"
                 (click)="selectStaff(staff, 'view')"
               >
@@ -525,8 +611,11 @@
                       (click)="$event.stopPropagation()"
                       (change)="onStaffStatusToggle(staff, $event)"
                     />
-                    <label class="form-check-label" [for]="'staff-status-' + staff.id">
-                      {{ isStaffActive(staff) ? 'Active' : 'Inactive' }}
+                    <label
+                      class="form-check-label"
+                      [for]="'staff-status-' + staff.id"
+                    >
+                      {{ isStaffActive(staff) ? "Active" : "Inactive" }}
                     </label>
                   </div>
                 </td>
@@ -561,7 +650,25 @@
                 </td>
               </tr>
 
-              <tr *ngIf="(filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length === 0">
+              <tr
+                *ngIf="
+                  (
+                    filteredStaff
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          staff: 'fullName|staffCode|id',
+                          role: 'role',
+                          classroom:
+                            'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId',
+                          hireDate: 'hireDate',
+                          status: 'status.name|status.statusName|status',
+                        }
+                      : '$sort_staff_1'
+                      : '$sort_staff_1_direction'
+                  ).length === 0
+                "
+              >
                 <td colspan="6" class="staff-empty">
                   <i class="bi bi-people"></i>
                   <strong>No staff found</strong>
@@ -570,11 +677,33 @@
               </tr>
             </tbody>
           </table>
+          <app-table-pagination
+            #staffTablePagination1
+            [totalItems]="staffTableToolbar1.filteredCount"
+            [resetKey]="tableFilters"
+          ></app-table-pagination>
         </div>
 
         <div class="staff-table-footer">
-          Showing {{ (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length }} of {{ staffList.length }} staff
-          members
+          Showing
+          {{
+            (
+              filteredStaff
+              | tableColumnFilter
+                : tableFilters
+                : {
+                    staff: "fullName|staffCode|id",
+                    role: "role",
+                    classroom:
+                      "classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId",
+                    hireDate: "hireDate",
+                    status: "status.name|status.statusName|status",
+                  }
+                : "$sort_staff_1"
+                : "$sort_staff_1_direction"
+            ).length
+          }}
+          of {{ staffList.length }} staff members
         </div>
       </div>
     </div>

@@ -385,41 +385,136 @@
             </div>
 
             <div class="programs-count">
-              {{ (filteredPrograms | tableColumnFilter: tableFilters : { program: 'programName|programCode|id', description: 'description', sessionStart: 'sessionStart', sessionEnd: 'sessionEnd', monthlyFee: 'monthlyFee', status: 'status.name|status.statusName|status' } : '$sort_program_1' : '$sort_program_1_direction').length }} Programs
+              {{
+                (
+                  filteredPrograms
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        program: "programName|programCode|id",
+                        description: "description",
+                        sessionStart: "sessionStart",
+                        sessionEnd: "sessionEnd",
+                        monthlyFee: "monthlyFee",
+                        status: "status.name|status.statusName|status",
+                      }
+                    : "$sort_program_1"
+                    : "$sort_program_1_direction"
+                ).length
+              }}
+              Programs
             </div>
           </div>
 
-          
-
           <app-table-filter-toolbar
-  [items]="filteredPrograms"
-  [fields]="{ program: 'programName|programCode|id', description: 'description', sessionStart: 'sessionStart', sessionEnd: 'sessionEnd', monthlyFee: 'monthlyFee', status: 'status.name|status.statusName|status' }"
-  [labels]="{ program: 'Program', description: 'Description', sessionStart: 'Session Start', sessionEnd: 'Session End', monthlyFee: 'Monthly Fee', status: 'Status' }"
-  [textFields]="['program']"
-  [optionValues]="{ status: ['Active', 'Inactive'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_program_1'"
-  [directionKey]="'$sort_program_1_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div class="table-responsive">
+            #programTableToolbar1
+            [items]="filteredPrograms"
+            [fields]="{
+              program: 'programName|programCode|id',
+              description: 'description',
+              sessionStart: 'sessionStart',
+              sessionEnd: 'sessionEnd',
+              monthlyFee: 'monthlyFee',
+              status: 'status.name|status.statusName|status',
+            }"
+            [labels]="{
+              program: 'Program',
+              description: 'Description',
+              sessionStart: 'Session Start',
+              sessionEnd: 'Session End',
+              monthlyFee: 'Monthly Fee',
+              status: 'Status',
+            }"
+            [textFields]="['program']"
+            [optionValues]="{ status: ['Active', 'Inactive'] }"
+            [(filters)]="tableFilters"
+            [sortKey]="'$sort_program_1'"
+            [directionKey]="'$sort_program_1_direction'"
+            heading="Filter and sort"
+            [resetKey]="tableFilters"
+          ></app-table-filter-toolbar>
+          <div class="table-responsive">
             <table class="table program-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th appTableSort="program" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Program</th>
-                  <th appTableSort="description" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Description</th>
-                  <th appTableSort="sessionStart" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Session Start</th>
-                  <th appTableSort="sessionEnd" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Session End</th>
-                  <th appTableSort="monthlyFee" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Monthly Fee</th>
-                  <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_program_1'" [sortDirectionKey]="'$sort_program_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
+                  <th
+                    appTableSort="program"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Program
+                  </th>
+                  <th
+                    appTableSort="description"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Description
+                  </th>
+                  <th
+                    appTableSort="sessionStart"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Session Start
+                  </th>
+                  <th
+                    appTableSort="sessionEnd"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Session End
+                  </th>
+                  <th
+                    appTableSort="monthlyFee"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Monthly Fee
+                  </th>
+                  <th
+                    appTableSort="status"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_program_1'"
+                    [sortDirectionKey]="'$sort_program_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Status
+                  </th>
                   <th class="text-center">Modify</th>
                 </tr>
-          
               </thead>
 
               <tbody>
                 <tr
-                  *ngFor="let program of (filteredPrograms | tableColumnFilter: tableFilters : { program: 'programName|programCode|id', description: 'description', sessionStart: 'sessionStart', sessionEnd: 'sessionEnd', monthlyFee: 'monthlyFee', status: 'status.name|status.statusName|status' } : '$sort_program_1' : '$sort_program_1_direction')"
+                  *ngFor="
+                    let program of filteredPrograms
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            program: 'programName|programCode|id',
+                            description: 'description',
+                            sessionStart: 'sessionStart',
+                            sessionEnd: 'sessionEnd',
+                            monthlyFee: 'monthlyFee',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_program_1'
+                        : '$sort_program_1_direction'
+                      | tablePaginate
+                        : programTablePagination1.page
+                        : programTablePagination1.pageSize
+                  "
                   class="program-row"
                   [class.selected-row]="selectedProgramId == program.id"
                   (click)="SelectProgramRow(program)"
@@ -552,7 +647,25 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="(filteredPrograms | tableColumnFilter: tableFilters : { program: 'programName|programCode|id', description: 'description', sessionStart: 'sessionStart', sessionEnd: 'sessionEnd', monthlyFee: 'monthlyFee', status: 'status.name|status.statusName|status' } : '$sort_program_1' : '$sort_program_1_direction').length === 0">
+                <tr
+                  *ngIf="
+                    (
+                      filteredPrograms
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            program: 'programName|programCode|id',
+                            description: 'description',
+                            sessionStart: 'sessionStart',
+                            sessionEnd: 'sessionEnd',
+                            monthlyFee: 'monthlyFee',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_program_1'
+                        : '$sort_program_1_direction'
+                    ).length === 0
+                  "
+                >
                   <td colspan="7" class="empty-table">
                     <div class="empty-state">
                       <i class="bi bi-collection"></i>
@@ -565,6 +678,11 @@
                 </tr>
               </tbody>
             </table>
+            <app-table-pagination
+              #programTablePagination1
+              [totalItems]="programTableToolbar1.filteredCount"
+              [resetKey]="tableFilters"
+            ></app-table-pagination>
           </div>
         </div>
       </div>

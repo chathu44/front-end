@@ -313,6 +313,7 @@
       "
     >
       <app-table-filter-toolbar
+        #attendanceTableToolbar1
         [items]="filteredRoster"
         [fields]="{
           child:
@@ -356,6 +357,7 @@
         [sortKey]="'$sort_attendance_1'"
         [directionKey]="'$sort_attendance_1_direction'"
         heading="Filter and sort"
+        [resetKey]="tableFilters"
       ></app-table-filter-toolbar>
       <table class="table roster-table align-middle">
         <thead>
@@ -456,7 +458,10 @@
                         '@attendanceState|attendance.status.name|attendance.status.statusName|attendance.status',
                     }
                   : '$sort_attendance_1'
-                  : '$sort_attendance_1_direction';
+                  : '$sort_attendance_1_direction'
+                | tablePaginate
+                  : attendanceTablePagination1.page
+                  : attendanceTablePagination1.pageSize;
               trackBy: trackByChildId
             "
           >
@@ -860,6 +865,11 @@
           </ng-container>
         </tbody>
       </table>
+      <app-table-pagination
+        #attendanceTablePagination1
+        [totalItems]="attendanceTableToolbar1.filteredCount"
+        [resetKey]="tableFilters"
+      ></app-table-pagination>
     </div>
 
     <div

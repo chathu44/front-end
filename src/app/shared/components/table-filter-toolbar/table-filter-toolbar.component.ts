@@ -23,6 +23,7 @@ export class TableFilterToolbarComponent implements OnChanges {
   @Input() fields: { [key: string]: string } = {};
   @Input() labels: { [key: string]: string } = {};
   @Input() filters: { [key: string]: any } = {};
+  @Input() resetKey: any = null;
   @Input() hiddenFields: string[] = [];
   @Input() textFields: string[] = [];
   @Input() optionValues: { [key: string]: Array<string | { value: string; label: string }> } = {};
@@ -201,7 +202,7 @@ export class TableFilterToolbarComponent implements OnChanges {
     if (normalized.includes('agegroup')) return ['0-1 Years', '1-2 Years', '2-3 Years', '3-5 Years', '5+ Years'];
     if (normalized.includes('parentnotified')) return ['Yes', 'No'];
     if (normalized.includes('meal')) return ['Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner', 'Other'];
-    if (normalized.includes('method')) return ['Cash', 'Card', 'Bank Transfer'];
+    if (normalized.includes('method')) return ['Cash', 'Card', 'Bank Transfer', 'Online', 'PayHere', 'Cheque'];
     return [];
   }
 
@@ -324,7 +325,7 @@ export class TableFilterToolbarComponent implements OnChanges {
     if (normalized.includes('date') || normalized.includes('hiredate')) return 'date';
 
     const normalizedKey = key.toLowerCase();
-    const numberKeys = ['amount', 'balance', 'fee', 'price', 'capacity', 'studentage', 'monthlyfee', 'received'];
+    const numberKeys = ['amount', 'balance', 'fee', 'price', 'capacity', 'studentage', 'monthlyfee', 'received', 'uniquechildren', 'averagedaily', 'utilization'];
     if (numberKeys.some((term) => normalizedKey === term || normalizedKey.endsWith(term))) return 'number';
 
     const categoryKeys = [

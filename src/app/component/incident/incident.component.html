@@ -227,7 +227,11 @@
                 [searchable]="true"
                 [loading]="loadingClassrooms"
                 [disabled]="loadingClassrooms || isReadOnlyIncident"
-                [notFoundText]="loadingClassrooms ? 'Loading open and full classrooms...' : 'No open or full classrooms found'"
+                [notFoundText]="
+                  loadingClassrooms
+                    ? 'Loading open and full classrooms...'
+                    : 'No open or full classrooms found'
+                "
                 appendTo="body"
                 placeholder="Select open or full classroom"
               >
@@ -416,8 +420,6 @@
             Search and review previously recorded incidents.
           </p>
         </div>
-
-        
       </div>
 
       <div class="card-body p-0">
@@ -431,37 +433,145 @@
         </div>
 
         <app-table-filter-toolbar
-  [items]="filteredIncidents"
-  [fields]="{ incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' }"
-  [labels]="{ incidentCode: 'Incident code', incidentDate: 'Date and time', type: 'Type', child: 'Child', description: 'Description', actionTaken: 'Action taken', parentNotified: 'Parent notified', status: 'Status' }"
-  [optionItems]="{ child: allChildFilterOptions }"
-  [optionPaths]="{ child: '@childLabel' }"
-  [optionValues]="{ type: incidentTypes, parentNotified: ['Yes', 'No'], status: ['Open', 'Resolved', 'Follow-up Required'] }"
-  [(filters)]="tableFilters"
-  [sortKey]="'$sort_incident_1'"
-  [directionKey]="'$sort_incident_1_direction'"
-  heading="Filter and sort"
-></app-table-filter-toolbar>
-<div *ngIf="!loadingIncidents" class="table-responsive">
+          #incidentTableToolbar1
+          [items]="filteredIncidents"
+          [fields]="{
+            incidentCode: 'incidentCode|id',
+            incidentDate: 'incidentDate',
+            type: 'incidentType|type',
+            child:
+              'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+            description: 'description',
+            actionTaken: 'actionTaken',
+            parentNotified: 'parentNotified',
+            status: 'status.name|status.statusName|status',
+          }"
+          [labels]="{
+            incidentCode: 'Incident code',
+            incidentDate: 'Date and time',
+            type: 'Type',
+            child: 'Child',
+            description: 'Description',
+            actionTaken: 'Action taken',
+            parentNotified: 'Parent notified',
+            status: 'Status',
+          }"
+          [optionItems]="{ child: allChildFilterOptions }"
+          [optionPaths]="{ child: '@childLabel' }"
+          [optionValues]="{
+            type: incidentTypes,
+            parentNotified: ['Yes', 'No'],
+            status: ['Open', 'Resolved', 'Follow-up Required'],
+          }"
+          [(filters)]="tableFilters"
+          [sortKey]="'$sort_incident_1'"
+          [directionKey]="'$sort_incident_1_direction'"
+          heading="Filter and sort"
+          [resetKey]="tableFilters"
+        ></app-table-filter-toolbar>
+        <div *ngIf="!loadingIncidents" class="table-responsive">
           <table class="table table-hover align-middle mb-0 incident-table">
             <thead>
               <tr>
-                <th appTableSort="incidentCode" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Incident code</th>
-                <th appTableSort="incidentDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Date and time</th>
-                <th appTableSort="type" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Type</th>
-                <th appTableSort="child" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
-                <th appTableSort="description" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Description</th>
-                <th appTableSort="actionTaken" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Action taken</th>
-                <th appTableSort="parentNotified" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Parent notified</th>
-                <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
+                <th
+                  appTableSort="incidentCode"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Incident code
+                </th>
+                <th
+                  appTableSort="incidentDate"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Date and time
+                </th>
+                <th
+                  appTableSort="type"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Type
+                </th>
+                <th
+                  appTableSort="child"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Child
+                </th>
+                <th
+                  appTableSort="description"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Description
+                </th>
+                <th
+                  appTableSort="actionTaken"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Action taken
+                </th>
+                <th
+                  appTableSort="parentNotified"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Parent notified
+                </th>
+                <th
+                  appTableSort="status"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_incident_1'"
+                  [sortDirectionKey]="'$sort_incident_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Status
+                </th>
                 <th class="text-end">Actions</th>
               </tr>
-          
             </thead>
 
             <tbody>
               <tr
-                *ngFor="let incident of (filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction')"
+                *ngFor="
+                  let incident of filteredIncidents
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          incidentCode: 'incidentCode|id',
+                          incidentDate: 'incidentDate',
+                          type: 'incidentType|type',
+                          child:
+                            'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                          description: 'description',
+                          actionTaken: 'actionTaken',
+                          parentNotified: 'parentNotified',
+                          status: 'status.name|status.statusName|status',
+                        }
+                      : '$sort_incident_1'
+                      : '$sort_incident_1_direction'
+                    | tablePaginate
+                      : incidentTablePagination1.page
+                      : incidentTablePagination1.pageSize
+                "
                 class="selectable-row"
                 (click)="GetIncidentById(incident.id)"
               >
@@ -556,7 +666,28 @@
                 </td>
               </tr>
 
-              <tr *ngIf="(filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction').length === 0 && !loadingIncidents">
+              <tr
+                *ngIf="
+                  (
+                    filteredIncidents
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          incidentCode: 'incidentCode|id',
+                          incidentDate: 'incidentDate',
+                          type: 'incidentType|type',
+                          child:
+                            'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                          description: 'description',
+                          actionTaken: 'actionTaken',
+                          parentNotified: 'parentNotified',
+                          status: 'status.name|status.statusName|status',
+                        }
+                      : '$sort_incident_1'
+                      : '$sort_incident_1_direction'
+                  ).length === 0 && !loadingIncidents
+                "
+              >
                 <td colspan="9" class="empty-state">
                   <i class="bi bi-clipboard2-pulse"></i>
 
@@ -573,12 +704,37 @@
               </tr>
             </tbody>
           </table>
+          <app-table-pagination
+            #incidentTablePagination1
+            [totalItems]="incidentTableToolbar1.filteredCount"
+            [resetKey]="tableFilters"
+          ></app-table-pagination>
         </div>
       </div>
 
       <div class="incident-table-footer">
-        Showing {{ (filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction').length }} of
-        {{ incidents.length }} incident record(s)
+        Showing
+        {{
+          (
+            filteredIncidents
+            | tableColumnFilter
+              : tableFilters
+              : {
+                  incidentCode: "incidentCode|id",
+                  incidentDate: "incidentDate",
+                  type: "incidentType|type",
+                  child:
+                    "child.firstName|child.lastName|child.fullName|child.childCode|child.id",
+                  description: "description",
+                  actionTaken: "actionTaken",
+                  parentNotified: "parentNotified",
+                  status: "status.name|status.statusName|status",
+                }
+              : "$sort_incident_1"
+              : "$sort_incident_1_direction"
+          ).length
+        }}
+        of {{ incidents.length }} incident record(s)
       </div>
     </section>
   </div>
