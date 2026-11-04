@@ -6,6 +6,7 @@ import { FeePaymentService } from '../services/api/fee-payment/fee-payment.servi
 import { FeeInvoiceRepresentation } from '../services/api/module/fee-invoice-representation';
 import { FeePaymentRepresentation } from '../services/api/module/fee-payment-representation';
 import { FeeDocumentService } from '../services/api/fee-payment/fee-document.service';
+import { normalizeLookupName, resolveRecordStatusName } from '../services/lookup-utils';
 import {
   AuthIds,
   PermissionHelperService,
@@ -20,6 +21,8 @@ type FormMode = 'add' | 'view' | 'edit';
   styleUrls: ['./fee-payment.component.scss'],
 })
 export class FeePaymentComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   activeTab: 'invoices' | 'payments' = 'invoices';
 
   canView = false;
@@ -47,7 +50,25 @@ export class FeePaymentComponent implements OnInit {
 
   private statusRows: any[] = [];
   private childOptions: any[] = [];
+  private staffOptions: any[] = [];
+  childFilterOptions: any[] = [];
+  staffFilterOptions: any[] = [];
   private enrollmentOptions: any[] = [];
+
+  private invoiceTableCache = {
+    invoices: null as FeeInvoiceRepresentation[] | null,
+    payments: null as FeePaymentRepresentation[] | null,
+    children: null as any[] | null,
+    search: '',
+    rows: [] as FeeInvoiceRepresentation[],
+  };
+  private paymentTableCache = {
+    payments: null as FeePaymentRepresentation[] | null,
+    invoices: null as FeeInvoiceRepresentation[] | null,
+    statuses: null as any[] | null,
+    search: '',
+    rows: [] as FeePaymentRepresentation[],
+  };
 
   private readonly invoiceRowsSubject = new BehaviorSubject<
     FeeInvoiceRepresentation[]
@@ -186,6 +207,12 @@ export class FeePaymentComponent implements OnInit {
 
     this.children$.subscribe((rows) => {
       this.childOptions = rows;
+      this.refreshChildFilterOptions();
+    });
+
+    this.staff$.subscribe((rows) => {
+      this.staffOptions = rows;
+      this.refreshStaffFilterOptions();
     });
 
     this.enrollments$.subscribe((rows) => {
@@ -194,6 +221,22 @@ export class FeePaymentComponent implements OnInit {
 
     this.statuses$.subscribe((rows) => {
       this.statusRows = rows;
+      this.refreshChildFilterOptions();
+      this.refreshStaffFilterOptions();
+    });
+  }
+
+  private refreshChildFilterOptions(): void {
+    this.childFilterOptions = this.childOptions.filter((child: any) => {
+      const statusName = normalizeLookupName(resolveRecordStatusName(child, this.statusRows));
+      return ['active', 'withdrawn', 'graduated'].includes(statusName);
+    });
+  }
+
+  private refreshStaffFilterOptions(): void {
+    this.staffFilterOptions = this.staffOptions.filter((staff: any) => {
+      const statusName = normalizeLookupName(resolveRecordStatusName(staff, this.statusRows));
+      return ['active', 'inactive'].includes(statusName);
     });
   }
 
@@ -789,46 +832,86 @@ export class FeePaymentComponent implements OnInit {
 
   get filteredInvoices(): FeeInvoiceRepresentation[] {
     const term = this.invoiceSearch.trim().toLowerCase();
+    const cache = this.invoiceTableCache;
 
-    if (!term) {
-      return this.invoices;
+    if (
+      cache.invoices === this.invoices &&
+      cache.payments === this.payments &&
+      cache.children === this.childOptions &&
+      cache.search === term
+    ) {
+      return cache.rows;
     }
 
-    return this.invoices.filter((invoice: any) => {
-      const text = [
-        invoice.invoiceCode,
-        invoice.billingMonth,
-        this.childLabel(invoice.child),
-        this.parentLabel(invoice.parent),
-        this.invoiceStatusLabel(invoice),
-      ]
-        .join(' ')
-        .toLowerCase();
+    const source = !term
+      ? this.invoices
+      : this.invoices.filter((invoice: any) => {
+          const text = [
+            invoice.invoiceCode,
+            invoice.billingMonth,
+            this.childLabel(invoice.child),
+            this.parentLabel(invoice.parent),
+            this.invoiceStatusLabel(invoice),
+          ]
+            .join(' ')
+            .toLowerCase();
 
-      return text.includes(term);
-    });
+          return text.includes(term);
+        });
+
+    cache.invoices = this.invoices;
+    cache.payments = this.payments;
+    cache.children = this.childOptions;
+    cache.search = term;
+    cache.rows = source.map((invoice: any) => ({
+      ...invoice,
+      _tableBalance: this.outstandingBalance(invoice.id),
+      _tableStatus: this.invoiceStatusLabel(invoice),
+    })) as FeeInvoiceRepresentation[];
+
+    return cache.rows;
   }
 
   get filteredPayments(): FeePaymentRepresentation[] {
     const term = this.paymentSearch.trim().toLowerCase();
+    const cache = this.paymentTableCache;
 
-    if (!term) {
-      return this.payments;
+    if (
+      cache.payments === this.payments &&
+      cache.invoices === this.invoices &&
+      cache.statuses === this.statusRows &&
+      cache.search === term
+    ) {
+      return cache.rows;
     }
 
-    return this.payments.filter((payment: any) => {
-      const text = [
-        this.invoiceLabelById(payment.invoice),
-        payment.paymentMethod,
-        payment.referenceNo,
-        this.staffLabel(payment.receivedBy),
-        this.paymentStatusLabel(payment),
-      ]
-        .join(' ')
-        .toLowerCase();
+    const source = !term
+      ? this.payments
+      : this.payments.filter((payment: any) => {
+          const text = [
+            this.invoiceLabelById(payment.invoice),
+            payment.paymentMethod,
+            payment.referenceNo,
+            this.staffLabel(payment.receivedBy),
+            this.paymentStatusLabel(payment),
+          ]
+            .join(' ')
+            .toLowerCase();
 
-      return text.includes(term);
-    });
+          return text.includes(term);
+        });
+
+    cache.payments = this.payments;
+    cache.invoices = this.invoices;
+    cache.statuses = this.statusRows;
+    cache.search = term;
+    cache.rows = source.map((payment: any) => ({
+      ...payment,
+      _tableInvoiceLabel: this.invoiceLabelById(payment.invoice),
+      _tableReceivedBy: this.staffLabel(payment.receivedBy),
+    })) as FeePaymentRepresentation[];
+
+    return cache.rows;
   }
 
   outstandingBalance(invoiceId: any, excludePaymentId?: any): number {
@@ -1009,6 +1092,26 @@ export class FeePaymentComponent implements OnInit {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  }
+
+  displayBillingMonth(value: any): string {
+    const text = String(value || '').trim();
+    if (!text) return '';
+
+    const isoMonth = text.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+    if (isoMonth) {
+      const year = Number(isoMonth[1]);
+      const month = Number(isoMonth[2]);
+      if (month >= 1 && month <= 12) {
+        return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+        });
+      }
+    }
+
+    const monthInput = this.monthToInput(text);
+    return monthInput ? this.monthToLabel(monthInput) : text;
   }
 
   private monthToLabel(value: string): string {

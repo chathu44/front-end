@@ -96,3 +96,50 @@ export function scrollPageToTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
+
+export function resolveRecordStatusName(
+  record: any,
+  statuses: any[] = [],
+): string {
+  const value = record?.status ?? record?.statusId ?? record?.status_id;
+  if (value && typeof value === 'object') {
+    const directName = value.name ?? value.statusName ?? value.label;
+    if (directName != null && String(directName).trim() !== '') {
+      return String(directName).trim();
+    }
+    if (value.id == null) return '';
+    const objectMatch = (statuses ?? []).find(
+      (item: any) => String(item?.id) === String(value.id),
+    );
+    return String(
+      objectMatch?.name ?? objectMatch?.statusName ?? objectMatch?.label ?? '',
+    ).trim();
+  }
+
+  if (value === null || value === undefined || value === '') return '';
+
+  const direct = String(value).trim();
+  if (!/^\d+$/.test(direct)) return direct;
+
+  const match = (statuses ?? []).find(
+    (item: any) => String(item?.id) === direct,
+  );
+  return String(match?.name ?? match?.statusName ?? match?.label ?? '').trim();
+}
+
+export function isActiveRecord(record: any, statuses: any[] = []): boolean {
+  return (
+    normalizeLookupName(resolveRecordStatusName(record, statuses)) === 'active'
+  );
+}
+
+export function isOpenOrFullRecord(record: any, statuses: any[] = []): boolean {
+  const status = normalizeLookupName(resolveRecordStatusName(record, statuses));
+  return status === 'open' || status === 'full';
+}
+
+export function isOpenRecord(record: any, statuses: any[] = []): boolean {
+  return (
+    normalizeLookupName(resolveRecordStatusName(record, statuses)) === 'open'
+  );
+}

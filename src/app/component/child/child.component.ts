@@ -9,13 +9,15 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import {
   filterStatusOptions,
   findStatusById,
   normalizeLookupName,
   unwrapApiList,
+  isActiveRecord,
+  resolveRecordStatusName,
   isValidPersonName,
   scrollPageToTop,
 } from '../services/lookup-utils';
@@ -26,18 +28,26 @@ import {
   styleUrls: ['./child.component.scss'],
 })
 export class ChildComponent {
+  tableFilters: { [key: string]: any } = {};
+
   childObj: ChildRepresentation = {};
 
   children: Array<any> = [];
 
   allParents: Array<any> = [];
+  allParentFilterOptions: Array<any> = [];
   allParents$: Observable<any[]> = of([]);
+  loadingParents = true;
+  parentDropdownValue: any = '';
+  selectedInactiveParentLabel = '';
+  private selectedParentRecord: any = null;
   childStatusOptions$: Observable<any[]> = of([]);
   readonly maxDate = this.localToday();
 
   parentValue: any = '';
 
   allStatus: Array<any> = [];
+  private statusLookup$: Observable<any[]> | null = null;
 
   statusValue: any = '';
 
@@ -325,10 +335,14 @@ export class ChildComponent {
 
       this.selectedChildId = record.id;
 
+      this.selectedParentRecord =
+        record.parent && typeof record.parent === 'object'
+          ? record.parent
+          : null;
+      this.childObj.parent = record.parent?.id ?? record.parent ?? null;
       this.parentValue =
         record.parent?.fullName || record.parent?.id || 'Select Value';
-
-      this.childObj.parent = record.parent?.id ?? record.parent ?? null;
+      this.updateParentDropdownSelection();
 
       this.statusValue =
         record.status?.name || record.status?.id || 'Select Value';
@@ -402,36 +416,103 @@ export class ChildComponent {
     });
   }
 
+  private getStatusLookup(): Observable<any[]> {
+    if (!this.statusLookup$) {
+      this.statusLookup$ = this.statusService.GetAllStatus().pipe(
+        map((response: any) => unwrapApiList(response)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.statusLookup$;
+  }
+
   GetAllParents(): void {
-    this.allParents$ = this.childService.GetAllParents().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allParents$ = forkJoin({
+      parents: this.childService
+        .GetAllParents()
+        .pipe(map((response: any) => unwrapApiList(response))),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ parents, statuses }: { parents: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        this.allParentFilterOptions = parents.filter((parent: any) => {
+          const statusName = normalizeLookupName(
+            resolveRecordStatusName(parent, statuses),
+          );
+          return statusName === 'active' || statusName === 'inactive';
+        });
+        return parents.filter((parent: any) =>
+          isActiveRecord(parent, statuses),
+        );
+      }),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
     this.allParents$.subscribe({
-      next: (parents: any[]) => (this.allParents = parents),
+      next: (parents: any[]) => {
+        this.allParents = parents;
+        this.loadingParents = false;
+        this.updateParentDropdownSelection();
+      },
       error: (error: any) => {
         console.error('Get parents error:', error);
         this.allParents = [];
-        swal('Error!', 'Unable to load parents.', 'error');
+        this.loadingParents = false;
+        swal('Error!', 'Unable to load active parents.', 'error');
       },
     });
   }
 
   onChangeParent(value: any): void {
     const parentId = value === '' || value == null ? null : value;
-    this.childObj.parent = parentId;
-    const selectedParent = this.allParents.find(
+    this.parentDropdownValue = parentId ?? '';
+    if (parentId !== null) {
+      this.childObj.parent = parentId;
+      const selectedParent = this.allParents.find(
+        (parent: any) => String(parent.id) === String(parentId),
+      );
+      this.parentValue = selectedParent?.fullName ?? '';
+      this.selectedParentRecord = selectedParent ?? null;
+      this.selectedInactiveParentLabel = '';
+    }
+  }
+
+  private updateParentDropdownSelection(): void {
+    const parentId =
+      this.childObj.parent && typeof this.childObj.parent === 'object'
+        ? this.childObj.parent.id
+        : this.childObj.parent;
+
+    if (parentId === null || parentId === undefined || parentId === '') {
+      this.parentDropdownValue = '';
+      this.selectedInactiveParentLabel = '';
+      return;
+    }
+
+    const activeParent = this.allParents.find(
       (parent: any) => String(parent.id) === String(parentId),
     );
-    this.parentValue = selectedParent?.fullName ?? '';
+    if (activeParent) {
+      this.parentDropdownValue = activeParent.id;
+      this.parentValue = activeParent.fullName || '';
+      this.selectedInactiveParentLabel = '';
+      return;
+    }
+
+    this.parentDropdownValue = '';
+    const parent = this.selectedParentRecord;
+    const parentName =
+      parent?.fullName ||
+      [parent?.firstName, parent?.lastName].filter(Boolean).join(' ') ||
+      `Parent #${parentId}`;
+    const statusName =
+      resolveRecordStatusName(parent, this.allStatus) || 'Inactive';
+    this.selectedInactiveParentLabel = `${parentName} (${statusName})`;
+    this.parentValue = parentName;
   }
 
   GetAllStatus(): void {
-    const statuses$ = this.statusService.GetAllStatus().pipe(
-      map((response: any) => unwrapApiList(response)),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
+    const statuses$ = this.getStatusLookup();
 
     this.childStatusOptions$ = statuses$.pipe(
       map((statuses: any[]) =>
@@ -578,6 +659,9 @@ export class ChildComponent {
     this.childObj = {};
 
     this.parentValue = '';
+    this.parentDropdownValue = '';
+    this.selectedParentRecord = null;
+    this.selectedInactiveParentLabel = '';
     this.statusValue = 'Active';
 
     const activeStatus = this.allStatus.find(

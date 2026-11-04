@@ -9,13 +9,16 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import {
   filterStatusOptions,
   findStatusById,
   normalizeLookupName,
   unwrapApiList,
+  isActiveRecord,
+  isOpenOrFullRecord,
+  resolveRecordStatusName,
   scrollPageToTop,
 } from '../services/lookup-utils';
 
@@ -26,17 +29,22 @@ import {
   styleUrls: ['./incident.component.scss'],
 })
 export class IncidentComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   incidentObj: IncidentRepresentation = this.newIncident();
 
   incidents: any[] = [];
 
   allChildList: any[] = [];
+  allChildFilterOptions: any[] = [];
   allChildList$: Observable<any[]> = of([]);
   allClassroomList: any[] = [];
   allClassroomList$: Observable<any[]> = of([]);
+  loadingClassrooms = true;
   allReportedByList: any[] = [];
   allReportedByList$: Observable<any[]> = of([]);
   allStatus: any[] = [];
+  private statusLookup$: Observable<any[]> | null = null;
   incidentStatusOptions$: Observable<any[]> = of([]);
 
   selectedChildId = '';
@@ -410,15 +418,32 @@ export class IncidentComponent implements OnInit {
     });
   }
 
+  private getStatusLookup(): Observable<any[]> {
+    if (!this.statusLookup$) {
+      this.statusLookup$ = this.statusService.GetAllStatus().pipe(
+        map((response: any) => unwrapApiList(response)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.statusLookup$;
+  }
+
   GetAllChildList(): void {
-    this.allChildList$ = this.incidentService.GetAllChildList().pipe(
-      map((response: any) => unwrapApiList(response)),
-      map((items: any[]) =>
-        items.map((item: any) => ({
-          ...item,
-          dropdownLabel: this.childLabel(item),
-        })),
+    this.allChildList$ = forkJoin({
+      children: this.incidentService.GetAllChildList().pipe(
+        map((response: any) => unwrapApiList(response)),
       ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ children, statuses }: { children: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        this.allChildFilterOptions = children.filter((item: any) => {
+          const statusName = normalizeLookupName(resolveRecordStatusName(item, statuses));
+          return ['active', 'withdrawn', 'graduated'].includes(statusName);
+        });
+        return children.filter((item: any) => isActiveRecord(item, statuses));
+      }),
+      map((items: any[]) => items.map((item: any) => ({ ...item, dropdownLabel: this.childLabel(item) }))),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
     this.allChildList$.subscribe({
@@ -428,8 +453,16 @@ export class IncidentComponent implements OnInit {
   }
 
   GetAllClassroomList(): void {
-    this.allClassroomList$ = this.incidentService.GetAllClassroomList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allClassroomList$ = forkJoin({
+      classrooms: this.incidentService.GetAllClassroomList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ classrooms, statuses }: { classrooms: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        return classrooms.filter((item: any) => isOpenOrFullRecord(item, statuses));
+      }),
       map((items: any[]) =>
         items.map((item: any) => ({
           ...item,
@@ -438,15 +471,30 @@ export class IncidentComponent implements OnInit {
       ),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
+    this.loadingClassrooms = true;
     this.allClassroomList$.subscribe({
-      next: (items: any[]) => (this.allClassroomList = items),
-      error: () => (this.allClassroomList = []),
+      next: (items: any[]) => {
+        this.allClassroomList = items;
+        this.loadingClassrooms = false;
+      },
+      error: () => {
+        this.allClassroomList = [];
+        this.loadingClassrooms = false;
+      },
     });
   }
 
   GetAllReportedByList(): void {
-    this.allReportedByList$ = this.incidentService.GetAllReportedByList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allReportedByList$ = forkJoin({
+      staff: this.incidentService.GetAllReportedByList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ staff, statuses }: { staff: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        return staff.filter((item: any) => isActiveRecord(item, statuses));
+      }),
       map((items: any[]) =>
         items.map((item: any) => ({
           ...item,
@@ -462,10 +510,7 @@ export class IncidentComponent implements OnInit {
   }
 
   GetAllStatus(): void {
-    const statuses$ = this.statusService.GetAllStatus().pipe(
-      map((response: any) => unwrapApiList(response)),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
+    const statuses$ = this.getStatusLookup();
 
     this.incidentStatusOptions$ = statuses$.pipe(
       map((statuses: any[]) =>

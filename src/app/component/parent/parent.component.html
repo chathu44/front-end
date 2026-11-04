@@ -130,7 +130,7 @@
                     class="error-text"
                     *ngIf="phone.invalid && phone.touched"
                   >
-                    Please enter a valid 10-digit  phone number
+                    Please enter a valid 10-digit phone number
                   </small>
                 </div>
 
@@ -156,7 +156,8 @@
                     class="error-text"
                     *ngIf="alternatePhone.invalid && alternatePhone.touched"
                   >
-                    Enter a valid 10-digit  phone number or leave this field blank.
+                    Enter a valid 10-digit phone number or leave this field
+                    blank.
                   </small>
                 </div>
 
@@ -430,7 +431,13 @@
               </div>
 
               <div>
-                <h5 class="mb-1">Registered Parents</h5>
+                <h5 class="mb-1">
+                  {{
+                    showInactiveParents
+                      ? "Inactive Parent Archive"
+                      : "Active Parents"
+                  }}
+                </h5>
 
                 <small>
                   Select a parent to load the details into the form
@@ -438,50 +445,166 @@
               </div>
             </div>
 
-            <div class="parents-count">
-              {{ filteredParents.length }} Parents
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                (click)="
+                  showInactiveParents = !showInactiveParents;
+                  searchText = '';
+                  tableFilters = {}
+                "
+              >
+                <i
+                  class="bi"
+                  [ngClass]="
+                    showInactiveParents ? 'bi-people-fill' : 'bi-archive'
+                  "
+                ></i>
+                {{
+                  showInactiveParents
+                    ? "Show Active Parents"
+                    : "Old / Inactive Parents"
+                }}
+              </button>
+              <div class="parents-count">
+                {{
+                  (
+                    filteredParents
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          parent: "fullName|parentName|parentCode|id",
+                          relationship: "relationship",
+                          phone: "phone",
+                          alternatePhone: "alternatePhone",
+                          email: "email",
+                          nic: "nic",
+                          address: "address",
+                          workplace: "workplace",
+                        }
+                      : "$sort_parent_1"
+                      : "$sort_parent_1_direction"
+                  ).length
+                }}
+                Parents
+              </div>
             </div>
           </div>
 
-          <div class="search-area">
-            <div class="search-box">
-              <i class="bi bi-search"></i>
-
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="searchText"
-                name="parentTableSearch"
-                placeholder="Search by parent name, code, phone or NIC"
-              />
-            </div>
-
-            <div class="search-help">
-              <i class="bi bi-info-circle me-1"></i>
-
-              Search using parent name, parent code, phone number or NIC.
-            </div>
-          </div>
-
+          <app-table-filter-toolbar
+            [items]="filteredParents"
+            [fields]="{
+              parent: 'fullName|parentName|parentCode|id',
+              relationship: 'relationship',
+              phone: 'phone',
+              alternatePhone: 'alternatePhone',
+              email: 'email',
+              nic: 'nic',
+              address: 'address',
+              workplace: 'workplace',
+              status: 'status.name|status.statusName|status',
+            }"
+            [labels]="{
+              parent: 'Parent',
+              relationship: 'Relationship',
+              phone: 'Phone',
+              alternatePhone: 'Alternate Phone',
+              email: 'Email',
+              nic: 'NIC',
+              address: 'Address',
+              workplace: 'Workplace',
+              status: 'Status',
+            }"
+            [(filters)]="tableFilters"
+            [hiddenFields]="['status']"
+            [sortKey]="'$sort_parent_1'"
+            [directionKey]="'$sort_parent_1_direction'"
+            heading="Filter and sort"
+          ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table parent-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Parent</th>
+                  <th
+                    appTableSort="parent"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Parent
+                  </th>
 
-                  <th>Relationship</th>
+                  <th
+                    appTableSort="relationship"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Relationship
+                  </th>
 
-                  <th>Phone</th>
+                  <th
+                    appTableSort="phone"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Phone
+                  </th>
 
-                  <th>Alternate Phone</th>
+                  <th
+                    appTableSort="alternatePhone"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Alternate Phone
+                  </th>
 
-                  <th>Email</th>
+                  <th
+                    appTableSort="email"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Email
+                  </th>
 
-                  <th>NIC</th>
+                  <th
+                    appTableSort="nic"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    NIC
+                  </th>
 
-                  <th>Address</th>
+                  <th
+                    appTableSort="address"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Address
+                  </th>
 
-                  <th>Workplace</th>
+                  <th
+                    appTableSort="workplace"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_parent_1'"
+                    [sortDirectionKey]="'$sort_parent_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Workplace
+                  </th>
 
                   <th>Status</th>
 
@@ -491,7 +614,24 @@
 
               <tbody>
                 <tr
-                  *ngFor="let parent of filteredParents"
+                  *ngFor="
+                    let parent of filteredParents
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            parent: 'fullName|parentName|parentCode|id',
+                            relationship: 'relationship',
+                            phone: 'phone',
+                            alternatePhone: 'alternatePhone',
+                            email: 'email',
+                            nic: 'nic',
+                            address: 'address',
+                            workplace: 'workplace',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_parent_1'
+                        : '$sort_parent_1_direction'
+                  "
                   class="parent-row"
                   [class.selected-row]="selectedParentId == parent.id"
                   (click)="SelectParentRow(parent)"
@@ -634,14 +774,34 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredParents.length === 0">
+                <tr
+                  *ngIf="
+                    (
+                      filteredParents
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            parent: 'fullName|parentName|parentCode|id',
+                            relationship: 'relationship',
+                            phone: 'phone',
+                            alternatePhone: 'alternatePhone',
+                            email: 'email',
+                            nic: 'nic',
+                            address: 'address',
+                            workplace: 'workplace',
+                          }
+                        : '$sort_parent_1'
+                        : '$sort_parent_1_direction'
+                    ).length === 0
+                  "
+                >
                   <td colspan="10" class="empty-table">
                     <div class="empty-state">
                       <i class="bi bi-people"></i>
 
                       <h6>No Parents Found</h6>
 
-                      <p>No registered parent matches your search.</p>
+                      <p>No parents match the selected filters.</p>
                     </div>
                   </td>
                 </tr>

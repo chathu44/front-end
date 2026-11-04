@@ -42,10 +42,28 @@
     ></button>
   </div>
 
-  <div *ngIf="!staffLoading && !currentStaffProfile" class="staff-warning mb-4">
+  <div *ngIf="staffLoading || staffStatusLoading" class="staff-context mb-4">
+    <i class="bi bi-arrow-repeat"></i>
+    <span>{{ currentStaffMessage }}</span>
+  </div>
+
+  <div
+    *ngIf="
+      !staffLoading &&
+      !staffStatusLoading &&
+      (!currentStaffProfile || !currentStaffIsActive)
+    "
+    class="staff-warning mb-4"
+  >
     <i class="bi bi-person-exclamation"></i>
     <div>
-      <strong>Staff profile could not be matched</strong>
+      <strong>
+        {{
+          currentStaffProfile
+            ? "Staff profile requires attention"
+            : "Staff profile could not be matched"
+        }}
+      </strong>
       <p class="mb-0">
         {{ currentStaffMessage }} Check that the logged-in app user is linked to
         the correct Staff record. Check-in and check-out are disabled until the
@@ -54,7 +72,15 @@
     </div>
   </div>
 
-  <div *ngIf="currentStaffProfile" class="staff-context mb-4">
+  <div
+    *ngIf="
+      !staffLoading &&
+      !staffStatusLoading &&
+      currentStaffProfile &&
+      currentStaffIsActive
+    "
+    class="staff-context mb-4"
+  >
     <i class="bi bi-shield-check"></i>
     <span>{{ currentStaffMessage }}</span>
   </div>
@@ -196,7 +222,30 @@
       <span
         class="roster-count"
         *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''"
-        >{{ filteredRoster.length }} children</span
+        >{{
+          (
+            filteredRoster
+            | tableColumnFilter
+              : tableFilters
+              : {
+                  child:
+                    "child.firstName|child.lastName|child.fullName|child.childCode|child.id",
+                  parent: "@parentName",
+                  arrival:
+                    "attendance.checkInTime|attendance.check_in_time|attendance.checkinTime",
+                  checkedInBy: "@checkedInBy",
+                  departure:
+                    "attendance.checkOutTime|attendance.check_out_time|attendance.checkoutTime",
+                  checkedOutBy: "@checkedOutBy",
+                  notes: "attendance.notes",
+                  todayStatus:
+                    "@attendanceState|attendance.status.name|attendance.status.statusName|attendance.status",
+                }
+              : "$sort_attendance_1"
+              : "$sort_attendance_1_direction"
+          ).length
+        }}
+        children</span
       >
     </div>
 
@@ -204,16 +253,6 @@
       class="roster-toolbar"
       *ngIf="selectedClassroomId !== null && selectedClassroomId !== ''"
     >
-      <div class="search-field">
-        <i class="bi bi-search"></i>
-        <input
-          type="search"
-          class="form-control"
-          name="rosterSearch"
-          [(ngModel)]="searchTerm"
-          placeholder="Search this classroom by child name or code"
-        />
-      </div>
       <div class="legend">
         <span><i class="legend-dot dot-care"></i>In daycare</span>
         <span><i class="legend-dot dot-picked"></i>Picked up</span>
@@ -273,23 +312,153 @@
         filteredRoster.length > 0
       "
     >
+      <app-table-filter-toolbar
+        [items]="filteredRoster"
+        [fields]="{
+          child:
+            'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+          parent: '@parentName',
+          arrival:
+            'attendance.checkInTime|attendance.check_in_time|attendance.checkinTime',
+          checkedInBy: '@checkedInBy',
+          departure:
+            'attendance.checkOutTime|attendance.check_out_time|attendance.checkoutTime',
+          checkedOutBy: '@checkedOutBy',
+          notes: 'attendance.notes',
+          todayStatus:
+            '@attendanceState|attendance.status.name|attendance.status.statusName|attendance.status',
+        }"
+        [labels]="{
+          child: 'Child',
+          parent: 'Parent / Guardian',
+          arrival: 'Arrival',
+          checkedInBy: 'Checked in by',
+          departure: 'Departure',
+          checkedOutBy: 'Checked out by',
+          notes: 'Notes',
+          todayStatus: 'Today\'s status',
+        }"
+        [textFields]="['child']"
+        [optionItems]="{
+          parent: allParentFilterOptions,
+          checkedInBy: allStaffFilterOptions,
+          checkedOutBy: allStaffFilterOptions,
+        }"
+        [optionPaths]="{
+          parent: '@parentLabel',
+          checkedInBy: '@staffLabel',
+          checkedOutBy: '@staffLabel',
+        }"
+        [optionValues]="{
+          todayStatus: ['Not arrived', 'In daycare', 'Picked up', 'Absent'],
+        }"
+        [(filters)]="tableFilters"
+        [sortKey]="'$sort_attendance_1'"
+        [directionKey]="'$sort_attendance_1_direction'"
+        heading="Filter and sort"
+      ></app-table-filter-toolbar>
       <table class="table roster-table align-middle">
         <thead>
           <tr>
-            <th>Child</th>
-            <th>Parent / Guardian</th>
-            <th>Arrival</th>
-            <th>Checked in by</th>
-            <th>Departure</th>
-            <th>Checked out by</th>
-            <th>Notes</th>
-            <th>Today's status</th>
+            <th
+              appTableSort="child"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Child
+            </th>
+            <th
+              appTableSort="parent"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Parent / Guardian
+            </th>
+            <th
+              appTableSort="arrival"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Arrival
+            </th>
+            <th
+              appTableSort="checkedInBy"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Checked in by
+            </th>
+            <th
+              appTableSort="departure"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Departure
+            </th>
+            <th
+              appTableSort="checkedOutBy"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Checked out by
+            </th>
+            <th
+              appTableSort="notes"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Notes
+            </th>
+            <th
+              appTableSort="todayStatus"
+              [sortFilters]="tableFilters"
+              [sortFieldKey]="'$sort_attendance_1'"
+              [sortDirectionKey]="'$sort_attendance_1_direction'"
+              (sortFiltersChange)="tableFilters = $event"
+            >
+              Today's status
+            </th>
             <th class="text-end">Action</th>
           </tr>
         </thead>
         <tbody>
           <ng-container
-            *ngFor="let row of filteredRoster; trackBy: trackByChildId"
+            *ngFor="
+              let row of filteredRoster
+                | tableColumnFilter
+                  : tableFilters
+                  : {
+                      child:
+                        'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                      parent: '@parentName',
+                      arrival:
+                        'attendance.checkInTime|attendance.check_in_time|attendance.checkinTime',
+                      checkedInBy: '@checkedInBy',
+                      departure:
+                        'attendance.checkOutTime|attendance.check_out_time|attendance.checkoutTime',
+                      checkedOutBy: '@checkedOutBy',
+                      notes: 'attendance.notes',
+                      todayStatus:
+                        '@attendanceState|attendance.status.name|attendance.status.statusName|attendance.status',
+                    }
+                  : '$sort_attendance_1'
+                  : '$sort_attendance_1_direction';
+              trackBy: trackByChildId
+            "
           >
             <tr>
               <td>
@@ -366,7 +535,11 @@
                     *ngIf="canCreate && !hasCheckIn(row) && !hasCheckedOut(row)"
                     type="button"
                     class="btn btn-checkin"
-                    [disabled]="staffLoading || !currentStaffProfile"
+                    [disabled]="
+                      staffLoading ||
+                      staffStatusLoading ||
+                      !currentStaffIsActive
+                    "
                     (click)="CheckIn(row)"
                   >
                     <i class="bi bi-box-arrow-in-right me-1"></i>
@@ -376,7 +549,11 @@
                     *ngIf="canUpdate && hasCheckIn(row) && !hasCheckedOut(row)"
                     type="button"
                     class="btn btn-checkout"
-                    [disabled]="staffLoading || !currentStaffProfile"
+                    [disabled]="
+                      staffLoading ||
+                      staffStatusLoading ||
+                      !currentStaffIsActive
+                    "
                     (click)="OpenCheckOut(row)"
                   >
                     <i class="bi bi-box-arrow-right me-1"></i>
@@ -394,6 +571,11 @@
                     "
                     type="button"
                     class="absent-link"
+                    [disabled]="
+                      staffLoading ||
+                      staffStatusLoading ||
+                      !currentStaffIsActive
+                    "
                     (click)="MarkAbsent(row)"
                   >
                     Mark absent
@@ -686,7 +868,27 @@
         selectedClassroomId !== '' &&
         !loading &&
         classroomChildren.length > 0 &&
-        filteredRoster.length === 0
+        (
+          filteredRoster
+          | tableColumnFilter
+            : tableFilters
+            : {
+                child:
+                  'child.firstName|child.lastName|child.fullName|child.childCode|child.id',
+                parent: '@parentName',
+                arrival:
+                  'attendance.checkInTime|attendance.check_in_time|attendance.checkinTime',
+                checkedInBy: '@checkedInBy',
+                departure:
+                  'attendance.checkOutTime|attendance.check_out_time|attendance.checkoutTime',
+                checkedOutBy: '@checkedOutBy',
+                notes: 'attendance.notes',
+                todayStatus:
+                  '@attendanceState|attendance.status.name|attendance.status.statusName|attendance.status',
+              }
+            : '$sort_attendance_1'
+            : '$sort_attendance_1_direction'
+        ).length === 0
       "
       class="empty-search"
     >

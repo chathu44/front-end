@@ -8,13 +8,16 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import {
   filterStatusOptions,
   findStatusById,
   normalizeLookupName,
   unwrapApiList,
+  isActiveRecord,
+  isOpenRecord,
+  resolveRecordStatusName,
   scrollPageToTop,
 } from '../services/lookup-utils';
 
@@ -25,16 +28,28 @@ import {
   styleUrls: ['./enrollment.component.scss'],
 })
 export class EnrollmentComponent {
+  tableFilters: { [key: string]: any } = {};
+
   enrollmentObj: EnrollmentRepresentation = {};
 
   enrollments: Array<any> = [];
 
   allChildList: Array<any> = [];
+  private activeChildList: any[] = [];
+  private allChildRecords: any[] = [];
+  loadingPrograms = true;
+  private selectedEnrollmentChild: any = null;
+  private selectedEnrollmentChildId: any = null;
   allParentList: Array<any> = [];
   allProgramList: Array<any> = [];
   allClassroomList: Array<any> = [];
+  childFilterOptions: any[] = [];
+  parentFilterOptions: any[] = [];
+  programFilterOptions: any[] = [];
+  classroomFilterOptions: any[] = [];
   allStatus: Array<any> = [];
-  allChildList$: Observable<any[]> = of([]);
+  private statusLookup$: Observable<any[]> | null = null;
+  allChildList$ = new BehaviorSubject<any[]>([]);
   allProgramList$: Observable<any[]> = of([]);
   allClassroomList$: Observable<any[]> = of([]);
   enrollmentStatusOptions$: Observable<any[]> = of([]);
@@ -234,50 +249,86 @@ export class EnrollmentComponent {
   }
 
   GetEnrollmentById(ID: any): void {
-    this.enrollmentService.GetEnrollmentById(ID).subscribe((allData: any) => {
-      const record = allData?.data?.dataList?.[0];
+    // The table already contains the complete enrollment DTO. Prefer that
+    // record so Active rows do not depend on a second detail request.
+    const tableRecord = this.enrollments.find(
+      (item: any) => String(item?.id) === String(ID),
+    );
 
-      if (!record) {
+    if (tableRecord) {
+      this.loadEnrollmentRecord(tableRecord);
+      return;
+    }
+
+    this.enrollmentService.GetEnrollmentById(ID).subscribe({
+      next: (allData: any) => {
+        const record =
+          unwrapApiList(allData)[0] ??
+          allData?.data?.dataList?.[0] ??
+          allData?.data?.data ??
+          allData?.data ??
+          allData;
+
+        if (!record || record.id == null) {
+          swal(
+            'Not Found',
+            'The selected enrollment could not be found.',
+            'warning',
+          );
+          return;
+        }
+
+        this.loadEnrollmentRecord(record);
+      },
+      error: (error: any) => {
+        console.error('Unable to load enrollment details:', error);
         swal(
-          'Not Found',
-          'The selected enrollment could not be found.',
-          'warning',
+          'Error',
+          'Unable to load this enrollment. Refresh the table and try again.',
+          'error',
         );
-
-        return;
-      }
-
-      this.enrollmentObj = {
-        ...record,
-
-        child: record.child?.id ?? record.child ?? null,
-
-        parent: record.parent?.id ?? record.parent ?? null,
-
-        program: record.program?.id ?? record.program ?? null,
-
-        classroom: record.classroom?.id ?? record.classroom ?? null,
-
-        status: record.status?.id ?? record.status ?? null,
-      };
-
-      this.isEditEnrollment = true;
-
-      this.selectedEnrollmentId = record.id;
-      scrollPageToTop();
+      },
     });
   }
 
-  SelectEnrollmentRow(enrollment: any): void {
-    this.selectedEnrollmentId = enrollment.id;
+  private loadEnrollmentRecord(record: any): void {
+    this.enrollmentObj = {
+      ...record,
+      child: record.child?.id ?? record.child ?? null,
+      parent: record.parent?.id ?? record.parent ?? null,
+      program: record.program?.id ?? record.program ?? null,
+      classroom: record.classroom?.id ?? record.classroom ?? null,
+      status: record.status?.id ?? record.status ?? null,
+    };
 
-    this.GetEnrollmentById(enrollment.id);
+    const selectedChildId = record.child?.id ?? record.child ?? null;
+    this.selectedEnrollmentChildId = selectedChildId;
+    this.selectedEnrollmentChild =
+      this.allChildRecords.find(
+        (child: any) => String(child.id) === String(selectedChildId),
+      ) ||
+      (record.child && typeof record.child === 'object'
+        ? record.child
+        : null);
+
+    this.isEditEnrollment = true;
+    this.allChildList = this.mergeSelectedEnrollmentChild(this.activeChildList);
+    this.allChildList$.next(this.allChildList);
+    this.selectedEnrollmentId = record.id;
+    scrollPageToTop();
+  }
+
+  SelectEnrollmentRow(enrollment: any): void {
+    if (!enrollment || enrollment.id == null) {
+      return;
+    }
+    this.loadEnrollmentRecord(enrollment);
   }
 
   GetAllEnrollments(): void {
     this.enrollmentService.GetAllEnrollments().subscribe({
       next: (allData: any): void => {
-        this.enrollments = allData?.data?.dataList || [];
+        this.enrollments = unwrapApiList(allData);
       },
 
       error: (error: any): void => {
@@ -331,31 +382,101 @@ export class EnrollmentComponent {
     });
   }
 
+  private getStatusLookup(): Observable<any[]> {
+    if (!this.statusLookup$) {
+      this.statusLookup$ = this.statusService.GetAllStatus().pipe(
+        map((response: any) => unwrapApiList(response)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.statusLookup$;
+  }
+
   GetAllChildList(): void {
-    this.allChildList$ = this.enrollmentService.GetAllChildList().pipe(
-      map((response: any) => unwrapApiList(response)),
-      map((items: any[]) =>
-        items.map((child: any) => ({
-          ...child,
-          dropdownLabel: [
-            [child.firstName, child.lastName].filter(Boolean).join(' ').trim(),
-            child.childCode || child.id,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        })),
+    forkJoin({
+      children: this.enrollmentService.GetAllChildList().pipe(
+        map((response: any) => unwrapApiList(response)),
       ),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
-    this.allChildList$.subscribe({
-      next: (items: any[]) => (this.allChildList = items),
-      error: (error: any) => console.error('Unable to load children', error),
+      statuses: this.getStatusLookup(),
+    }).subscribe({
+      next: ({ children, statuses }: { children: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        this.allChildRecords = children;
+        this.childFilterOptions = children.filter((child: any) => {
+          const statusName = normalizeLookupName(resolveRecordStatusName(child, statuses));
+          return ['active', 'withdrawn', 'graduated'].includes(statusName);
+        });
+        this.activeChildList = children
+          .filter((child: any) => isActiveRecord(child, statuses))
+          .map((child: any) => ({
+            ...child,
+            dropdownLabel: this.childDropdownLabel(child),
+          }));
+        this.allChildList = this.mergeSelectedEnrollmentChild(
+          this.activeChildList,
+        );
+        this.allChildList$.next(this.allChildList);
+      },
+      error: (error: any) => {
+        console.error('Unable to load children for enrollment:', error);
+        this.allChildRecords = [];
+        this.activeChildList = [];
+        this.allChildList = [];
+        this.allChildList$.next([]);
+      },
     });
+  }
+
+  private childDropdownLabel(child: any): string {
+    const name =
+      [child?.firstName, child?.lastName].filter(Boolean).join(' ').trim() ||
+      child?.fullName ||
+      child?.name ||
+      `Child #${child?.id ?? ''}`;
+    const code = child?.childCode || `CH-${child?.id ?? ''}`;
+    const status = resolveRecordStatusName(child, this.allStatus);
+    const historicStatus =
+      status && status.toLowerCase() !== 'active' ? ` · ${status}` : '';
+    return `${name} · ${code}${historicStatus}`;
+  }
+
+  private mergeSelectedEnrollmentChild(activeItems: any[]): any[] {
+    // Every option must have the label used by ng-select's bindLabel.
+    const items = (activeItems || []).map((child: any) => ({
+      ...child,
+      dropdownLabel: child.dropdownLabel || this.childDropdownLabel(child),
+    }));
+    const historicChild =
+      this.allChildRecords.find(
+        (child: any) =>
+          String(child.id) === String(this.selectedEnrollmentChildId),
+      ) || this.selectedEnrollmentChild;
+    if (!historicChild || historicChild.id == null) return items;
+    const exists = items.some(
+      (item: any) => String(item.id) === String(historicChild.id),
+    );
+    if (!exists) {
+      items.push({
+        ...historicChild,
+        dropdownLabel: this.childDropdownLabel(historicChild),
+      });
+    }
+    return items;
   }
 
   onChildSelection(childId: any): void {
     this.enrollmentObj.child =
       childId === '' || childId === null ? null : childId;
+
+    if (
+      this.selectedEnrollmentChildId != null &&
+      String(childId) !== String(this.selectedEnrollmentChildId)
+    ) {
+      this.selectedEnrollmentChild = null;
+      this.selectedEnrollmentChildId = null;
+      this.allChildList = [...this.activeChildList];
+      this.allChildList$.next(this.allChildList);
+    }
 
     const selectedChild = this.allChildList.find(
       (child: any) => String(child.id) === String(childId),
@@ -373,20 +494,39 @@ export class EnrollmentComponent {
   }
 
   GetAllParentList(): void {
-    this.enrollmentService.GetAllParentList().subscribe({
-      next: (allData: any): void => {
-        this.allParentList = allData?.data?.dataList || [];
+    forkJoin({
+      parents: this.enrollmentService.GetAllParentList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).subscribe({
+      next: ({ parents, statuses }: { parents: any[]; statuses: any[] }): void => {
+        this.allStatus = statuses;
+        this.parentFilterOptions = parents.filter((item: any) => {
+          const statusName = normalizeLookupName(resolveRecordStatusName(item, statuses));
+          return statusName === 'active' || statusName === 'inactive';
+        });
+        this.allParentList = parents.filter((item: any) => isActiveRecord(item, statuses));
       },
-
-      error: (error: any): void => {
-        console.error(error);
-      },
+      error: (error: any): void => console.error('Unable to load active parents', error),
     });
   }
 
   GetAllProgramList(): void {
-    this.allProgramList$ = this.enrollmentService.GetAllProgramList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allProgramList$ = forkJoin({
+      programs: this.enrollmentService.GetAllProgramList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ programs, statuses }: { programs: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        this.programFilterOptions = programs.filter((program: any) => {
+          const statusName = normalizeLookupName(resolveRecordStatusName(program, statuses));
+          return statusName === 'active' || statusName === 'inactive';
+        });
+        return programs.filter((program: any) => isActiveRecord(program, statuses));
+      }),
       map((items: any[]) =>
         items.map((program: any) => ({
           ...program,
@@ -396,15 +536,35 @@ export class EnrollmentComponent {
       ),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
+    this.loadingPrograms = true;
     this.allProgramList$.subscribe({
-      next: (items: any[]) => (this.allProgramList = items),
-      error: (error: any) => console.error('Unable to load programs', error),
+      next: (items: any[]) => {
+        this.allProgramList = items;
+        this.loadingPrograms = false;
+      },
+      error: (error: any) => {
+        console.error('Unable to load programs', error);
+        this.allProgramList = [];
+        this.loadingPrograms = false;
+      },
     });
   }
 
   GetAllClassroomList(): void {
-    this.allClassroomList$ = this.enrollmentService.GetAllClassroomList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allClassroomList$ = forkJoin({
+      classrooms: this.enrollmentService.GetAllClassroomList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ classrooms, statuses }: { classrooms: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        // The table filter must search every classroom, including Closed ones.
+        // Keep this separate from the enrollment form list, which intentionally
+        // continues to offer only Open classrooms for new enrollments.
+        this.classroomFilterOptions = classrooms.map((room: any) => ({ ...room }));
+        return classrooms.filter((room: any) => isOpenRecord(room, statuses));
+      }),
       map((items: any[]) =>
         items.map((room: any) => ({
           ...room,
@@ -425,10 +585,7 @@ export class EnrollmentComponent {
   }
 
   GetAllStatus(): void {
-    const statuses$ = this.statusService.GetAllStatus().pipe(
-      map((response: any) => unwrapApiList(response)),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
+    const statuses$ = this.getStatusLookup();
 
     this.enrollmentStatusOptions$ = statuses$.pipe(
       map((statuses: any[]) =>
@@ -672,6 +829,10 @@ export class EnrollmentComponent {
     if (pendingStatus) this.enrollmentObj.status = pendingStatus.id;
 
     this.isEditEnrollment = false;
+    this.selectedEnrollmentChild = null;
+    this.selectedEnrollmentChildId = null;
+    this.allChildList = [...this.activeChildList];
+    this.allChildList$.next(this.allChildList);
 
     this.type = '';
 

@@ -1039,3 +1039,48 @@ a:hover {
     border-radius: 12px;
   }
 }
+
+/* Reusable click-to-sort table headings */
+.table thead th.table-sortable-header {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.table thead th.table-sortable-header::after {
+  content: "↕";
+  display: inline-block;
+  margin-left: 0.42rem;
+  color: #98a2b3;
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.8;
+  vertical-align: 0.04rem;
+}
+
+.table thead th.table-sortable-header:hover {
+  color: #0f766e;
+}
+
+.table thead th.table-sortable-header:focus-visible {
+  outline: 2px solid rgba(15, 118, 110, 0.35);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.table thead th.table-sortable-header.sort-ascending::after {
+  content: "↑";
+  color: #0f766e;
+  opacity: 1;
+  font-weight: 800;
+}
+
+.table thead th.table-sortable-header.sort-descending::after {
+  content: "↓";
+  color: #0f766e;
+  opacity: 1;
+  font-weight: 800;
+}

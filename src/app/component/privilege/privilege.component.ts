@@ -25,6 +25,8 @@ import {
   styleUrls: ['./privilege.component.scss'],
 })
 export class PrivilegeComponent implements OnInit {
+  tableFilters: { [key: string]: string } = {};
+
   @ViewChild('groupModal') groupModal!: TemplateRef<any>;
   @ViewChild('confirmModal') confirmModal!: TemplateRef<any>;
 

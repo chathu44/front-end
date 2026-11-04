@@ -9,16 +9,20 @@ import {
   PermissionHelperService,
 } from '../services/permission-helper.service';
 import { UserAuthService } from '../services/api/user/user-auth.service';
+import { StatusService } from '../services/api/status/status.service';
 
 type MealTab = 'plans' | 'records';
 
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import {
   filterStatusOptions,
   findStatusById,
   normalizeLookupName,
   unwrapApiList,
+  isActiveRecord,
+  isOpenOrFullRecord,
+  resolveRecordStatusName,
   scrollPageToTop,
 } from '../services/lookup-utils';
 
@@ -29,12 +33,15 @@ import {
   styleUrls: ['./meal-plan.component.scss'],
 })
 export class MealPlanComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   activeTab: MealTab = 'plans';
   searchText = '';
 
   mealPlanObj: MealPlanRepresentation = this.newMealPlan();
   mealPlans: any[] = [];
   allClassroomList: any[] = [];
+  allClassroomFilterOptions: any[] = [];
   allClassroomList$: Observable<any[]> = of([]);
   selectedClassroomId = '';
   isEditMealPlan = false;
@@ -45,6 +52,7 @@ export class MealPlanComponent implements OnInit {
   mealRecordObj: MealRecordRepresentation = this.newMealRecord();
   mealRecords: any[] = [];
   allChildList: any[] = [];
+  allChildFilterOptions: any[] = [];
   allChildList$: Observable<any[]> = of([]);
   allMealPlanList: any[] = [];
   allMealPlanList$: Observable<any[]> = of([]);
@@ -55,6 +63,7 @@ export class MealPlanComponent implements OnInit {
   isReadOnlyMealRecord = false;
   loadingRecords = false;
   savingRecord = false;
+  private statusLookup$: Observable<any[]> | null = null;
 
   readonly mealTypeOptions = [
     'Breakfast',
@@ -80,6 +89,7 @@ export class MealPlanComponent implements OnInit {
     private mealRecordService: MealRecordService,
     private permissionHelper: PermissionHelperService,
     private userAuthService: UserAuthService,
+    private statusService: StatusService,
   ) {}
 
   ngOnInit(): void {
@@ -481,21 +491,34 @@ export class MealPlanComponent implements OnInit {
     return `${date} · ${type}${menu}`;
   }
 
+  private getStatusLookup(): Observable<any[]> {
+    if (!this.statusLookup$) {
+      this.statusLookup$ = this.statusService.GetAllStatus().pipe(
+        map((response: any) => unwrapApiList(response)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.statusLookup$;
+  }
+
   private loadClassrooms(): void {
-    this.allClassroomList$ = this.mealPlanService.GetAllClassroomList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allClassroomList$ = forkJoin({
+      classrooms: this.mealPlanService.GetAllClassroomList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ classrooms, statuses }: { classrooms: any[]; statuses: any[] }) => {
+        // Include every classroom in the table filter, including Closed ones.
+        // The form dropdown below still excludes Closed classrooms.
+        this.allClassroomFilterOptions = classrooms.map((room: any) => ({ ...room }));
+        return classrooms.filter((room: any) => isOpenOrFullRecord(room, statuses));
+      }),
       map((items: any[]) =>
         items.map((room: any) => ({
           ...room,
-          dropdownLabel: [
-            room.roomName ||
-              room.classroomName ||
-              room.classroomCode ||
-              `Classroom #${room.id}`,
-            room.roomCode,
-          ]
-            .filter(Boolean)
-            .join(' · '),
+          dropdownLabel: [room.roomName || room.classroomName || room.classroomCode || `Classroom #${room.id}`, room.roomCode]
+            .filter(Boolean).join(' · '),
         })),
       ),
       shareReplay({ bufferSize: 1, refCount: false }),
@@ -510,8 +533,19 @@ export class MealPlanComponent implements OnInit {
   }
 
   private loadChildren(): void {
-    this.allChildList$ = this.mealRecordService.GetAllChildList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.allChildList$ = forkJoin({
+      children: this.mealRecordService.GetAllChildList().pipe(
+        map((response: any) => unwrapApiList(response)),
+      ),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ children, statuses }: { children: any[]; statuses: any[] }) => {
+        this.allChildFilterOptions = children.filter((child: any) => {
+          const statusName = normalizeLookupName(resolveRecordStatusName(child, statuses));
+          return ['active', 'withdrawn', 'graduated'].includes(statusName);
+        });
+        return children.filter((child: any) => isActiveRecord(child, statuses));
+      }),
       map((items: any[]) =>
         items.map((child: any) => ({
           ...child,

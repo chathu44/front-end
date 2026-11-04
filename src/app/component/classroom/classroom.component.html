@@ -316,43 +316,103 @@
             </div>
 
             <div class="classrooms-count">
-              {{ filteredClassrooms.length }} Classrooms
+              {{
+                (
+                  filteredClassrooms
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        classroom:
+                          "roomName|classroomName|roomCode|classroomCode|id",
+                        ageGroup: "ageGroup",
+                        capacity: "capacity",
+                        floor: "floor",
+                        status: "status.name|status.statusName|status",
+                      }
+                    : "$sort_classroom_1"
+                    : "$sort_classroom_1_direction"
+                ).length
+              }}
+              Classrooms
             </div>
           </div>
 
-          <div class="search-area">
-            <div class="search-box">
-              <i class="bi bi-search"></i>
-
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="searchText"
-                name="classroomTableSearch"
-                placeholder="Search by room name, room code, age group or floor"
-              />
-            </div>
-
-            <div class="search-help">
-              <i class="bi bi-info-circle me-1"></i>
-
-              Search using classroom name, room code, age group or floor.
-            </div>
-          </div>
-
+          <app-table-filter-toolbar
+            [items]="filteredClassrooms"
+            [fields]="{
+              classroom: 'roomName|classroomName|roomCode|classroomCode|id',
+              ageGroup: 'ageGroup',
+              capacity: 'capacity',
+              floor: 'floor',
+              status: 'status.name|status.statusName|status',
+            }"
+            [labels]="{
+              classroom: 'Classroom',
+              ageGroup: 'Age Group',
+              capacity: 'Capacity',
+              floor: 'Floor',
+              status: 'Status',
+            }"
+            [textFields]="['classroom']"
+            [optionValues]="{ status: ['Open', 'Full', 'Closed'] }"
+            [(filters)]="tableFilters"
+            [sortKey]="'$sort_classroom_1'"
+            [directionKey]="'$sort_classroom_1_direction'"
+            heading="Filter and sort"
+          ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table classroom-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Classroom</th>
+                  <th
+                    appTableSort="classroom"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_classroom_1'"
+                    [sortDirectionKey]="'$sort_classroom_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Classroom
+                  </th>
 
-                  <th>Age Group</th>
+                  <th
+                    appTableSort="ageGroup"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_classroom_1'"
+                    [sortDirectionKey]="'$sort_classroom_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Age Group
+                  </th>
 
-                  <th>Capacity</th>
+                  <th
+                    appTableSort="capacity"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_classroom_1'"
+                    [sortDirectionKey]="'$sort_classroom_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Capacity
+                  </th>
 
-                  <th>Floor</th>
+                  <th
+                    appTableSort="floor"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_classroom_1'"
+                    [sortDirectionKey]="'$sort_classroom_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Floor
+                  </th>
 
-                  <th>Status</th>
+                  <th
+                    appTableSort="status"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_classroom_1'"
+                    [sortDirectionKey]="'$sort_classroom_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Status
+                  </th>
 
                   <th class="text-center">Modify</th>
                 </tr>
@@ -360,7 +420,21 @@
 
               <tbody>
                 <tr
-                  *ngFor="let classroom of filteredClassrooms"
+                  *ngFor="
+                    let classroom of filteredClassrooms
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            classroom:
+                              'roomName|classroomName|roomCode|classroomCode|id',
+                            ageGroup: 'ageGroup',
+                            capacity: 'capacity',
+                            floor: 'floor',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_classroom_1'
+                        : '$sort_classroom_1_direction'
+                  "
                   class="classroom-row"
                   [class.selected-row]="selectedClassroomId == classroom.id"
                   (click)="SelectClassroomRow(classroom)"
@@ -472,14 +546,32 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredClassrooms.length === 0">
+                <tr
+                  *ngIf="
+                    (
+                      filteredClassrooms
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            classroom:
+                              'roomName|classroomName|roomCode|classroomCode|id',
+                            ageGroup: 'ageGroup',
+                            capacity: 'capacity',
+                            floor: 'floor',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_classroom_1'
+                        : '$sort_classroom_1_direction'
+                    ).length === 0
+                  "
+                >
                   <td colspan="6" class="empty-table">
                     <div class="empty-state">
                       <i class="bi bi-building"></i>
 
                       <h6>No Classrooms Found</h6>
 
-                      <p>No registered classroom matches your search.</p>
+                      <p>No classrooms match the selected filters.</p>
                     </div>
                   </td>
                 </tr>

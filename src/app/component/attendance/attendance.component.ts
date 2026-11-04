@@ -3,7 +3,9 @@ import swal from 'sweetalert';
 
 import { AttendanceRepresentation } from '../services/api/module/attendance-representation';
 import { AttendanceService } from '../services/api/attendance/attendance.service';
+import { ChildService } from '../services/api/child/child.service';
 import { StatusService } from '../services/api/status/status.service';
+import { UserAuthService } from '../services/api/user/user-auth.service';
 import {
   AuthIds,
   PermissionHelperService,
@@ -15,13 +17,15 @@ interface AttendanceRosterRow {
   attendance: AttendanceRepresentation | null;
 }
 
-import { Observable, of } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { map, shareReplay, timeout } from 'rxjs/operators';
 import {
   filterStatusOptions,
   findStatusById,
   normalizeLookupName,
   unwrapApiList,
+  isOpenOrFullRecord,
+  resolveRecordStatusName,
 } from '../services/lookup-utils';
 
 @Component({
@@ -31,6 +35,8 @@ import {
   styleUrls: ['./attendance.component.scss'],
 })
 export class AttendanceComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   attendances: AttendanceRepresentation[] = [];
   enrollments: any[] = [];
   classrooms: any[] = [];
@@ -38,11 +44,25 @@ export class AttendanceComponent implements OnInit {
   availableClassrooms$: Observable<any[]> = of([]);
   attendanceStatusOptions$: Observable<any[]> = of([]);
   allStaff: any[] = [];
+  allStaffFilterOptions: any[] = [];
+  allParentFilterOptions: any[] = [];
   allStatus: any[] = [];
+  private statusLookup$: Observable<any[]> | null = null;
 
   selectedClassroomId: string | number | null = null;
   selectedDate = '';
   searchTerm = '';
+
+  private rosterCacheInitialized = false;
+  private rosterCacheEnrollments: any[] | null = null;
+  private rosterCacheAttendances: AttendanceRepresentation[] | null = null;
+  private rosterCacheStatuses: any[] | null = null;
+  private rosterCacheClassroomId: string | number | null = null;
+  private rosterCacheDate = '';
+  private rosterCacheRows: AttendanceRosterRow[] = [];
+  private filteredRosterCacheBase: AttendanceRosterRow[] | null = null;
+  private filteredRosterCacheTerm = '';
+  private filteredRosterCacheRows: AttendanceRosterRow[] = [];
 
   checkoutChildId: string | number | null = null;
   pickupPersonDraft = '';
@@ -63,6 +83,8 @@ export class AttendanceComponent implements OnInit {
   private enrollmentsLoading = true;
   private attendanceLoading = true;
   staffLoading = true;
+  staffStatusLoading = true;
+  staffLoadError = '';
 
   canView = false;
   canCreate = false;
@@ -74,8 +96,10 @@ export class AttendanceComponent implements OnInit {
 
   constructor(
     private attendanceService: AttendanceService,
+    private childService: ChildService,
     private statusService: StatusService,
     private permissionHelper: PermissionHelperService,
+    private userAuthService: UserAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -93,12 +117,20 @@ export class AttendanceComponent implements OnInit {
 
     this.selectedDate = this.localDate(new Date());
     this.todayLabel = this.formatDate(this.selectedDate);
-    this.currentUserClaims = this.readCurrentUserClaims();
+    const authenticatedUser = this.userAuthService.getUser();
+    const authenticatedUserId =
+      this.userAuthService.getUserId() ?? authenticatedUser?.id ?? null;
+    this.currentUserClaims = {
+      ...(this.readCurrentUserClaims() || {}),
+      ...(authenticatedUserId != null ? { userId: authenticatedUserId } : {}),
+      ...(authenticatedUser?.login ? { login: authenticatedUser.login } : {}),
+    };
 
     this.GetAllClassroomList();
     this.GetAllEnrollmentList();
     this.GetAllAttendances();
     this.GetAllStaffList();
+    this.GetAllParentFilterOptions();
     this.GetAllStatus();
   }
 
@@ -107,20 +139,42 @@ export class AttendanceComponent implements OnInit {
   }
 
   get availableClassrooms(): any[] {
-    return this.classrooms.filter((room: any) => {
-      const statusName = this.statusName(room.status).toLowerCase();
-      return (
-        !statusName || (statusName !== 'inactive' && statusName !== 'closed')
-      );
-    });
+    return this.classrooms.filter((room: any) =>
+      isOpenOrFullRecord(room, this.allStatus),
+    );
   }
 
   get classroomChildren(): AttendanceRosterRow[] {
-    if (this.selectedClassroomId === null || this.selectedClassroomId === '') {
-      return [];
+    const enrollments = this.enrollments || [];
+    const attendances = this.attendances || [];
+    const statuses = this.allStatus || [];
+    const date = this.selectedDate || this.localDate(new Date());
+
+    if (
+      this.rosterCacheInitialized &&
+      this.rosterCacheEnrollments === enrollments &&
+      this.rosterCacheAttendances === attendances &&
+      this.rosterCacheStatuses === statuses &&
+      String(this.rosterCacheClassroomId) ===
+        String(this.selectedClassroomId) &&
+      this.rosterCacheDate === date
+    ) {
+      return this.rosterCacheRows;
     }
 
-    const activeEnrollments = this.enrollments.filter((enrollment: any) => {
+    this.rosterCacheInitialized = true;
+    this.rosterCacheEnrollments = enrollments;
+    this.rosterCacheAttendances = attendances;
+    this.rosterCacheStatuses = statuses;
+    this.rosterCacheClassroomId = this.selectedClassroomId;
+    this.rosterCacheDate = date;
+
+    if (this.selectedClassroomId === null || this.selectedClassroomId === '') {
+      this.rosterCacheRows = [];
+      return this.rosterCacheRows;
+    }
+
+    const activeEnrollments = enrollments.filter((enrollment: any) => {
       const classroomId = this.relationId(enrollment.classroom);
       const childId = this.relationId(enrollment.child);
 
@@ -153,33 +207,46 @@ export class AttendanceComponent implements OnInit {
       }
     }
 
-    return Array.from(uniqueRows.values()).sort((a, b) =>
+    this.rosterCacheRows = Array.from(uniqueRows.values()).sort((a, b) =>
       this.childName(a.child).localeCompare(this.childName(b.child)),
     );
+    this.filteredRosterCacheBase = null;
+    return this.rosterCacheRows;
   }
 
   get filteredRoster(): AttendanceRosterRow[] {
+    const base = this.classroomChildren;
     const term = this.searchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.classroomChildren;
+
+    if (
+      this.filteredRosterCacheBase === base &&
+      this.filteredRosterCacheTerm === term
+    ) {
+      return this.filteredRosterCacheRows;
     }
 
-    return this.classroomChildren.filter((row: AttendanceRosterRow) => {
-      const text = [
-        this.childName(row.child),
-        row.child?.childCode,
-        row.child?.id,
-        row.child?.parent?.fullName,
-        row.attendance?.pickupPerson,
-        row.attendance?.notes,
-        this.attendanceStateLabel(row),
-      ]
-        .filter((value: any) => value !== null && value !== undefined)
-        .join(' ')
-        .toLowerCase();
+    this.filteredRosterCacheBase = base;
+    this.filteredRosterCacheTerm = term;
+    this.filteredRosterCacheRows = !term
+      ? base
+      : base.filter((row: AttendanceRosterRow) => {
+          const text = [
+            this.childName(row.child),
+            row.child?.childCode,
+            row.child?.id,
+            row.child?.parent?.fullName,
+            row.attendance?.pickupPerson,
+            row.attendance?.notes,
+            this.attendanceStateLabel(row),
+          ]
+            .filter((value: any) => value !== null && value !== undefined)
+            .join(' ')
+            .toLowerCase();
 
-      return text.includes(term);
-    });
+          return text.includes(term);
+        });
+
+    return this.filteredRosterCacheRows;
   }
 
   get totalChildren(): number {
@@ -206,12 +273,39 @@ export class AttendanceComponent implements OnInit {
     }).length;
   }
 
+  get currentStaffStatusName(): string {
+    return this.currentStaffProfile
+      ? resolveRecordStatusName(this.currentStaffProfile, this.allStatus)
+      : '';
+  }
+
+  get currentStaffIsActive(): boolean {
+    return (
+      !!this.currentStaffProfile &&
+      normalizeLookupName(this.currentStaffStatusName) === 'active'
+    );
+  }
+
   get currentStaffMessage(): string {
     if (this.staffLoading) {
       return 'Finding the staff profile linked to your login...';
     }
+    if (this.staffLoadError) {
+      return this.staffLoadError;
+    }
     if (!this.currentStaffProfile) {
-      return 'Your login could not be matched to a Staff profile. Link your app user to a staff profile before recording arrival or pickup, so attendance is attributed correctly.';
+      const userId = this.userAuthService.getUserId();
+      const login = this.userAuthService.getUser()?.login;
+      return `No Staff profile returned by the Staff API is linked to this login. Logged-in User ID: ${userId ?? 'not available'}${login ? ` (${login})` : ''}. The Staff record must have the same app_user ID in user_id.`;
+    }
+    if (this.staffStatusLoading) {
+      return 'Staff profile found. Checking its Active status...';
+    }
+    if (!this.currentStaffStatusName) {
+      return 'The Staff profile was found, but its status could not be verified. Check that the Status API is responding and that the Staff record has a valid status.';
+    }
+    if (!this.currentStaffIsActive) {
+      return `The linked Staff profile (${this.currentStaffProfile.fullName || this.currentStaffProfile.staffCode || this.currentStaffProfile.id}) has status ${this.currentStaffStatusName}. Change it to Active in Staff Management before recording attendance.`;
     }
     return (
       'Attendance actions will be recorded under ' +
@@ -226,20 +320,23 @@ export class AttendanceComponent implements OnInit {
     this.classroomsLoading = true;
     this.updateRosterLoading();
 
-    this.classrooms$ = this.attendanceService.GetAllClassroomList().pipe(
-      map((response: any) => unwrapApiList(response)),
+    this.classrooms$ = forkJoin({
+      rooms: this.attendanceService
+        .GetAllClassroomList()
+        .pipe(map((response: any) => unwrapApiList(response))),
+      statuses: this.getStatusLookup(),
+    }).pipe(
+      map(({ rooms, statuses }: { rooms: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        return rooms;
+      }),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
     this.availableClassrooms$ = this.classrooms$.pipe(
       map((rooms: any[]) =>
         rooms
-          .filter((room: any) => {
-            const status = normalizeLookupName(
-              room?.status?.name ?? room?.status?.statusName ?? room?.status,
-            );
-            return status !== 'closed' && status !== 'inactive';
-          })
+          .filter((room: any) => isOpenOrFullRecord(room, this.allStatus))
           .map((room: any) => ({
             ...room,
             displayLabel: [
@@ -317,28 +414,107 @@ export class AttendanceComponent implements OnInit {
     });
   }
 
-  GetAllStaffList(): void {
-    this.staffLoading = true;
-    this.attendanceService.GetAllStaffList().subscribe({
-      next: (response: any) => {
-        this.allStaff = response?.data?.dataList || [];
-        this.currentStaffProfile = this.findCurrentStaffProfile();
-        this.staffLoading = false;
-        this.trySelectStaffClassroom();
+  GetAllParentFilterOptions(): void {
+    forkJoin({
+      parents: this.childService
+        .GetAllParents()
+        .pipe(map((response: any) => unwrapApiList(response))),
+      statuses: this.getStatusLookup(),
+    }).subscribe({
+      next: ({ parents, statuses }: { parents: any[]; statuses: any[] }) => {
+        this.allStatus = statuses;
+        this.allParentFilterOptions = parents.filter((parent: any) => {
+          const statusName = normalizeLookupName(
+            resolveRecordStatusName(parent, statuses),
+          );
+          return statusName === 'active' || statusName === 'inactive';
+        });
       },
-      error: () => {
-        this.allStaff = [];
-        this.currentStaffProfile = null;
-        this.staffLoading = false;
+      error: (error: any) => {
+        console.error('Could not load parents for attendance filters:', error);
+        this.allParentFilterOptions = [];
       },
     });
   }
 
+  private refreshStaffFilterOptions(): void {
+    const allowedStatuses = ['active', 'inactive'];
+    this.allStaffFilterOptions = (this.allStaff || []).filter((staff: any) => {
+      const statusName = normalizeLookupName(
+        resolveRecordStatusName(staff, this.allStatus),
+      );
+      return allowedStatuses.includes(statusName);
+    });
+  }
+
+  GetAllStaffList(): void {
+    this.staffLoading = true;
+    this.staffLoadError = '';
+
+    // Do not make staff identity lookup wait for the Status API. They are
+    // separate requests and either one must be able to finish independently.
+    this.attendanceService
+      .GetAllStaffList()
+      .pipe(
+        timeout(15000),
+        map((response: any) => unwrapApiList(response)),
+      )
+      .subscribe({
+        next: (staff: any[]) => {
+          this.allStaff = staff;
+          this.refreshStaffFilterOptions();
+          this.currentStaffProfile = this.findCurrentStaffProfile();
+          this.staffLoading = false;
+          this.trySelectStaffClassroom();
+
+          console.log('Attendance staff lookup:', {
+            loggedInUserId: this.userAuthService.getUserId(),
+            loggedInLogin: this.userAuthService.getUser()?.login,
+            staffCount: this.allStaff.length,
+            matchedStaffId: this.currentStaffProfile?.id ?? null,
+            matchedStaffUserId:
+              this.relationId(this.currentStaffProfile?.user) ??
+              this.currentStaffProfile?.userId ??
+              this.currentStaffProfile?.user_id ??
+              null,
+            staffUserLinks: this.allStaff.map((item: any) => ({
+              staffId: item?.id,
+              userId:
+                this.relationId(item?.user) ??
+                item?.userId ??
+                item?.user_id ??
+                null,
+              login: item?.user?.login ?? null,
+            })),
+          });
+        },
+        error: (error: any) => {
+          console.error('Could not load staff profiles for attendance:', error);
+          this.allStaff = [];
+          this.currentStaffProfile = null;
+          this.staffLoading = false;
+          this.staffLoadError =
+            error?.name === 'TimeoutError'
+              ? 'The Staff API did not respond within 15 seconds. Check that Spring Boot is running and GET /api/v1/staff is responding.'
+              : 'Could not load staff profiles. Check the Staff API and browser console for the request error.';
+        },
+      });
+  }
+
+  private getStatusLookup(): Observable<any[]> {
+    if (!this.statusLookup$) {
+      this.statusLookup$ = this.statusService.GetAllStatus().pipe(
+        timeout(15000),
+        map((response: any) => unwrapApiList(response)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.statusLookup$;
+  }
+
   GetAllStatus(): void {
-    const statuses$ = this.statusService.GetAllStatus().pipe(
-      map((response: any) => unwrapApiList(response)),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
+    this.staffStatusLoading = true;
+    const statuses$ = this.getStatusLookup();
 
     this.attendanceStatusOptions$ = statuses$.pipe(
       map((statuses: any[]) =>
@@ -353,8 +529,16 @@ export class AttendanceComponent implements OnInit {
     );
 
     statuses$.subscribe({
-      next: (statuses: any[]) => (this.allStatus = statuses),
-      error: () => (this.allStatus = []),
+      next: (statuses: any[]) => {
+        this.allStatus = statuses;
+        this.refreshStaffFilterOptions();
+        this.staffStatusLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Could not load attendance statuses:', error);
+        this.allStatus = [];
+        this.staffStatusLoading = false;
+      },
     });
   }
 
@@ -1154,13 +1338,7 @@ export class AttendanceComponent implements OnInit {
   }
 
   private statusName(value: any): string {
-    if (value && typeof value === 'object') {
-      return value.name || '';
-    }
-    const found = this.allStatus.find(
-      (item: any) => String(item.id) === String(value),
-    );
-    return found?.name || '';
+    return resolveRecordStatusName({ status: value }, this.allStatus);
   }
 
   private findStatusId(name: string): any | null {
@@ -1206,17 +1384,22 @@ export class AttendanceComponent implements OnInit {
   }
 
   private ensureCurrentStaff(): boolean {
-    if (
-      this.currentStaffProfile?.id !== undefined &&
-      this.currentStaffProfile?.id !== null
-    ) {
-      return true;
+    if (this.staffLoading || this.staffStatusLoading) {
+      this.showMessage(
+        'Staff identity is still being checked. Please wait until the staff profile check finishes.',
+        true,
+      );
+      return false;
     }
-    this.showMessage(
-      'Your logged-in account is not linked to a Staff profile. Please link the User and Staff records before recording attendance.',
-      true,
-    );
-    return false;
+    if (!this.currentStaffProfile) {
+      this.showMessage(this.currentStaffMessage, true);
+      return false;
+    }
+    if (!this.currentStaffIsActive) {
+      this.showMessage(this.currentStaffMessage, true);
+      return false;
+    }
+    return true;
   }
 
   private defaultPickupPerson(row: AttendanceRosterRow): string {
@@ -1253,21 +1436,27 @@ export class AttendanceComponent implements OnInit {
   }
 
   private findCurrentStaffProfile(): any | null {
-    if (!this.currentUserClaims) {
-      return null;
-    }
-
-    const candidateValues = [
-      this.currentUserClaims.userId,
-      this.currentUserClaims.user_id,
-      this.currentUserClaims.id,
-      this.currentUserClaims.uid,
-      this.currentUserClaims.sub,
-      this.currentUserClaims.user?.id,
-      this.currentUserClaims.user?.userId,
-      this.currentUserClaims.user?.login,
-      this.currentUserClaims.login,
-      this.currentUserClaims.username,
+    const user = this.userAuthService.getUser();
+    const claims = this.currentUserClaims || {};
+    const candidateIds = [
+      this.userAuthService.getUserId(),
+      user?.id,
+      claims.userId,
+      claims.user_id,
+      claims.id,
+      claims.uid,
+      claims.user?.id,
+      claims.user?.userId,
+    ].filter(
+      (value: any) =>
+        value !== null && value !== undefined && String(value).trim() !== '',
+    );
+    const candidateLogins = [
+      user?.login,
+      claims.login,
+      claims.username,
+      claims.user?.login,
+      claims.user?.username,
     ].filter(
       (value: any) =>
         value !== null && value !== undefined && String(value).trim() !== '',
@@ -1275,20 +1464,32 @@ export class AttendanceComponent implements OnInit {
 
     return (
       this.allStaff.find((staff: any) => {
-        const linkedUser = staff.user;
-        const linkedUserId = this.relationId(linkedUser);
+        const linkedUser = staff?.user;
+        const linkedUserId =
+          this.relationId(linkedUser) ?? staff?.userId ?? staff?.user_id;
+        // A null relation also has typeof "object" in JavaScript.
+        // Use optional chaining so staff records without a linked user do not
+        // crash the entire attendance profile lookup.
         const linkedLogin =
-          typeof linkedUser === 'object'
-            ? linkedUser.login || linkedUser.username
-            : null;
+          linkedUser?.login ||
+          linkedUser?.username ||
+          staff?.login ||
+          staff?.username;
 
-        return candidateValues.some(
-          (candidate: any) =>
-            String(candidate) === String(linkedUserId) ||
-            (!!linkedLogin &&
+        const idMatches =
+          linkedUserId !== null &&
+          candidateIds.some(
+            (candidate: any) => String(candidate) === String(linkedUserId),
+          );
+        const loginMatches =
+          !!linkedLogin &&
+          candidateLogins.some(
+            (candidate: any) =>
               String(candidate).toLowerCase() ===
-                String(linkedLogin).toLowerCase()),
-        );
+              String(linkedLogin).toLowerCase(),
+          );
+
+        return idMatches || loginMatches;
       }) || null
     );
   }

@@ -3,6 +3,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import { StaffService } from '../services/api/staff/staff.service';
+import { isOpenOrFullRecord, resolveRecordStatusName } from '../services/lookup-utils';
 import { StaffRepresentation } from '../services/api/module/staff-representation';
 import {
   AuthIds,
@@ -18,12 +19,15 @@ type StaffFormMode = 'add' | 'view' | 'edit';
   styleUrls: ['./staff.component.scss'],
 })
 export class StaffComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   canView = false;
   canCreate = false;
   canUpdate = false;
 
   staffList: StaffRepresentation[] = [];
   classrooms: any[] = [];
+  classroomFilterOptions: any[] = [];
   statuses: any[] = [];
 
   staffObj: StaffRepresentation = this.emptyStaff();
@@ -36,6 +40,7 @@ export class StaffComponent implements OnInit {
 
   message = '';
   messageIsError = false;
+  readonly updatingStatusIds = new Set<string>();
 
   readonly roles: string[] = [
     'Caregiver',
@@ -115,10 +120,16 @@ export class StaffComponent implements OnInit {
       ),
     }).subscribe({
       next: (result: { classrooms: any[]; statuses: any[] }) => {
-        this.classrooms = result.classrooms.map((item: any) => ({
-          ...item,
-          displayLabel: this.classroomLabel(item),
-        }));
+        // Include every classroom in the table filter, including Closed ones.
+        // The classroom assignment dropdown below intentionally remains Open/Full.
+        this.classroomFilterOptions = result.classrooms.map((item: any) => ({ ...item }));
+
+        this.classrooms = result.classrooms
+          .filter((item: any) => isOpenOrFullRecord(item, result.statuses))
+          .map((item: any) => ({
+            ...item,
+            displayLabel: this.classroomLabel(item),
+          }));
 
         this.statuses = result.statuses;
 
@@ -334,6 +345,7 @@ export class StaffComponent implements OnInit {
       id: this.staffObj.id,
       staffCode,
       userId,
+      user: userId === null ? null : { id: userId },
       fullName,
       role,
       phone,
@@ -374,6 +386,76 @@ export class StaffComponent implements OnInit {
         this.showMessage(
           error?.error?.message ||
             'Could not save staff. Check the API response and selected foreign keys.',
+          true,
+        );
+      },
+    });
+  }
+
+  isStaffStatusUpdating(staff: any): boolean {
+    return this.updatingStatusIds.has(String(staff?.id ?? ''));
+  }
+
+  isStaffActive(staff: any): boolean {
+    return resolveRecordStatusName(staff, this.statuses)
+      .trim()
+      .toLowerCase() === 'active';
+  }
+
+  onStaffStatusToggle(staff: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const currentActive = this.isStaffActive(staff);
+    const requestedName = input.checked ? 'Active' : 'Inactive';
+    const selectedStatus = this.statuses.find(
+      (item: any) =>
+        String(item.name ?? item.statusName ?? '')
+          .trim()
+          .toLowerCase() === requestedName.toLowerCase(),
+    );
+
+    if (!this.canUpdate || !selectedStatus?.id || staff.id == null) {
+      input.checked = currentActive;
+      this.showMessage(
+        !this.canUpdate
+          ? 'You do not have permission to update staff status.'
+          : `${requestedName} status is missing from Status Management.`,
+        true,
+      );
+      return;
+    }
+
+    const key = String(staff.id);
+    if (this.updatingStatusIds.has(key)) {
+      input.checked = currentActive;
+      return;
+    }
+
+    this.updatingStatusIds.add(key);
+    const linkedUserId = this.relationId(
+      staff.user ?? staff.userId ?? staff.user_id,
+    );
+    const classroomId = this.relationId(
+      staff.classroom ?? staff.classroomId ?? staff.classroom_id,
+    );
+    const payload: StaffRepresentation = {
+      ...staff,
+      userId: linkedUserId,
+      user: linkedUserId == null ? null : { id: linkedUserId },
+      classroom: classroomId,
+      status: selectedStatus.id,
+    };
+
+    this.staffService.updateStaff(staff.id, payload).subscribe({
+      next: () => {
+        this.updatingStatusIds.delete(key);
+        this.refreshStaff();
+      },
+      error: (error: any) => {
+        this.updatingStatusIds.delete(key);
+        input.checked = currentActive;
+        console.error('Staff status update failed:', error);
+        this.showMessage(
+          error?.error?.message || 'Could not update staff status.',
           true,
         );
       },
@@ -457,14 +539,7 @@ export class StaffComponent implements OnInit {
   }
 
   statusName(value: any): string {
-    if (value && typeof value === 'object') {
-      return value.name || '';
-    }
-
-    return (
-      this.statuses.find((item: any) => String(item.id) === String(value))
-        ?.name || (value == null ? '' : String(value))
-    );
+    return resolveRecordStatusName({ status: value }, this.statuses) || '';
   }
 
   statusClass(value: any): string {

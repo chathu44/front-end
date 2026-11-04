@@ -26,6 +26,8 @@ import {
   styleUrls: ['./program.component.scss'],
 })
 export class ProgramComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   programObj: ProgramRepresentation = {};
   programs: Array<any> = [];
   allStatus: Array<any> = [];
@@ -323,20 +325,38 @@ export class ProgramComponent implements OnInit {
   searchText: string = '';
   selectedProgramId: any = null;
 
+  private programFilterSource: any[] | null = null;
+  private programFilterTerm = '';
+  private programFilterRows: any[] = [];
+
   get filteredPrograms(): any[] {
+    const source = this.programs || [];
     const search = this.searchText.trim().toLowerCase();
 
-    return (this.programs || []).filter((program: any) => {
-      const name = String(program.programName || '').toLowerCase();
-      const code = String(program.programCode || '').toLowerCase();
-      const description = String(program.description || '').toLowerCase();
+    if (
+      this.programFilterSource === source &&
+      this.programFilterTerm === search
+    ) {
+      return this.programFilterRows;
+    }
 
-      return (
-        name.includes(search) ||
-        code.includes(search) ||
-        description.includes(search)
-      );
-    });
+    this.programFilterSource = source;
+    this.programFilterTerm = search;
+    this.programFilterRows = !search
+      ? source
+      : source.filter((program: any) => {
+          const name = String(program.programName || '').toLowerCase();
+          const code = String(program.programCode || '').toLowerCase();
+          const description = String(program.description || '').toLowerCase();
+
+          return (
+            name.includes(search) ||
+            code.includes(search) ||
+            description.includes(search)
+          );
+        });
+
+    return this.programFilterRows;
   }
 
   SelectProgramRow(program: any): void {
