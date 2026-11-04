@@ -278,41 +278,6 @@
               </div>
             </div>
 
-            <div class="row g-3 mb-4">
-              <div class="col-md-6">
-                <label for="staffStatus" class="form-label">
-                  Status <span class="required">*</span>
-                </label>
-
-                <select
-                  id="staffStatus"
-                  name="staffStatus"
-                  class="form-select"
-                  required
-                  [(ngModel)]="staffObj.status"
-                  [disabled]="mode === 'view'"
-                  #staffStatus="ngModel"
-                >
-                  <option [ngValue]="null" disabled>Select status</option>
-
-                  <option *ngFor="let status of statuses" [ngValue]="status.id">
-                    {{ status.name }}
-                  </option>
-                </select>
-
-                <small
-                  class="field-error"
-                  *ngIf="staffStatus.invalid && staffStatus.touched"
-                >
-                  Select staff status.
-                </small>
-
-                <small class="field-hint">
-                  Options come from Status Management.
-                </small>
-              </div>
-            </div>
-
             <div class="staff-form-actions">
               <button
                 type="button"
@@ -481,43 +446,46 @@
           </div>
 
           <div class="staff-count">
-            {{ filteredStaff.length }} Staff Members
+            {{ (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length }} Staff Members
           </div>
         </div>
 
-        <div class="staff-search">
-          <i class="bi bi-search"></i>
-
-          <input
-            type="search"
-            class="form-control"
-            name="staffSearch"
-            [(ngModel)]="staffSearch"
-            placeholder="Search code, name, role, phone or classroom"
-          />
-        </div>
+        
 
         <div *ngIf="loading" class="staff-loading">
           <span class="spinner-border spinner-border-sm me-2"></span>
           Loading staff records...
         </div>
 
-        <div class="table-responsive" *ngIf="!loading">
+        <app-table-filter-toolbar
+  [items]="filteredStaff"
+  [fields]="{ staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' }"
+  [labels]="{ staff: 'Staff Member', role: 'Role', classroom: 'Classroom', hireDate: 'Hire Date', status: 'Status' }"
+  [optionItems]="{ classroom: classroomFilterOptions }"
+  [optionPaths]="{ classroom: '@classroomLabel' }"
+  [optionValues]="{ role: roles, status: ['Active', 'Inactive'] }"
+  [(filters)]="tableFilters"
+  [sortKey]="'$sort_staff_1'"
+  [directionKey]="'$sort_staff_1_direction'"
+  heading="Filter and sort"
+></app-table-filter-toolbar>
+<div class="table-responsive" *ngIf="!loading">
           <table class="table staff-table align-middle mb-0">
             <thead>
               <tr>
-                <th>Staff Member</th>
-                <th>Role</th>
-                <th>Classroom</th>
-                <th>Hire Date</th>
-                <th>Status</th>
+                <th appTableSort="staff" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Staff Member</th>
+                <th appTableSort="role" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Role</th>
+                <th appTableSort="classroom" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Classroom</th>
+                <th appTableSort="hireDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Hire Date</th>
+                <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_staff_1'" [sortDirectionKey]="'$sort_staff_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
                 <th class="text-end">Actions</th>
               </tr>
+          
             </thead>
 
             <tbody>
               <tr
-                *ngFor="let staff of filteredStaff"
+                *ngFor="let staff of (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction')"
                 class="staff-selectable-row"
                 (click)="selectStaff(staff, 'view')"
               >
@@ -545,17 +513,22 @@
 
                 <td>{{ staff.hireDate || "—" }}</td>
 
-                <td>
-                  <span
-                    class="status-badge"
-                    [ngClass]="
-                      statusClass(statusName(staff.status ?? staff.statusId))
-                    "
-                  >
-                    {{
-                      statusName(staff.status ?? staff.statusId) || "Unknown"
-                    }}
-                  </span>
+                <td (click)="$event.stopPropagation()">
+                  <div class="form-check form-switch staff-status-switch mb-0">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      [id]="'staff-status-' + staff.id"
+                      [checked]="isStaffActive(staff)"
+                      [disabled]="!canUpdate || isStaffStatusUpdating(staff)"
+                      (click)="$event.stopPropagation()"
+                      (change)="onStaffStatusToggle(staff, $event)"
+                    />
+                    <label class="form-check-label" [for]="'staff-status-' + staff.id">
+                      {{ isStaffActive(staff) ? 'Active' : 'Inactive' }}
+                    </label>
+                  </div>
                 </td>
 
                 <td class="text-end">
@@ -588,7 +561,7 @@
                 </td>
               </tr>
 
-              <tr *ngIf="filteredStaff.length === 0">
+              <tr *ngIf="(filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length === 0">
                 <td colspan="6" class="staff-empty">
                   <i class="bi bi-people"></i>
                   <strong>No staff found</strong>
@@ -600,7 +573,7 @@
         </div>
 
         <div class="staff-table-footer">
-          Showing {{ filteredStaff.length }} of {{ staffList.length }} staff
+          Showing {{ (filteredStaff | tableColumnFilter: tableFilters : { staff: 'fullName|staffCode|id', role: 'role', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id|classroomId', hireDate: 'hireDate', status: 'status.name|status.statusName|status' } : '$sort_staff_1' : '$sort_staff_1_direction').length }} of {{ staffList.length }} staff
           members
         </div>
       </div>

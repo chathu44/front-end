@@ -484,6 +484,10 @@
   margin: 6px 0 0 auto;
   padding: 0;
 }
+.absent-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .completed-label {
   color: #168657;
   font-size: 0.72rem;

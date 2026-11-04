@@ -225,9 +225,11 @@
                 required
                 [clearable]="false"
                 [searchable]="true"
+                [loading]="loadingClassrooms"
+                [disabled]="loadingClassrooms || isReadOnlyIncident"
+                [notFoundText]="loadingClassrooms ? 'Loading open and full classrooms...' : 'No open or full classrooms found'"
                 appendTo="body"
-                placeholder="Select classroom"
-                [readonly]="isReadOnlyIncident"
+                placeholder="Select open or full classroom"
               >
                 <ng-template ng-label-tmp let-item="item">
                   {{ classroomLabel(item) }}
@@ -415,18 +417,7 @@
           </p>
         </div>
 
-        <div class="incident-search-wrap">
-          <i class="bi bi-search" aria-hidden="true"></i>
-
-          <input
-            class="form-control"
-            type="search"
-            name="searchText"
-            [(ngModel)]="searchText"
-            placeholder="Search incidents..."
-            aria-label="Search incidents"
-          />
-        </div>
+        
       </div>
 
       <div class="card-body p-0">
@@ -439,25 +430,38 @@
           Loading incident records...
         </div>
 
-        <div *ngIf="!loadingIncidents" class="table-responsive">
+        <app-table-filter-toolbar
+  [items]="filteredIncidents"
+  [fields]="{ incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' }"
+  [labels]="{ incidentCode: 'Incident code', incidentDate: 'Date and time', type: 'Type', child: 'Child', description: 'Description', actionTaken: 'Action taken', parentNotified: 'Parent notified', status: 'Status' }"
+  [optionItems]="{ child: allChildFilterOptions }"
+  [optionPaths]="{ child: '@childLabel' }"
+  [optionValues]="{ type: incidentTypes, parentNotified: ['Yes', 'No'], status: ['Open', 'Resolved', 'Follow-up Required'] }"
+  [(filters)]="tableFilters"
+  [sortKey]="'$sort_incident_1'"
+  [directionKey]="'$sort_incident_1_direction'"
+  heading="Filter and sort"
+></app-table-filter-toolbar>
+<div *ngIf="!loadingIncidents" class="table-responsive">
           <table class="table table-hover align-middle mb-0 incident-table">
             <thead>
               <tr>
-                <th>Incident code</th>
-                <th>Date and time</th>
-                <th>Type</th>
-                <th>Child</th>
-                <th>Description</th>
-                <th>Action taken</th>
-                <th>Parent notified</th>
-                <th>Status</th>
+                <th appTableSort="incidentCode" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Incident code</th>
+                <th appTableSort="incidentDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Date and time</th>
+                <th appTableSort="type" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Type</th>
+                <th appTableSort="child" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
+                <th appTableSort="description" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Description</th>
+                <th appTableSort="actionTaken" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Action taken</th>
+                <th appTableSort="parentNotified" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Parent notified</th>
+                <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_incident_1'" [sortDirectionKey]="'$sort_incident_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
                 <th class="text-end">Actions</th>
               </tr>
+          
             </thead>
 
             <tbody>
               <tr
-                *ngFor="let incident of filteredIncidents"
+                *ngFor="let incident of (filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction')"
                 class="selectable-row"
                 (click)="GetIncidentById(incident.id)"
               >
@@ -552,7 +556,7 @@
                 </td>
               </tr>
 
-              <tr *ngIf="filteredIncidents.length === 0 && !loadingIncidents">
+              <tr *ngIf="(filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction').length === 0 && !loadingIncidents">
                 <td colspan="9" class="empty-state">
                   <i class="bi bi-clipboard2-pulse"></i>
 
@@ -573,7 +577,7 @@
       </div>
 
       <div class="incident-table-footer">
-        Showing {{ filteredIncidents.length }} of
+        Showing {{ (filteredIncidents | tableColumnFilter: tableFilters : { incidentCode: 'incidentCode|id', incidentDate: 'incidentDate', type: 'incidentType|type', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', description: 'description', actionTaken: 'actionTaken', parentNotified: 'parentNotified', status: 'status.name|status.statusName|status' } : '$sort_incident_1' : '$sort_incident_1_direction').length }} of
         {{ incidents.length }} incident record(s)
       </div>
     </section>

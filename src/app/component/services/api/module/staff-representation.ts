@@ -4,6 +4,7 @@ export interface StaffRepresentation {
   staffCode?: string;
 
   userId?: string | number | null;
+  user?: any;
   user_id?: string | number | null;
 
   fullName?: string;

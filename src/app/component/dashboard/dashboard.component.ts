@@ -11,6 +11,7 @@ import { catchError, map } from 'rxjs/operators';
 
 import { DashboardService } from '../services/api/dashboard/dashboard.service';
 import { DashboardRepresentation } from '../services/api/module/dashboard-representation';
+import { normalizeLookupName, resolveRecordStatusName } from '../services/lookup-utils';
 import {
   AuthIds,
   PermissionHelperService,
@@ -34,6 +35,8 @@ interface NotificationForm {
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  tableFilters: { [key: string]: any } = {};
+
   canView: boolean | null = null;
 
   @ViewChild('attendanceChartCanvas')
@@ -66,10 +69,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
   notifications: DashboardRepresentation[] = [];
 
   checkedInAttendance: any[] = [];
+  dashboardChildFilterOptions: any[] = [];
+  dashboardClassroomFilterOptions: any[] = [];
   classroomSummaries: any[] = [];
   nearCapacityClassrooms: any[] = [];
 
   unpaidInvoices: any[] = [];
+  private tableUnpaidInvoiceSource: any[] | null = null;
+  private tableUnpaidPaymentSource: any[] | null = null;
+  private tableUnpaidInvoiceRows: any[] = [];
+
+  get tableUnpaidInvoices(): any[] {
+    if (
+      this.tableUnpaidInvoiceSource === this.unpaidInvoices &&
+      this.tableUnpaidPaymentSource === this.payments
+    ) {
+      return this.tableUnpaidInvoiceRows;
+    }
+
+    this.tableUnpaidInvoiceSource = this.unpaidInvoices;
+    this.tableUnpaidPaymentSource = this.payments;
+    this.tableUnpaidInvoiceRows = (this.unpaidInvoices || []).map((invoice: any) => ({
+      ...invoice,
+      _tableBalance: this.outstandingBalance(invoice),
+      _tableStatus: (invoice.dueDate ?? invoice.due_date ?? '') < this.today ? 'Overdue' : 'Outstanding',
+    }));
+
+    return this.tableUnpaidInvoiceRows;
+  }
+
   overdueInvoices: any[] = [];
 
   openIncidents: any[] = [];
@@ -176,6 +204,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.parents = data.parents;
         this.staff = data.staff;
         this.statuses = data.statuses;
+        this.dashboardChildFilterOptions = this.filterLookupRecords(
+          this.children,
+          ['active', 'withdrawn', 'graduated'],
+        );
+        this.dashboardClassroomFilterOptions = this.filterLookupRecords(
+          this.classrooms,
+          ['open', 'full', 'closed'],
+        );
 
         this.notifications = data.notifications.sort(
           (a: any, b: any) =>
@@ -198,6 +234,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           true,
         );
       },
+    });
+  }
+
+  private filterLookupRecords(records: any[], allowedStatuses: string[]): any[] {
+    const allowed = new Set(allowedStatuses.map((value) => normalizeLookupName(value)));
+    return (records || []).filter((record: any) => {
+      const statusName = normalizeLookupName(resolveRecordStatusName(record, this.statuses));
+      return allowed.has(statusName);
     });
   }
 

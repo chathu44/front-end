@@ -45,7 +45,7 @@
       (click)="activeTab = 'invoices'"
     >
       <i class="bi bi-receipt me-2"></i>Fee Invoices
-      <span class="tab-count">{{ invoices.length }}</span>
+      <span class="tab-count">{{ (filteredInvoices | tableColumnFilter: tableFilters : { invoiceFilter: 'invoiceCode|id', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', billingMonth: 'billingMonth', amount: 'amount', balance: '_tableBalance|balance|outstandingBalance|remainingBalance', status: '_tableStatus|status.name|status.statusName|status' } : '$sort_fee_payment_1' : '$sort_fee_payment_1_direction').length }}</span>
     </button>
     <button
       type="button"
@@ -53,7 +53,7 @@
       (click)="activeTab = 'payments'"
     >
       <i class="bi bi-cash-coin me-2"></i>Fee Payments
-      <span class="tab-count">{{ payments.length }}</span>
+      <span class="tab-count">{{ (filteredPayments | tableColumnFilter: tableFilters : { paymentDate: 'paymentDate', paymentInvoice: '_tableInvoiceLabel|invoice.invoiceCode|invoice.id|invoice', method: 'paymentMethod|method', reference: 'referenceNo|reference', received: 'amount|receivedAmount', receivedBy: '_tableReceivedBy|receivedBy.fullName|receivedBy.name|receivedBy.staffCode|receivedBy' } : '$sort_fee_payment_2' : '$sort_fee_payment_2_direction').length }}</span>
     </button>
   </div>
 
@@ -314,38 +314,42 @@
             </button>
           </div>
 
-          <div class="fee-search">
-            <i class="bi bi-search"></i>
-            <input
-              type="search"
-              class="form-control"
-              name="invoiceSearch"
-              [(ngModel)]="invoiceSearch"
-              placeholder="Search invoice code, child, month or status"
-            />
-          </div>
+          
 
           <div *ngIf="loadingInvoices" class="fee-loading">
             <span class="spinner-border spinner-border-sm me-2"></span>
             Loading invoices...
           </div>
 
-          <div class="table-responsive" *ngIf="!loadingInvoices">
+          <app-table-filter-toolbar
+  [items]="filteredInvoices"
+  [fields]="{ invoiceFilter: 'invoiceCode|id', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', billingMonth: 'billingMonth', amount: 'amount', balance: '_tableBalance|balance|outstandingBalance|remainingBalance', status: '_tableStatus|status.name|status.statusName|status' }"
+  [labels]="{ invoiceFilter: 'Invoice', child: 'Child', billingMonth: 'Billing Month', amount: 'Amount', balance: 'Balance', status: 'Status' }"
+  [optionItems]="{ child: childFilterOptions }"
+  [optionPaths]="{ child: '@childLabel' }"
+  [optionValues]="{ status: ['Unpaid', 'Partially Paid', 'Paid', 'Overdue'] }"
+  [(filters)]="tableFilters"
+  [sortKey]="'$sort_fee_payment_1'"
+  [directionKey]="'$sort_fee_payment_1_direction'"
+  heading="Filter and sort"
+></app-table-filter-toolbar>
+<div class="table-responsive" *ngIf="!loadingInvoices">
             <table class="table fee-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Invoice</th>
-                  <th>Child</th>
-                  <th>Billing Month</th>
-                  <th>Amount</th>
-                  <th>Balance</th>
-                  <th>Status</th>
+                  <th appTableSort="invoiceFilter" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Invoice</th>
+                  <th appTableSort="child" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
+                  <th appTableSort="billingMonth" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Billing Month</th>
+                  <th appTableSort="amount" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Amount</th>
+                  <th appTableSort="balance" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Balance</th>
+                  <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_1'" [sortDirectionKey]="'$sort_fee_payment_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
                   <th class="text-end">Actions</th>
                 </tr>
+          
               </thead>
               <tbody>
                 <tr
-                  *ngFor="let invoice of filteredInvoices"
+                  *ngFor="let invoice of (filteredInvoices | tableColumnFilter: tableFilters : { invoiceFilter: 'invoiceCode|id', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', billingMonth: 'billingMonth', amount: 'amount', balance: '_tableBalance|balance|outstandingBalance|remainingBalance', status: '_tableStatus|status.name|status.statusName|status' } : '$sort_fee_payment_1' : '$sort_fee_payment_1_direction')"
                   (click)="selectInvoice(invoice, 'view')"
                   class="fee-selectable-row"
                 >
@@ -358,7 +362,7 @@
                     >
                   </td>
                   <td>{{ childLabel(invoice.child) }}</td>
-                  <td>{{ invoice.billingMonth }}</td>
+                  <td>{{ displayBillingMonth(invoice.billingMonth) }}</td>
                   <td>{{ formatLkr(invoice.amount) }}</td>
                   <td>{{ formatLkr(outstandingBalance(invoice.id)) }}</td>
                   <td>
@@ -426,7 +430,7 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredInvoices.length === 0">
+                <tr *ngIf="(filteredInvoices | tableColumnFilter: tableFilters : { invoiceFilter: 'invoiceCode|id', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id|child|childId|child_id', billingMonth: 'billingMonth', amount: 'amount', balance: '_tableBalance|balance|outstandingBalance|remainingBalance', status: '_tableStatus|status.name|status.statusName|status' } : '$sort_fee_payment_1' : '$sort_fee_payment_1_direction').length === 0">
                   <td colspan="7" class="fee-empty">
                     <i class="bi bi-receipt"></i>
                     <strong>No invoices found</strong>
@@ -661,38 +665,41 @@
             </div>
           </div>
 
-          <div class="fee-search">
-            <i class="bi bi-search"></i>
-            <input
-              type="search"
-              class="form-control"
-              name="paymentSearch"
-              [(ngModel)]="paymentSearch"
-              placeholder="Search invoice, method, reference or staff"
-            />
-          </div>
+          
 
           <div *ngIf="loadingPayments" class="fee-loading">
             <span class="spinner-border spinner-border-sm me-2"></span>
             Loading payments...
           </div>
 
-          <div class="table-responsive" *ngIf="!loadingPayments">
+          <app-table-filter-toolbar
+  [items]="filteredPayments"
+  [fields]="{ paymentDate: 'paymentDate', paymentInvoice: '_tableInvoiceLabel|invoice.invoiceCode|invoice.id|invoice', method: 'paymentMethod|method', reference: 'referenceNo|reference', received: 'amount|receivedAmount', receivedBy: '_tableReceivedBy|receivedBy.fullName|receivedBy.name|receivedBy.staffCode|receivedBy' }"
+  [labels]="{ paymentDate: 'Payment Date', paymentInvoice: 'Invoice', method: 'Method', reference: 'Reference', received: 'Received', receivedBy: 'Received By' }"
+  [optionItems]="{ paymentInvoice: invoices, receivedBy: staffFilterOptions }"
+  [optionPaths]="{ paymentInvoice: '@invoiceLabel', receivedBy: '@staffLabel' }"
+  [(filters)]="tableFilters"
+  [sortKey]="'$sort_fee_payment_2'"
+  [directionKey]="'$sort_fee_payment_2_direction'"
+  heading="Filter and sort"
+></app-table-filter-toolbar>
+<div class="table-responsive" *ngIf="!loadingPayments">
             <table class="table fee-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Payment Date</th>
-                  <th>Invoice</th>
-                  <th>Method</th>
-                  <th>Reference</th>
-                  <th>Received</th>
-                  <th>Received By</th>
+                  <th appTableSort="paymentDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Payment Date</th>
+                  <th appTableSort="paymentInvoice" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Invoice</th>
+                  <th appTableSort="method" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Method</th>
+                  <th appTableSort="reference" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Reference</th>
+                  <th appTableSort="received" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Received</th>
+                  <th appTableSort="receivedBy" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_fee_payment_2'" [sortDirectionKey]="'$sort_fee_payment_2_direction'" (sortFiltersChange)="tableFilters = $event">Received By</th>
                   <th class="text-end">Actions</th>
                 </tr>
+          
               </thead>
               <tbody>
                 <tr
-                  *ngFor="let payment of filteredPayments"
+                  *ngFor="let payment of (filteredPayments | tableColumnFilter: tableFilters : { paymentDate: 'paymentDate', paymentInvoice: '_tableInvoiceLabel|invoice.invoiceCode|invoice.id|invoice', method: 'paymentMethod|method', reference: 'referenceNo|reference', received: 'amount|receivedAmount', receivedBy: '_tableReceivedBy|receivedBy.fullName|receivedBy.name|receivedBy.staffCode|receivedBy' } : '$sort_fee_payment_2' : '$sort_fee_payment_2_direction')"
                   (click)="selectPayment(payment, 'view')"
                   class="fee-selectable-row"
                 >
@@ -765,7 +772,7 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredPayments.length === 0">
+                <tr *ngIf="(filteredPayments | tableColumnFilter: tableFilters : { paymentDate: 'paymentDate', paymentInvoice: '_tableInvoiceLabel|invoice.invoiceCode|invoice.id|invoice', method: 'paymentMethod|method', reference: 'referenceNo|reference', received: 'amount|receivedAmount', receivedBy: '_tableReceivedBy|receivedBy.fullName|receivedBy.name|receivedBy.staffCode|receivedBy' } : '$sort_fee_payment_2' : '$sort_fee_payment_2_direction').length === 0">
                   <td colspan="7" class="fee-empty">
                     <i class="bi bi-cash-coin"></i>
                     <strong>No payments found</strong>

@@ -26,6 +26,8 @@ import {
   styleUrls: ['./classroom.component.scss'],
 })
 export class ClassroomComponent implements OnInit {
+  tableFilters: { [key: string]: string } = {};
+
   classroomObj: ClassroomRepresentation = {};
   classrooms: Array<any> = [];
   allStatus: Array<any> = [];

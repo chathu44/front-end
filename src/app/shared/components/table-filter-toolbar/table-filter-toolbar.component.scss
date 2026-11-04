@@ -1,0 +1,364 @@
+:host {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.8rem;
+  position: relative;
+  z-index: 30;
+}
+
+.table-filter-toolbar {
+  position: relative;
+  min-height: 38px;
+}
+
+.filter-toolbar-bar,
+.filter-toolbar-actions,
+.filter-toolbar-summary,
+.filter-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.filter-toolbar-bar {
+  min-height: 38px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.filter-toolbar-actions {
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 36px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #dce4e9;
+  border-radius: 9px;
+  background: #fff;
+  color: #344054;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.filter-trigger:hover,
+.filter-trigger-active {
+  border-color: #91c7c1;
+  background: #f3faf9;
+  color: #0b655e;
+}
+
+.filter-trigger:focus-visible,
+.clear-control-button:focus-visible,
+.clear-all-button:focus-visible,
+.popover-close:focus-visible,
+.clear-one-button:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.2);
+  outline-offset: 2px;
+}
+
+.filter-trigger > i:first-child {
+  font-size: 0.95rem;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.filter-chevron {
+  margin-left: 0.1rem;
+  color: #85929e;
+  font-size: 0.66rem;
+  transition: transform 150ms ease;
+}
+
+.filter-chevron.chevron-open {
+  transform: rotate(180deg);
+}
+
+.clear-control-button,
+.clear-all-button {
+  padding: 0.3rem 0.15rem;
+  border: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.clear-control-button:hover,
+.clear-all-button:hover {
+  color: #b42318;
+}
+
+.filter-toolbar-summary {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem 0.8rem;
+  color: #7b8794;
+  font-size: 0.73rem;
+}
+
+.result-count strong {
+  color: #344054;
+  font-weight: 700;
+}
+
+.sorted-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.23rem 0.52rem;
+  border-radius: 999px;
+  background: #f0f5f5;
+  color: #0b655e;
+  font-size: 0.69rem;
+  font-weight: 600;
+}
+
+/* The filter panel floats over the table and never pushes the table down. */
+.filter-popover {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(1060px, calc(100vw - 2rem));
+  padding: 0.9rem 1rem 0.75rem;
+  border: 1px solid #e2e8ee;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgba(16, 24, 40, 0.18);
+  z-index: 1200;
+  animation: filter-popover-in 120ms ease-out;
+}
+
+@keyframes filter-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.filter-popover-header h6 {
+  margin: 0 0 0.2rem;
+  color: #1d2939;
+  font-size: 0.87rem;
+  font-weight: 700;
+}
+
+.filter-popover-header p {
+  margin: 0;
+  color: #7b8794;
+  font-size: 0.7rem;
+}
+
+.filter-header-actions {
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+.popover-close,
+.clear-one-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 27px;
+  height: 27px;
+  border: 0;
+  border-radius: 7px;
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.popover-close:hover,
+.clear-one-button:hover {
+  background: #eaecf0;
+  color: #344054;
+}
+
+/* A single horizontal strip keeps a long list of filters compact. */
+.filter-fields-strip {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 0.65rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.1rem 0.1rem 0.65rem;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5df transparent;
+}
+
+.filter-fields-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.filter-fields-strip::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5df;
+}
+
+.filter-field-card {
+  display: flex;
+  flex: 0 0 218px;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 92px;
+  padding: 0.65rem;
+  border: 1px solid #e7ebf0;
+  border-radius: 9px;
+  background: #fcfdfd;
+}
+
+.filter-field-heading {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.filter-field-heading label {
+  overflow: hidden;
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clear-one-button {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  font-size: 0.9rem;
+}
+
+.filter-field-card .form-control,
+.filter-field-card .form-select,
+.filter-field-card .ng-select .ng-select-container {
+  min-height: 35px;
+  border-color: #dce3e9;
+  border-radius: 8px;
+  font-size: 0.73rem;
+  box-shadow: none;
+}
+
+.filter-field-card .form-control:focus,
+.filter-field-card .form-select:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.filter-field-card .ng-select .ng-select-container {
+  padding-left: 0.1rem;
+}
+
+.filter-field-card .ng-select .ng-value-container,
+.filter-field-card .ng-select .ng-input {
+  font-size: 0.73rem;
+}
+
+.filter-date-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.filter-mode-select {
+  min-width: 0;
+  min-height: 30px !important;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  font-size: 0.68rem !important;
+}
+
+.range-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.range-control > span {
+  color: #98a2b3;
+  font-size: 0.66rem;
+}
+
+.range-control .form-control {
+  min-width: 0;
+  padding-right: 0.25rem;
+  padding-left: 0.35rem;
+  font-size: 0.67rem;
+}
+
+.filter-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #edf0f3;
+  color: #7b8794;
+  font-size: 0.69rem;
+}
+
+.filter-popover-footer .btn {
+  padding: 0.28rem 0.65rem;
+  border-radius: 7px;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 575.98px) {
+  .filter-toolbar-bar {
+    align-items: flex-start;
+  }
+
+  .filter-toolbar-summary {
+    justify-content: flex-start;
+  }
+
+  .filter-popover {
+    left: 0;
+    width: calc(100vw - 2rem);
+    padding: 0.75rem;
+  }
+
+  .filter-field-card {
+    flex-basis: 205px;
+  }
+}

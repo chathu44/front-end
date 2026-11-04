@@ -214,15 +214,30 @@
                       [items]="(allParents$ | async) ?? []"
                       bindLabel="fullName"
                       bindValue="id"
-                      [(ngModel)]="childObj.parent"
+                      [(ngModel)]="parentDropdownValue"
                       (ngModelChange)="onChangeParent($event)"
                       required
                       [clearable]="false"
                       [searchable]="true"
+                      [loading]="loadingParents"
+                      [disabled]="loadingParents"
+                      [notFoundText]="
+                        loadingParents
+                          ? 'Loading active parents...'
+                          : 'No active parents found'
+                      "
                       appendTo="body"
-                      placeholder="Select Parent / Guardian"
+                      placeholder="Select active Parent / Guardian"
+                    ></ng-select>
+                    <small
+                      class="text-warning d-block mt-2"
+                      *ngIf="selectedInactiveParentLabel"
                     >
-                    </ng-select>
+                      This child is currently linked to
+                      {{ selectedInactiveParentLabel }}. Inactive parents are
+                      not selectable. The existing link will be kept unless you
+                      choose an active parent.
+                    </small>
                   </div>
 
                   <div class="col-md-4">
@@ -526,51 +541,147 @@
                 </small>
               </div>
             </div>
-  <div class="children-count">
-              {{ filteredChildren.length }} Children
+            <div class="children-count">
+              {{
+                (
+                  filteredChildren
+                  | tableColumnFilter
+                    : tableFilters
+                    : {
+                        child: "firstName|lastName|fullName|childCode|id",
+                        dateOfBirth: "dateOfBirth",
+                        gender: "gender",
+                        bloodGroup: "bloodGroup",
+                        allergies: "allergies",
+                        medicalNotes: "medicalNotes",
+                        parent:
+                          "parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id",
+                        status: "status.name|status.statusName|status",
+                      }
+                    : "$sort_child_1"
+                    : "$sort_child_1_direction"
+                ).length
+              }}
+              Children
             </div>
-          
           </div>
 
-          <div class="search-area">
-            <div class="search-box">
-              <i class="bi bi-search"></i>
-
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="searchText"
-                name="childTableSearch"
-                placeholder="Search by child name or child code"
-              />
-            </div>
-
-            <div class="search-help">
-              <i class="bi bi-info-circle me-1"></i>
-
-              You can search using the child's full name or child code.
-            </div>
-          </div>
-
+          <app-table-filter-toolbar
+            [items]="filteredChildren"
+            [fields]="{
+              child: 'firstName|lastName|fullName|childCode|id',
+              dateOfBirth: 'dateOfBirth',
+              gender: 'gender',
+              bloodGroup: 'bloodGroup',
+              allergies: 'allergies',
+              medicalNotes: 'medicalNotes',
+              parent:
+                'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id',
+              status: 'status.name|status.statusName|status',
+            }"
+            [labels]="{
+              child: 'Child',
+              dateOfBirth: 'Date of Birth',
+              gender: 'Gender',
+              bloodGroup: 'Blood Group',
+              allergies: 'Allergies',
+              medicalNotes: 'Medical Notes',
+              parent: 'Parent / Guardian',
+              status: 'Status',
+            }"
+            [optionItems]="{ parent: allParentFilterOptions }"
+            [optionPaths]="{ parent: '@parentLabel' }"
+            [optionValues]="{
+              status: ['Active', 'Withdrawn', 'Graduated'],
+            }"
+            [(filters)]="tableFilters"
+            [sortKey]="'$sort_child_1'"
+            [directionKey]="'$sort_child_1_direction'"
+            heading="Filter and sort"
+          ></app-table-filter-toolbar>
           <div class="table-responsive">
             <table class="table child-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Child</th>
+                  <th
+                    appTableSort="child"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Child
+                  </th>
 
-                  <th>Date of Birth</th>
+                  <th
+                    appTableSort="dateOfBirth"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Date of Birth
+                  </th>
 
-                  <th>Gender</th>
+                  <th
+                    appTableSort="gender"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Gender
+                  </th>
 
-                  <th>Blood Group</th>
+                  <th
+                    appTableSort="bloodGroup"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Blood Group
+                  </th>
 
-                  <th>Allergies</th>
+                  <th
+                    appTableSort="allergies"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Allergies
+                  </th>
 
-                  <th>Medical Notes</th>
+                  <th
+                    appTableSort="medicalNotes"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Medical Notes
+                  </th>
 
-                  <th>Parent / Guardian</th>
+                  <th
+                    appTableSort="parent"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Parent / Guardian
+                  </th>
 
-                  <th>Status</th>
+                  <th
+                    appTableSort="status"
+                    [sortFilters]="tableFilters"
+                    [sortFieldKey]="'$sort_child_1'"
+                    [sortDirectionKey]="'$sort_child_1_direction'"
+                    (sortFiltersChange)="tableFilters = $event"
+                  >
+                    Status
+                  </th>
 
                   <th class="text-center">Modify</th>
                 </tr>
@@ -578,7 +689,24 @@
 
               <tbody>
                 <tr
-                  *ngFor="let child of filteredChildren"
+                  *ngFor="
+                    let child of filteredChildren
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            child: 'firstName|lastName|fullName|childCode|id',
+                            dateOfBirth: 'dateOfBirth',
+                            gender: 'gender',
+                            bloodGroup: 'bloodGroup',
+                            allergies: 'allergies',
+                            medicalNotes: 'medicalNotes',
+                            parent:
+                              'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_child_1'
+                        : '$sort_child_1_direction'
+                  "
                   class="child-row"
                   [class.selected-row]="selectedChildId == child.id"
                   (click)="SelectChildRow(child)"
@@ -718,14 +846,35 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredChildren.length === 0">
+                <tr
+                  *ngIf="
+                    (
+                      filteredChildren
+                      | tableColumnFilter
+                        : tableFilters
+                        : {
+                            child: 'firstName|lastName|fullName|childCode|id',
+                            dateOfBirth: 'dateOfBirth',
+                            gender: 'gender',
+                            bloodGroup: 'bloodGroup',
+                            allergies: 'allergies',
+                            medicalNotes: 'medicalNotes',
+                            parent:
+                              'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id',
+                            status: 'status.name|status.statusName|status',
+                          }
+                        : '$sort_child_1'
+                        : '$sort_child_1_direction'
+                    ).length === 0
+                  "
+                >
                   <td colspan="9" class="empty-table">
                     <div class="empty-state">
                       <i class="bi bi-people"></i>
 
                       <h6>No Children Found</h6>
 
-                      <p>No registered child matches your search.</p>
+                      <p>No children match the selected filters.</p>
                     </div>
                   </td>
                 </tr>

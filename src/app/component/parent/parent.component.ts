@@ -29,6 +29,8 @@ import {
   styleUrls: ['./parent.component.scss'],
 })
 export class ParentComponent implements OnInit {
+  tableFilters: { [key: string]: any } = {};
+
   parentObj: ParentRepresentation = {};
   parents: Array<any> = [];
   allStatus: Array<any> = [];
@@ -41,6 +43,12 @@ export class ParentComponent implements OnInit {
   canCreate = false;
   canUpdate = false;
   canDelete = false;
+  showInactiveParents = false;
+
+  private cachedParentSource: any[] | null = null;
+  private cachedStatusSource: any[] | null = null;
+  private cachedArchiveMode: boolean | null = null;
+  private cachedParentRows: any[] = [];
 
   readonly relationshipOptions = ['Mother', 'Father', 'Guardian', 'Other'];
 
@@ -235,6 +243,7 @@ export class ParentComponent implements OnInit {
     this.parentService.GetAllParents().subscribe({
       next: (allData: any): void => {
         this.parents = allData?.data?.dataList || [];
+        this.invalidateFilteredParentsCache();
       },
       error: (error: any): void => {
         console.error('Get parents error:', error);
@@ -298,6 +307,7 @@ export class ParentComponent implements OnInit {
     statuses$.subscribe({
       next: (statuses: any[]): void => {
         this.allStatus = statuses;
+        this.invalidateFilteredParentsCache();
         if (!this.isEditParent && !this.parentObj.status) {
           const activeStatus = findStatusById(
             statuses,
@@ -345,21 +355,34 @@ export class ParentComponent implements OnInit {
   selectedParentId: any = null;
 
   get filteredParents(): any[] {
-    const search = this.searchText.toLowerCase().trim();
+    const source = Array.isArray(this.parents) ? this.parents : [];
 
-    return (this.parents || []).filter((parent: any) => {
-      const name = String(
-        parent.fullName || parent.parentName || '',
-      ).toLowerCase();
+    if (
+      this.cachedParentSource === source &&
+      this.cachedStatusSource === this.allStatus &&
+      this.cachedArchiveMode === this.showInactiveParents
+    ) {
+      return this.cachedParentRows;
+    }
 
-      const code = String(parent.parentCode || '').toLowerCase();
-
-      const phone = String(parent.phone || '').toLowerCase();
-
-      return (
-        name.includes(search) || code.includes(search) || phone.includes(search)
-      );
+    this.cachedParentSource = source;
+    this.cachedStatusSource = this.allStatus;
+    this.cachedArchiveMode = this.showInactiveParents;
+    this.cachedParentRows = source.filter((parent: any) => {
+      const active =
+        this.normalizeStatusName(this.getStatusName(parent.status)) ===
+        'active';
+      return this.showInactiveParents ? !active : active;
     });
+
+    return this.cachedParentRows;
+  }
+
+  private invalidateFilteredParentsCache(): void {
+    this.cachedParentSource = null;
+    this.cachedStatusSource = null;
+    this.cachedArchiveMode = null;
+    this.cachedParentRows = [];
   }
 
   SelectParentRow(parent: any): void {

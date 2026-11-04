@@ -1,0 +1,152 @@
+<section class="table-filter-toolbar" aria-label="Table filters">
+  <div class="filter-toolbar-bar">
+    <div class="filter-toolbar-actions">
+      <button
+        type="button"
+        class="filter-trigger"
+        [class.filter-trigger-active]="panelOpen || hasAppliedFilters"
+        (click)="togglePanel()"
+        [attr.aria-expanded]="panelOpen"
+        aria-haspopup="true"
+      >
+        <i class="bi bi-funnel" aria-hidden="true"></i>
+        <span>Filters</span>
+        <span class="filter-count" *ngIf="activeFilterCount > 0">{{ activeFilterCount }}</span>
+        <i class="bi bi-chevron-down filter-chevron" [class.chevron-open]="panelOpen" aria-hidden="true"></i>
+      </button>
+
+      <button *ngIf="hasAppliedFilters" type="button" class="clear-control-button" (click)="clearFilters()">
+        Clear filters
+      </button>
+      <button *ngIf="isSorted" type="button" class="clear-control-button" (click)="clearSort()">
+        Clear sort
+      </button>
+    </div>
+
+    <div class="filter-toolbar-summary">
+      <span class="result-count"><strong>{{ filteredCount }}</strong> of {{ totalCount }} records</span>
+      <span class="sorted-indicator" *ngIf="isSorted">
+        <i [class]="sortDirectionLabel === 'Descending' ? 'bi bi-sort-down' : 'bi bi-sort-up'" aria-hidden="true"></i>
+        {{ sortedByLabel }} · {{ sortDirectionLabel }}
+      </span>
+    </div>
+  </div>
+
+  <div class="filter-popover" *ngIf="panelOpen">
+    <div class="filter-popover-header">
+      <div>
+        <h6>{{ heading }}</h6>
+        <p>All filters are available here. Changes apply automatically.</p>
+      </div>
+      <div class="filter-header-actions">
+        <button *ngIf="hasAppliedFilters || isSorted" type="button" class="clear-all-button" (click)="clearAll()">Clear all</button>
+        <button type="button" class="popover-close" aria-label="Close filters" (click)="closePanel()">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-fields-strip">
+      <div class="filter-field-card" *ngFor="let field of filterFields; trackBy: trackByField">
+        <div class="filter-field-heading">
+          <label [for]="'table-filter-' + field.key">{{ field.label }}</label>
+          <button
+            *ngIf="filters[field.key] !== undefined && filters[field.key] !== null && filters[field.key] !== ''"
+            type="button"
+            class="clear-one-button"
+            [attr.aria-label]="'Clear ' + field.label + ' filter'"
+            (click)="clearFilter(field.key)"
+          >
+            <i class="bi bi-x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <ng-container [ngSwitch]="field.type">
+          <ng-select
+            *ngSwitchCase="'select'"
+            [items]="optionsFor(field)"
+            bindLabel="label"
+            bindValue="value"
+            [ngModel]="filters[field.key] || null"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="setValue(field.key, $event)"
+            [clearable]="true"
+            [searchable]="true"
+            [closeOnSelect]="true"
+            [placeholder]="'All ' + field.label"
+            [notFoundText]="'No options found'"
+            appendTo="body"
+            class="table-filter-select"
+          ></ng-select>
+
+          <input
+            *ngSwitchCase="'text'"
+            [id]="'table-filter-' + field.key"
+            class="form-control form-control-sm"
+            type="search"
+            [ngModel]="textValue(field.key)"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="setValue(field.key, $event)"
+            [placeholder]="'Search ' + field.label.toLowerCase()"
+          />
+
+          <div *ngSwitchCase="'date'" class="filter-date-control">
+            <select class="form-select form-select-sm filter-mode-select" [ngModel]="rangeMode(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRangeMode(field.key, $event)">
+              <option value="single">On date</option>
+              <option value="range">Date range</option>
+            </select>
+            <input *ngIf="rangeMode(field.key) === 'single'" type="date" class="form-control form-control-sm" [ngModel]="singleValue(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setSingleValue(field.key, $event)" />
+            <div *ngIf="rangeMode(field.key) === 'range'" class="range-control">
+              <input type="date" class="form-control form-control-sm" aria-label="From date" [ngModel]="rangeValue(field.key, 'from')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'from', $event)" />
+              <span>to</span>
+              <input type="date" class="form-control form-control-sm" aria-label="To date" [ngModel]="rangeValue(field.key, 'to')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'to', $event)" />
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'month'" class="filter-date-control">
+            <select class="form-select form-select-sm filter-mode-select" [ngModel]="rangeMode(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRangeMode(field.key, $event)">
+              <option value="single">Month and year</option>
+              <option value="range">Month range</option>
+            </select>
+            <input *ngIf="rangeMode(field.key) === 'single'" type="month" class="form-control form-control-sm" [ngModel]="singleValue(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setSingleValue(field.key, $event)" />
+            <div *ngIf="rangeMode(field.key) === 'range'" class="range-control">
+              <input type="month" class="form-control form-control-sm" aria-label="From month" [ngModel]="rangeValue(field.key, 'from')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'from', $event)" />
+              <span>to</span>
+              <input type="month" class="form-control form-control-sm" aria-label="To month" [ngModel]="rangeValue(field.key, 'to')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'to', $event)" />
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'time'" class="filter-date-control">
+            <select class="form-select form-select-sm filter-mode-select" [ngModel]="rangeMode(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRangeMode(field.key, $event)">
+              <option value="single">At time</option>
+              <option value="range">Time range</option>
+            </select>
+            <input *ngIf="rangeMode(field.key) === 'single'" type="time" class="form-control form-control-sm" [ngModel]="singleValue(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setSingleValue(field.key, $event)" />
+            <div *ngIf="rangeMode(field.key) === 'range'" class="range-control">
+              <input type="time" class="form-control form-control-sm" aria-label="From time" [ngModel]="rangeValue(field.key, 'from')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'from', $event)" />
+              <span>to</span>
+              <input type="time" class="form-control form-control-sm" aria-label="To time" [ngModel]="rangeValue(field.key, 'to')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'to', $event)" />
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'number'" class="filter-date-control">
+            <select class="form-select form-select-sm filter-mode-select" [ngModel]="rangeMode(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRangeMode(field.key, $event)">
+              <option value="single">Exact value</option>
+              <option value="range">Value range</option>
+            </select>
+            <input *ngIf="rangeMode(field.key) === 'single'" type="number" step="0.01" class="form-control form-control-sm" [ngModel]="singleValue(field.key)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setSingleValue(field.key, $event)" placeholder="Enter value" />
+            <div *ngIf="rangeMode(field.key) === 'range'" class="range-control">
+              <input type="number" step="0.01" class="form-control form-control-sm" aria-label="Minimum value" [ngModel]="rangeValue(field.key, 'from')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'from', $event)" placeholder="Min" />
+              <span>to</span>
+              <input type="number" step="0.01" class="form-control form-control-sm" aria-label="Maximum value" [ngModel]="rangeValue(field.key, 'to')" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setRange(field.key, 'to', $event)" placeholder="Max" />
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="filter-popover-footer">
+      <span>{{ filteredCount }} matching records · {{ activeFilterCount }} filters applied</span>
+    </div>
+  </div>
+</section>

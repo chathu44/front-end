@@ -25,14 +25,31 @@ export class StaffService {
   }
 
   createStaff(staff: StaffRepresentation): Observable<any> {
-    return this.http.post(this.staffUrl, staff);
+    return this.http.post(this.staffUrl, this.toApiPayload(staff));
   }
 
   updateStaff(
     id: string | number,
     staff: StaffRepresentation,
   ): Observable<any> {
-    return this.http.put(`${this.staffUrl}/${id}`, staff);
+    return this.http.put(`${this.staffUrl}/${id}`, this.toApiPayload(staff));
+  }
+
+  private toApiPayload(staff: StaffRepresentation): any {
+    const rawUser = staff.user ?? staff.userId ?? staff.user_id;
+    const userId =
+      rawUser && typeof rawUser === 'object' ? rawUser.id : rawUser;
+    const payload: any = {
+      ...staff,
+      user:
+        userId === null || userId === undefined || userId === ''
+          ? null
+          : { id: Number(userId) },
+    };
+
+    delete payload.userId;
+    delete payload.user_id;
+    return payload;
   }
 
   getClassrooms(): Observable<any> {

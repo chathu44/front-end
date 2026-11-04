@@ -156,18 +156,7 @@
                     [searchable]="true"
                     appendTo="body"
                     placeholder="Select child"
-                  >
-                    <ng-template ng-label-tmp let-item="item">
-                      {{ item.firstName }} {{ item.lastName }} ({{
-                        item.childCode || item.id
-                      }})
-                    </ng-template>
-                    <ng-template ng-option-tmp let-item="item">
-                      {{ item.firstName }} {{ item.lastName }} ({{
-                        item.childCode || item.id
-                      }})
-                    </ng-template>
-                  </ng-select>
+                  ></ng-select>
                 </div>
 
                 <div class="col-md-6">
@@ -218,8 +207,11 @@
                     required
                     [clearable]="false"
                     [searchable]="true"
+                    [loading]="loadingPrograms"
+                    [disabled]="loadingPrograms"
+                    [notFoundText]="loadingPrograms ? 'Loading active programs...' : 'No active programs found'"
                     appendTo="body"
-                    placeholder="Select program"
+                    placeholder="Select active program"
                   ></ng-select>
                 </div>
 
@@ -440,50 +432,45 @@
             </div>
 
             <div class="enrollments-count">
-              {{ filteredEnrollments.length }} Enrollments
+              {{ (filteredEnrollments | tableColumnFilter: tableFilters : { enrollment: 'enrollmentCode|id', enrollDate: 'enrollDate', startDate: 'startDate', endDate: 'endDate', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', parent: 'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id', program: 'program.programName|program.programCode|program.name', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id', status: 'status.name|status.statusName|status' } : '$sort_enrollment_1' : '$sort_enrollment_1_direction').length }} Enrollments
             </div>
           </div>
 
-          <div class="search-area">
-            <div class="search-box">
-              <i class="bi bi-search"></i>
+          
 
-              <input
-                type="text"
-                class="form-control"
-                [(ngModel)]="searchText"
-                name="enrollmentTableSearch"
-                placeholder="Search by enrollment code, child, parent, program or classroom"
-              />
-            </div>
-
-            <div class="search-help">
-              <i class="bi bi-info-circle me-1"></i>
-              Search by enrollment code, child's name, parent, program or
-              classroom.
-            </div>
-          </div>
-
-          <div class="table-responsive">
+          <app-table-filter-toolbar
+  [items]="filteredEnrollments"
+  [fields]="{ enrollment: 'enrollmentCode|id', enrollDate: 'enrollDate', startDate: 'startDate', endDate: 'endDate', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', parent: 'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id', program: 'program.programName|program.programCode|program.name', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id', status: 'status.name|status.statusName|status' }"
+  [labels]="{ enrollment: 'Enrollment', enrollDate: 'Enroll Date', startDate: 'Start Date', endDate: 'End Date', child: 'Child', parent: 'Parent / Guardian', program: 'Program', classroom: 'Classroom', status: 'Status' }"
+  [optionItems]="{ child: childFilterOptions, parent: parentFilterOptions, program: programFilterOptions, classroom: classroomFilterOptions }"
+  [optionPaths]="{ child: '@childLabel', parent: '@parentLabel', program: '@programLabel', classroom: '@classroomLabel' }"
+  [optionValues]="{ status: ['Pending', 'Active', 'Completed', 'Withdrawn'] }"
+  [(filters)]="tableFilters"
+  [sortKey]="'$sort_enrollment_1'"
+  [directionKey]="'$sort_enrollment_1_direction'"
+  heading="Filter and sort"
+></app-table-filter-toolbar>
+<div class="table-responsive">
             <table class="table enrollment-table align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Enrollment</th>
-                  <th>Enroll Date</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Child</th>
-                  <th>Parent / Guardian</th>
-                  <th>Program</th>
-                  <th>Classroom</th>
-                  <th>Status</th>
+                  <th appTableSort="enrollment" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Enrollment</th>
+                  <th appTableSort="enrollDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Enroll Date</th>
+                  <th appTableSort="startDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Start Date</th>
+                  <th appTableSort="endDate" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">End Date</th>
+                  <th appTableSort="child" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Child</th>
+                  <th appTableSort="parent" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Parent / Guardian</th>
+                  <th appTableSort="program" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Program</th>
+                  <th appTableSort="classroom" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Classroom</th>
+                  <th appTableSort="status" [sortFilters]="tableFilters" [sortFieldKey]="'$sort_enrollment_1'" [sortDirectionKey]="'$sort_enrollment_1_direction'" (sortFiltersChange)="tableFilters = $event">Status</th>
                   <th class="text-center">Modify</th>
                 </tr>
+          
               </thead>
 
               <tbody>
                 <tr
-                  *ngFor="let enrollment of filteredEnrollments"
+                  *ngFor="let enrollment of (filteredEnrollments | tableColumnFilter: tableFilters : { enrollment: 'enrollmentCode|id', enrollDate: 'enrollDate', startDate: 'startDate', endDate: 'endDate', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', parent: 'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id', program: 'program.programName|program.programCode|program.name', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id', status: 'status.name|status.statusName|status' } : '$sort_enrollment_1' : '$sort_enrollment_1_direction')"
                   class="enrollment-row"
                   [class.selected-row]="selectedEnrollmentId == enrollment.id"
                   (click)="SelectEnrollmentRow(enrollment)"
@@ -608,14 +595,14 @@
                   </td>
                 </tr>
 
-                <tr *ngIf="filteredEnrollments.length === 0">
+                <tr *ngIf="(filteredEnrollments | tableColumnFilter: tableFilters : { enrollment: 'enrollmentCode|id', enrollDate: 'enrollDate', startDate: 'startDate', endDate: 'endDate', child: 'child.firstName|child.lastName|child.fullName|child.childCode|child.id', parent: 'parent.fullName|parent.parentName|parent.phone|parent.parentCode|parent.id', program: 'program.programName|program.programCode|program.name', classroom: 'classroom.roomName|classroom.classroomName|classroom.roomCode|classroom.classroomCode|classroom.id', status: 'status.name|status.statusName|status' } : '$sort_enrollment_1' : '$sort_enrollment_1_direction').length === 0">
                   <td colspan="10" class="empty-table">
                     <div class="empty-state">
                       <i class="bi bi-clipboard2-x"></i>
 
                       <h6>No Enrollments Found</h6>
 
-                      <p>No enrollment matches your search.</p>
+                      <p>No enrollments match the selected filters.</p>
                     </div>
                   </td>
                 </tr>

@@ -15,6 +15,12 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
   padding: 1.25rem 1rem;
   background: linear-gradient(180deg, #0b1f33 0%, #12324a 55%, #0f4e4a 100%);
   color: #f4f1ea;
@@ -168,4 +174,25 @@
   .menu-label {
     grid-column: 1 / -1;
   }
+}
+
+.side-nav::-webkit-scrollbar {
+  width: 7px;
+}
+.side-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.side-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 10px;
+}
+.side-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+.side-brand {
+  flex-shrink: 0;
+}
+.side-menu {
+  min-height: min-content;
+  padding-bottom: 1rem;
 }

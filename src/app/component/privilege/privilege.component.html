@@ -99,19 +99,73 @@
           <span class="section-count">{{ groups.length }} groups</span>
         </div>
 
+        <app-table-filter-toolbar
+          [items]="groups$ | async"
+          [fields]="{
+            groupId: 'id',
+            groupName: 'groupName',
+            description: 'description',
+          }"
+          [labels]="{
+            groupId: 'ID',
+            groupName: 'Group Name',
+            description: 'Description',
+          }"
+          [(filters)]="tableFilters"
+          [sortKey]="'$sort_privilege_1'"
+          [directionKey]="'$sort_privilege_1_direction'"
+          heading="Filter and sort"
+        ></app-table-filter-toolbar>
         <div class="table-responsive">
           <table class="table privilege-table align-middle mb-0">
             <thead>
               <tr>
-                <th class="id-column">ID</th>
-                <th>Group Name</th>
-                <th>Description</th>
+                <th
+                  class="id-column"
+                  appTableSort="groupId"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_privilege_1'"
+                  [sortDirectionKey]="'$sort_privilege_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  ID
+                </th>
+                <th
+                  appTableSort="groupName"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_privilege_1'"
+                  [sortDirectionKey]="'$sort_privilege_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Group Name
+                </th>
+                <th
+                  appTableSort="description"
+                  [sortFilters]="tableFilters"
+                  [sortFieldKey]="'$sort_privilege_1'"
+                  [sortDirectionKey]="'$sort_privilege_1_direction'"
+                  (sortFiltersChange)="tableFilters = $event"
+                >
+                  Description
+                </th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr
-                *ngFor="let g of groups$ | async"
+                *ngFor="
+                  let g of groups$
+                    | async
+                    | tableColumnFilter
+                      : tableFilters
+                      : {
+                          groupId: 'id',
+                          groupName: 'groupName',
+                          description: 'description',
+                        }
+                      : '$sort_privilege_1'
+                      : '$sort_privilege_1_direction'
+                "
                 [class.selected-group-row]="selectedGroupId === g.id"
                 (click)="selectedGroupId = g.id!; onGroupChange()"
               >
